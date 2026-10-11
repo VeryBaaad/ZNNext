@@ -1,6 +1,6 @@
 {
-    "version": "v1.7.2",
-    "versionCode": 96,
-    "zipUrl": "https://github.com/VeryBaaad/ZygiskNextNext/releases/download/v1.7.2/Zygisk-Next-Next-v1.7.2-96-9940daf-release.zip",
+    "version": "v1.8.0",
+    "versionCode": 99,
+    "zipUrl": "https://github.com/VeryBaaad/ZygiskNextNext/releases/download/v1.8.0/Zygisk-Next-Next-v1.8.0-99-da2570a-release.zip",
     "changelog": "https://raw.githubusercontent.com/VeryBaaad/ZygiskNextNext/refs/heads/update/changelog.md"
 }
