@@ -41,6 +41,7 @@ pub const MODULE_ID: &str = "zygisknextsu";
 pub const VERSION: &str = env!("ZNN_VERSION");
 
 const SHUTDOWN_RELEASE_BUDGET_MS: u64 = 800;
+const PROC_IDLE_SLEEP_MS: u64 = 25;
 
 static RESCAN: AtomicBool = AtomicBool::new(false);
 static SHUTDOWN: AtomicBool = AtomicBool::new(false);
@@ -50,6 +51,7 @@ pub enum Tracking {
     Kernel,
     Ptrace,
     Proc,
+    Late,
 }
 
 impl Tracking {
@@ -58,6 +60,7 @@ impl Tracking {
             Tracking::Kernel => "kernel",
             Tracking::Ptrace => "ptrace",
             Tracking::Proc => "proc",
+            Tracking::Late => "late",
         }
     }
 }
@@ -79,7 +82,11 @@ pub struct Daemon {
     pub ignored: HashSet<Pid>,
     pub candidates: HashMap<Pid, Candidate>,
     pub yielded: HashSet<Pid>,
+    pub deferred: HashMap<Pid, u64>,
+    pub recheck: HashMap<Pid, u64>,
     pub ignored_rescans: u32,
+    pub last_allocated_pid: Option<Pid>,
+    pub proc_scan_active: bool,
     pub last_rescan_ms: Option<u64>,
     pub last_zygisk_check_ms: u64,
     pub last_state_write_ms: u64,
@@ -109,17 +116,15 @@ impl Daemon {
             ignored: HashSet::new(),
             candidates: HashMap::new(),
             yielded: HashSet::new(),
+            deferred: HashMap::new(),
+            recheck: HashMap::new(),
             ignored_rescans: 0,
+            last_allocated_pid: None,
+            proc_scan_active: false,
             last_rescan_ms: None,
             last_zygisk_check_ms: 0,
             last_state_write_ms: 0,
         };
-
-        let kernel_early = requested_mode == config::MODE_KERNEL
-            || (requested_mode == config::MODE_AUTO && crate::mode::monitor_present());
-        if kernel_early {
-            daemon.start_kernel_tracker();
-        }
 
         daemon.system = system::collect();
         daemon.check_loaders();
@@ -131,6 +136,12 @@ impl Daemon {
         daemon.collect_targets();
         daemon.restore_processes();
         logi!("collected {} zn modules", daemon.targets.len());
+
+        let kernel_early = requested_mode == config::MODE_KERNEL
+            || (requested_mode == config::MODE_AUTO && crate::mode::monitor_present());
+        if kernel_early {
+            daemon.start_kernel_tracker();
+        }
 
         daemon.select_mode();
         daemon
@@ -167,6 +178,14 @@ impl Daemon {
             match self.mode {
                 Tracking::Kernel => self.poll_kernel(),
                 Tracking::Proc => self.poll_processes(),
+                Tracking::Late => {
+                    if self.kernel.is_some() {
+                        self.poll_kernel();
+                    } else {
+                        self.poll_processes();
+                    }
+                    self.retry_deferred();
+                }
                 Tracking::Ptrace => {
                     let now = procfs::now_ms();
                     if self.requested_mode == config::MODE_AUTO
@@ -174,10 +193,11 @@ impl Daemon {
                     {
                         self.last_zygisk_check_ms = now;
                         if crate::mode::monitor_present() && self.hand_over_init() {
+                            self.start_kernel_tracker();
                             logw!(
-                                "another Zygisk-family loader is running; yielded init and switched to proc mode (poll /proc)"
+                                "another Zygisk-family loader is running; yielded init and switched to late mode (deferring to it)"
                             );
-                            self.mode = Tracking::Proc;
+                            self.mode = Tracking::Late;
                             self.state.dirty = true;
                         }
                     }
@@ -186,6 +206,7 @@ impl Daemon {
 
             self.reap_traces();
             self.expire_pending();
+            self.recheck_pending();
 
             let now = procfs::now_ms();
             if self
@@ -195,10 +216,16 @@ impl Daemon {
                 self.collect_targets();
                 self.last_rescan_ms = Some(now);
                 self.state.dirty = true;
-                if self.mode == Tracking::Kernel {
+                if self.mode == Tracking::Kernel
+                    || (self.mode == Tracking::Late && self.kernel.is_some())
+                {
                     self.prune_kernel_bookkeeping();
                     self.upgrade_kernel_sources();
                 }
+                if self.mode == Tracking::Late {
+                    self.prune_deferred();
+                }
+                self.recheck.retain(|pid, _| procfs::is_alive(*pid));
             }
             if self.state.dirty
                 && (now - self.last_state_write_ms >= 2000 || self.last_state_write_ms == 0)
@@ -209,7 +236,11 @@ impl Daemon {
             }
 
             thread::sleep(match self.mode {
-                Tracking::Proc => Duration::from_millis(2),
+                Tracking::Proc if self.proc_scan_active => Duration::from_millis(2),
+                Tracking::Proc => Duration::from_millis(PROC_IDLE_SLEEP_MS),
+                Tracking::Late if self.kernel.is_some() => Duration::from_millis(1),
+                Tracking::Late if self.proc_scan_active => Duration::from_millis(2),
+                Tracking::Late => Duration::from_millis(PROC_IDLE_SLEEP_MS),
                 Tracking::Kernel | Tracking::Ptrace => Duration::from_millis(1),
             });
         }

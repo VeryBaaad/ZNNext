@@ -20,6 +20,7 @@ rootProject.name = "ZygiskNextNext"
 include(
     ":loader",
     ":injector",
+    ":kpm",
     ":module",
     ":webui",
 )

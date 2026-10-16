@@ -26,6 +26,7 @@ val verName = "v1.9.0"
 val verCode = gitCommitCount
 val commitHash = gitCommitHash
 val updateUrl = "https://raw.githubusercontent.com/VeryBaaad/ZygiskNextNext/refs/heads/update/update.json"
+val kpmVersion = verName.removePrefix("v")
 
 val minKsuVersion = 10940
 val minKsudVersion = 11425
@@ -38,6 +39,7 @@ extra.set("verName", verName)
 extra.set("verCode", verCode)
 extra.set("commitHash", commitHash)
 extra.set("updateUrl", updateUrl)
+extra.set("kpmVersion", kpmVersion)
 
 extra.set("minKsuVersion", minKsuVersion)
 extra.set("minKsudVersion", minKsudVersion)

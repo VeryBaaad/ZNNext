@@ -98,6 +98,8 @@ mod implementation {
             uid: read_u32(record, 12)?,
             ppid: read_u32(record, 16)? as Pid,
             comm: record[24..40].try_into().ok()?,
+            filename: None,
+            pre_exec: false,
         })
     }
 

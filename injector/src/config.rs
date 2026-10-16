@@ -31,6 +31,8 @@ pub const MODE_KERNEL: &str = "kernel";
 pub const MODE_PTRACE: &str = "ptrace";
 /// Poll `/proc` and never trace init.
 pub const MODE_PROC: &str = "proc";
+/// Never trace init: seize targets late and defer to another tracer.
+pub const MODE_LATE: &str = "late";
 
 pub const DEBUGDATA_LZMA: &str = "lzma";
 pub const DEBUGDATA_XZ: &str = "xz";
@@ -77,7 +79,7 @@ pub fn plt_hook_options() -> Vec<&'static str> {
 }
 
 pub fn tracking_mode_options() -> Vec<&'static str> {
-    vec![MODE_AUTO, MODE_KERNEL, MODE_PTRACE, MODE_PROC]
+    vec![MODE_AUTO, MODE_KERNEL, MODE_PTRACE, MODE_PROC, MODE_LATE]
 }
 
 pub fn debugdata_options() -> Vec<&'static str> {

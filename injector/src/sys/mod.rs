@@ -20,7 +20,9 @@
 #![allow(unsafe_code)]
 
 pub mod dlfcn;
+pub mod fanotify;
 pub mod fs;
+pub mod kpm;
 pub mod log;
 pub mod memfd;
 pub mod netlink;

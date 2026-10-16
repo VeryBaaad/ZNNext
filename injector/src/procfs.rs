@@ -24,14 +24,23 @@ use std::path::Path;
 use std::sync::OnceLock;
 use std::time::Instant;
 
+use nix::unistd::{SysconfVar, sysconf};
+
 use crate::maps::{self, PROT_EXEC};
 use crate::sys::Pid;
 
 const DELETED_SUFFIX: &str = " (deleted)";
 
+const STARTTIME_INDEX: usize = 22 - 3;
+
 pub fn now_ms() -> u64 {
     static START: OnceLock<Instant> = OnceLock::new();
     START.get_or_init(Instant::now).elapsed().as_millis() as u64
+}
+
+pub fn last_allocated_pid() -> Option<Pid> {
+    let contents = fs::read_to_string("/proc/loadavg").ok()?;
+    contents.split_whitespace().nth(4)?.parse().ok()
 }
 
 pub fn basename(path: &str) -> &str {
@@ -160,6 +169,46 @@ pub fn foreign_tracer(pid: Pid) -> Option<Pid> {
 /// The executable of a process, for reporting which foreign loader holds it.
 pub fn process_exe(pid: Pid) -> String {
     read_exe_path(pid)
+}
+
+pub fn is_single_threaded(pid: Pid) -> bool {
+    let Ok(status) = fs::read_to_string(format!("/proc/{pid}/status")) else {
+        return false;
+    };
+    status
+        .lines()
+        .find_map(|line| line.strip_prefix("Threads:"))
+        .and_then(|value| value.trim().parse::<u32>().ok())
+        == Some(1)
+}
+
+pub fn process_age_ms(pid: Pid) -> Option<u64> {
+    let stat = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+    let starttime: u64 = stat
+        .rsplit_once(')')?
+        .1
+        .split_whitespace()
+        .nth(STARTTIME_INDEX)?
+        .parse()
+        .ok()?;
+
+    let ticks_per_second = clock_ticks_per_second();
+    let uptime_seconds: f64 = fs::read_to_string("/proc/uptime")
+        .ok()?
+        .split_whitespace()
+        .next()?
+        .parse()
+        .ok()?;
+    let uptime_ticks = (uptime_seconds * ticks_per_second as f64) as u64;
+    Some(uptime_ticks.saturating_sub(starttime) * 1000 / ticks_per_second)
+}
+
+fn clock_ticks_per_second() -> u64 {
+    sysconf(SysconfVar::CLK_TCK)
+        .ok()
+        .flatten()
+        .filter(|ticks| *ticks > 0)
+        .map_or(100, |ticks| ticks as u64)
 }
 
 /// Locate the running daemon, preferring the pid the daemon published in its

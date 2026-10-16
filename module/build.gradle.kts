@@ -94,8 +94,12 @@ androidComponents.onVariants { variant ->
         dependsOn(
             ":loader:assemble$variantCapped",
             ":injector:assemble$variantCapped",
+            ":kpm:assemble$variantCapped",
             ":webui:buildWebui",
         )
+        inputs.dir(project(":kpm").layout.buildDirectory.dir("kpm/$variantLowered"))
+            .withPropertyName("kpmBackend")
+            .optional()
         into(moduleDir)
         from("${rootProject.projectDir}/README.md")
         from("$projectDir/src") {
@@ -171,6 +175,24 @@ androidComponents.onVariants { variant ->
                 val destination = File(dstRoot, "bin/${abiDir.name}/injector")
                 destination.parentFile.mkdirs()
                 artifact.copyTo(destination, overwrite = true)
+            }
+
+            val kpmProperty = (findProperty("kpm") as? String)?.trim()?.lowercase()
+            val kpmSkipped = kpmProperty == "false" || kpmProperty == "off" || kpmProperty == "no"
+            val kpmArtifact = File(
+                project(":kpm").layout.buildDirectory.dir("kpm/$variantLowered").get().asFile,
+                "znn.kpm"
+            )
+            if (kpmArtifact.isFile) {
+                kpmArtifact.copyTo(File(dstRoot, "znn.kpm"), overwrite = true)
+                logger.lifecycle("Packaging KernelPatch backend: znn.kpm")
+            } else if (kpmSkipped) {
+                logger.warn("kpm: -Pkpm=false, the zip will not contain znn.kpm")
+            } else {
+                throw GradleException(
+                    "znn.kpm was not built; the module zip always ships it " +
+                        "(build with a complete NDK, or pass -Pkpm=false to ship without it)"
+                )
             }
         }
 

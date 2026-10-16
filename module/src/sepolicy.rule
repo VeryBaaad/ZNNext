@@ -1,2 +1,6 @@
 allow * * file execute
 allow * tmpfs file { open getattr map read }
+allow * debugfs_tracing dir { read search open getattr }
+allow * debugfs_tracing_instances dir { read write add_name create search open getattr }
+allow * debugfs_tracing_instances file { read write open getattr map }
+allow * debugfs_tracing_instances lnk_file { read open getattr }

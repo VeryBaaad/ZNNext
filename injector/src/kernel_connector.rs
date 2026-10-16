@@ -72,6 +72,8 @@ impl ConnectorTracker {
                 uid: 0,
                 ppid,
                 comm: [0; 16],
+                filename: None,
+                pre_exec: false,
             });
         }
     }

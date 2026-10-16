@@ -63,6 +63,7 @@ export const zhCN: Dictionary = {
   'config.mode.kernel': 'kernel events',
   'config.mode.ptrace': 'ptrace mode',
   'config.mode.proc': 'proc mode',
+  'config.mode.late': 'late mode',
   'config.debugdata': 'gnu_debugdata 解压后端',
   'config.debugdata.lzma': 'LZMA SDK',
   'config.debugdata.xz': 'XZ Embedded',

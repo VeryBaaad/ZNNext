@@ -61,6 +61,7 @@ export const en: Record<string, string> = {
   'config.mode.kernel': 'kernel events',
   'config.mode.ptrace': 'ptrace mode',
   'config.mode.proc': 'proc mode',
+  'config.mode.late': 'late mode',
   'config.debugdata': 'gnu_debugdata decompressor',
   'config.debugdata.lzma': 'LZMA SDK',
   'config.debugdata.xz': 'XZ Embedded',

@@ -300,6 +300,7 @@ fn status(snapshot: Option<&StateSnapshot>) -> i32 {
             *mode == config::MODE_KERNEL
                 || *mode == config::MODE_PTRACE
                 || *mode == config::MODE_PROC
+                || *mode == config::MODE_LATE
         });
     let pid = daemon_pid().unwrap_or(0);
     let running = pid > 0;

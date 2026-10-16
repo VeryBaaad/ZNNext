@@ -18,6 +18,11 @@ or
 - GrapheneOS
 - Linux 3.17 or newer
 
+> Kernel event tracking is optional and uses whatever the kernel provides: tracefs
+> `sched_process_exec` events first, then the proc connector and eBPF. A `/proc`
+> polling mode needs no kernel support at all, so any supported kernel works
+> without kernel events.
+
 ## Install
 
 1. Install Magisk 26402+ or KernelSU 11425+ or APatch 10700+

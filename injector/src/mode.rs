@@ -42,6 +42,8 @@ use crate::trace::{State, Tracee, release_tracee, set_entry_breakpoint};
 /// value: a process another tracer holds is held for its whole life.
 const HOLD_TIMEOUT_MS: u64 = 5000;
 const INTERRUPT_TIMEOUT_MS: u64 = 200;
+const LATE_DEFER_MS: u64 = 10_000;
+const LATE_SAFE_AGE_MS: u64 = 5000;
 
 #[derive(Debug, Clone)]
 pub struct Candidate {
@@ -54,6 +56,15 @@ enum Seizure {
     Seized,
     Retry,
     GiveUp,
+}
+
+struct StoppedTarget {
+    arch: Arch,
+    is_64: bool,
+    entry: usize,
+    thumb: bool,
+    pc: usize,
+    resume_signal: Option<i32>,
 }
 
 impl Daemon {
@@ -74,6 +85,18 @@ impl Daemon {
             return;
         }
 
+        if self.requested_mode == config::MODE_LATE {
+            if self.start_kernel_tracker() {
+                logi!(
+                    "tracking mode forced to late: kernel events are only an accelerator, init is never traced"
+                );
+            } else {
+                logi!("tracking mode forced to late (poll /proc); init is never traced");
+            }
+            self.mode = Tracking::Late;
+            return;
+        }
+
         if self.requested_mode == config::MODE_KERNEL {
             if self.start_kernel_tracker() {
                 self.mode = Tracking::Kernel;
@@ -89,12 +112,17 @@ impl Daemon {
             self.mode = Tracking::Ptrace;
             return;
         }
+        if monitor_present() {
+            self.start_kernel_tracker();
+            logi!(
+                "another Zygisk-family loader is running; using late mode (never trace init, defer to it)"
+            );
+            self.mode = Tracking::Late;
+            return;
+        }
         if self.start_kernel_tracker() {
             self.mode = Tracking::Kernel;
             return;
-        }
-        if monitor_present() {
-            logi!("another Zygisk-family loader is running; using proc mode (poll /proc)");
         }
         self.mode = Tracking::Proc;
     }
@@ -105,6 +133,22 @@ impl Daemon {
             return;
         }
         self.requested_mode = wanted.clone();
+
+        if wanted == config::MODE_LATE {
+            if self.mode == Tracking::Ptrace && !self.hand_over_init() {
+                logw!("tracking mode late needs init to be handed over; staying in ptrace mode");
+                return;
+            }
+            if !self.start_kernel_tracker() {
+                logw!("kernel tracking is unavailable on this kernel; late mode polls /proc");
+            }
+            self.mode = Tracking::Late;
+            self.state.dirty = true;
+            logw!(
+                "tracking mode changed to late; init is never traced and another tracer is deferred to"
+            );
+            return;
+        }
 
         if wanted == config::MODE_KERNEL || wanted == config::MODE_AUTO {
             if self.mode == Tracking::Kernel {
@@ -124,6 +168,16 @@ impl Daemon {
                 return;
             }
             logw!("kernel tracking is unavailable on this kernel; falling back");
+        }
+
+        if self.mode == Tracking::Late && wanted == config::MODE_PROC {
+            self.stop_kernel_tracker();
+            self.mode = Tracking::Proc;
+            self.state.dirty = true;
+            logw!(
+                "tracking mode changed to proc; stopped the kernel event sources and switched to polling /proc"
+            );
+            return;
         }
 
         if self.mode == Tracking::Kernel {
@@ -147,6 +201,10 @@ impl Daemon {
         } else if wanted != config::MODE_PROC && self.mode == Tracking::Proc {
             logw!(
                 "tracking mode {wanted} only applies on the next injector start; staying in proc mode"
+            );
+        } else if wanted != config::MODE_PROC && self.mode == Tracking::Late {
+            logw!(
+                "tracking mode {wanted} only applies on the next injector start; staying in late mode"
             );
         }
     }
@@ -216,6 +274,32 @@ impl Daemon {
         }
     }
 
+    pub fn recheck_pending(&mut self) {
+        if self.recheck.is_empty() {
+            return;
+        }
+        let now = procfs::now_ms();
+        let pending: Vec<Pid> = self.recheck.keys().copied().collect();
+        for pid in pending {
+            let deadline = self.recheck.get(&pid).copied().unwrap_or(0);
+            if now >= deadline
+                || !procfs::is_alive(pid)
+                || self.tracees.contains_key(&pid)
+                || self.done.contains(&pid)
+                || self.ignored.contains(&pid)
+            {
+                self.recheck.remove(&pid);
+                continue;
+            }
+            let exe = procfs::read_exe_path(pid);
+            if exe.is_empty() || !crate::targets::matches(&self.targets, &exe) {
+                continue;
+            }
+            self.recheck.remove(&pid);
+            self.observe_target(pid, &exe);
+        }
+    }
+
     pub fn release_tracees(&mut self) -> bool {
         let pending: Vec<Pid> = self
             .tracees
@@ -241,6 +325,14 @@ impl Daemon {
     }
 
     pub fn poll_processes(&mut self) {
+        let last_pid = procfs::last_allocated_pid();
+        if last_pid.is_some() && last_pid == self.last_allocated_pid && self.candidates.is_empty() {
+            self.proc_scan_active = false;
+            return;
+        }
+        self.last_allocated_pid = last_pid;
+
+        let mut active = false;
         let mut seen = std::collections::HashSet::new();
         let Ok(entries) = std::fs::read_dir("/proc") else {
             return;
@@ -268,6 +360,7 @@ impl Daemon {
                 continue; // zombie or gone; pruned below
             }
             let is_target = crate::targets::matches(&self.targets, &exe);
+            active |= is_target;
 
             match self.candidates.get(&pid).cloned() {
                 None => {
@@ -296,7 +389,11 @@ impl Daemon {
                 Some(candidate) => {
                     if exe == candidate.exe {
                         if is_target {
-                            if procfs::now_ms() - candidate.target_since_ms > HOLD_TIMEOUT_MS {
+                            // Late mode has its own deadline for a target another
+                            // tracer holds, so the proc hold timeout does not apply.
+                            if self.mode != Tracking::Late
+                                && procfs::now_ms() - candidate.target_since_ms > HOLD_TIMEOUT_MS
+                            {
                                 self.abandon(pid, &exe);
                             } else {
                                 self.observe_target(pid, &exe);
@@ -323,6 +420,7 @@ impl Daemon {
         self.ignored.retain(|pid| seen.contains(pid));
         self.done.retain(|pid| seen.contains(pid));
         self.yielded.retain(|pid| seen.contains(pid));
+        self.proc_scan_active = active;
         self.ignored_rescans += 1;
         if self.ignored_rescans >= 15000 {
             self.ignored_rescans = 0;
@@ -349,6 +447,10 @@ impl Daemon {
     }
 
     pub(crate) fn observe_target(&mut self, pid: Pid, exe: &str) {
+        if self.mode == Tracking::Late {
+            self.observe_late_target(pid, exe);
+            return;
+        }
         match self.seize_target(pid, exe) {
             Seizure::Retry => {}
             Seizure::Seized | Seizure::GiveUp => {
@@ -358,7 +460,154 @@ impl Daemon {
         }
     }
 
+    pub(crate) fn observe_late_target(&mut self, pid: Pid, exe: &str) {
+        if let Some(tracer) = procfs::foreign_tracer(pid) {
+            if !self.deferred.contains_key(&pid) {
+                logi!(
+                    "{exe} (pid {pid}) is traced by {} (pid {tracer}); deferring",
+                    procfs::process_exe(tracer)
+                );
+            }
+            self.deferred
+                .entry(pid)
+                .or_insert(procfs::now_ms() + LATE_DEFER_MS);
+            return;
+        }
+
+        match self.seize_late_target(pid, exe) {
+            Seizure::Retry => {
+                self.deferred
+                    .entry(pid)
+                    .or_insert(procfs::now_ms() + LATE_DEFER_MS);
+            }
+            Seizure::Seized | Seizure::GiveUp => {
+                self.deferred.remove(&pid);
+                self.done.insert(pid);
+                self.candidates.remove(&pid);
+            }
+        }
+    }
+
+    pub fn retry_deferred(&mut self) {
+        if self.deferred.is_empty() {
+            return;
+        }
+        let now = procfs::now_ms();
+        let pending: Vec<Pid> = self.deferred.keys().copied().collect();
+        for pid in pending {
+            let deadline = self.deferred.get(&pid).copied().unwrap_or(0);
+            let Some(tracer) = procfs::foreign_tracer(pid) else {
+                self.deferred.remove(&pid);
+                if !procfs::is_alive(pid)
+                    || self.tracees.contains_key(&pid)
+                    || self.done.contains(&pid)
+                    || self.ignored.contains(&pid)
+                {
+                    continue;
+                }
+                let exe = procfs::read_exe_path(pid);
+                if exe.is_empty() || !crate::targets::matches(&self.targets, &exe) {
+                    continue;
+                }
+                logi!("{exe} (pid {pid}): the foreign tracer went away; retrying the injection");
+                self.observe_late_target(pid, &exe);
+                continue;
+            };
+            if now < deadline {
+                continue;
+            }
+
+            let exe = procfs::read_exe_path(pid);
+            let holder = procfs::process_exe(tracer);
+            if holder.is_empty() {
+                logw!("{exe} (pid {pid}) is still held by pid {tracer}; giving up");
+                self.record_failure(pid, &exe, "no injection window");
+            } else {
+                logw!("{exe} (pid {pid}) is still held by {holder}; giving up");
+                self.record_failure(pid, &exe, &format!("held by {holder}"));
+            }
+            self.deferred.remove(&pid);
+            self.done.insert(pid);
+        }
+    }
+
+    pub fn prune_deferred(&mut self) {
+        self.deferred.retain(|pid, _| procfs::is_alive(*pid));
+    }
+
+    fn seize_late_target(&mut self, pid: Pid, exe: &str) -> Seizure {
+        let stopped = match self.seize_and_stop(pid, exe) {
+            Ok(stopped) => stopped,
+            Err(seizure) => return seizure,
+        };
+
+        if !procfs::pc_in_exe_text(pid, exe, stopped.pc) {
+            return self.arm_entry_injection(pid, exe, stopped);
+        }
+
+        let single_threaded = procfs::is_single_threaded(pid);
+        let young = procfs::process_age_ms(pid).is_some_and(|age| age < LATE_SAFE_AGE_MS);
+        if !single_threaded && !young {
+            logw!(
+                "{exe} (pid {pid}) is a running multithreaded process; it is unsafe to inject late"
+            );
+            self.record_failure(
+                pid,
+                exe,
+                "unsafe to inject late into a running multithreaded process",
+            );
+            ptrace::detach(pid, None);
+            return Seizure::GiveUp;
+        }
+
+        let mut tracee = Tracee::new(State::Late, stopped.arch);
+        tracee.exe = exe.to_owned();
+        tracee.loader = if stopped.is_64 {
+            self.loader64.to_string_lossy().into_owned()
+        } else {
+            self.loader32.to_string_lossy().into_owned()
+        };
+        tracee.entry = if stopped.arch == Arch::Arm32 {
+            stopped.pc & !1
+        } else {
+            stopped.pc
+        };
+        tracee.thumb = stopped.arch == Arch::Arm32 && stopped.pc & 1 != 0;
+        let thumb = tracee.thumb;
+        if !set_entry_breakpoint(pid, &mut tracee, thumb) {
+            logw!("{exe} (pid {pid}): cannot arm the late breakpoint; skipping");
+            ptrace::detach(pid, None);
+            return Seizure::GiveUp;
+        }
+        if !self.begin_late_injection(pid, &mut tracee) {
+            return Seizure::GiveUp;
+        }
+        logi!(
+            "seized {exe} (pid {pid}) past its entry (pc {:#x}); injecting late ({})",
+            stopped.pc,
+            if stopped.is_64 { "64-bit" } else { "32-bit" }
+        );
+        Seizure::Seized
+    }
+
     fn seize_target(&mut self, pid: Pid, exe: &str) -> Seizure {
+        let stopped = match self.seize_and_stop(pid, exe) {
+            Ok(stopped) => stopped,
+            Err(seizure) => return seizure,
+        };
+        if procfs::pc_in_exe_text(pid, exe, stopped.pc) {
+            logw!(
+                "{exe} (pid {pid}) is already past its entry (pc {:#x}); instance missed",
+                stopped.pc
+            );
+            self.record_failure(pid, exe, "injection window missed (already past its entry)");
+            ptrace::detach(pid, None);
+            return Seizure::GiveUp;
+        }
+        self.arm_entry_injection(pid, exe, stopped)
+    }
+
+    fn seize_and_stop(&mut self, pid: Pid, exe: &str) -> Result<StoppedTarget, Seizure> {
         // A process has exactly one tracer, so a foreign one means another
         // loader already reached this process. Wait for it to finish and take
         // the process afterwards: this is the same outcome as a failed
@@ -370,12 +619,12 @@ impl Daemon {
                     procfs::process_exe(tracer)
                 );
             }
-            return Seizure::Retry;
+            return Err(Seizure::Retry);
         }
 
         let Some(header) = elf::header_of_file(Path::new(&format!("/proc/{pid}/exe"))) else {
             logw!("{exe} (pid {pid}): cannot read its ELF header; skipping");
-            return Seizure::GiveUp;
+            return Err(Seizure::GiveUp);
         };
         let arch = elf::arch_of(&header);
         if arch == Arch::Unknown {
@@ -383,7 +632,7 @@ impl Daemon {
                 "skipping {exe} (pid {pid}): unsupported machine {}",
                 header.machine
             );
-            return Seizure::GiveUp;
+            return Err(Seizure::GiveUp);
         }
 
         let mut base = 0;
@@ -404,44 +653,44 @@ impl Daemon {
                 "{exe} (pid {pid}): no load base in /proc/{pid}/maps ({} entries read); skipping",
                 maps::parse_for_pid(pid).len()
             );
-            return Seizure::GiveUp;
+            return Err(Seizure::GiveUp);
         }
         if has_loader {
             logw!(
                 "{exe} (pid {pid}) already carries the ZNN loader (fork of an injected process); skipping"
             );
-            return Seizure::GiveUp;
+            return Err(Seizure::GiveUp);
         }
 
         let (entry, thumb) = crate::trace::entry_point(arch, &header, base);
         if entry == 0 {
             logw!("{exe} (pid {pid}): no usable entry point; skipping");
-            return Seizure::GiveUp;
+            return Err(Seizure::GiveUp);
         }
 
         if let Err(error) = ptrace::seize(pid, 0) {
             if error.kind() == std::io::ErrorKind::PermissionDenied {
-                return Seizure::Retry;
+                return Err(Seizure::Retry);
             }
             logw!("{exe} (pid {pid}): cannot seize: {error}; skipping");
-            return Seizure::GiveUp;
+            return Err(Seizure::GiveUp);
         }
 
         if let Err(error) = ptrace::interrupt(pid) {
             logw!("{exe} (pid {pid}): cannot interrupt: {error}; skipping");
             ptrace::detach(pid, None);
-            return Seizure::GiveUp;
+            return Err(Seizure::GiveUp);
         }
 
         let deadline = procfs::now_ms() + INTERRUPT_TIMEOUT_MS;
         let Some(status) = wait_for_stop(pid, deadline) else {
             logw!("{exe} (pid {pid}): never stopped after being interrupted; skipping");
             ptrace::detach(pid, None);
-            return Seizure::GiveUp;
+            return Err(Seizure::GiveUp);
         };
         if status.is_exited() || status.is_signaled() {
             ptrace::detach(pid, None);
-            return Seizure::GiveUp;
+            return Err(Seizure::GiveUp);
         }
         let mut resume_signal = None;
         if status.is_stopped() {
@@ -454,27 +703,30 @@ impl Daemon {
         let Ok(regs) = read_registers(pid, arch) else {
             logw!("{exe} (pid {pid}): cannot read its registers; skipping");
             ptrace::detach(pid, None);
-            return Seizure::GiveUp;
+            return Err(Seizure::GiveUp);
         };
-        let pc = regs.pc();
-        if procfs::pc_in_exe_text(pid, exe, pc) {
-            logw!("{exe} (pid {pid}) is already past its entry (pc {pc:#x}); instance missed");
-            self.record_failure(pid, exe, "injection window missed (already past its entry)");
-            ptrace::detach(pid, None);
-            return Seizure::GiveUp;
-        }
+        Ok(StoppedTarget {
+            arch,
+            is_64: header.is_64,
+            entry,
+            thumb,
+            pc: regs.pc(),
+            resume_signal,
+        })
+    }
 
-        let mut tracee = Tracee::new(State::Entry, arch);
-        tracee.entry = entry;
-        tracee.thumb = thumb;
+    fn arm_entry_injection(&mut self, pid: Pid, exe: &str, stopped: StoppedTarget) -> Seizure {
+        let mut tracee = Tracee::new(State::Entry, stopped.arch);
+        tracee.entry = stopped.entry;
+        tracee.thumb = stopped.thumb;
         tracee.exe = exe.to_owned();
-        tracee.loader = if header.is_64 {
+        tracee.loader = if stopped.is_64 {
             self.loader64.to_string_lossy().into_owned()
         } else {
             self.loader32.to_string_lossy().into_owned()
         };
         tracee.deadline_ms = procfs::now_ms() + 3000;
-        if !set_entry_breakpoint(pid, &mut tracee, thumb) {
+        if !set_entry_breakpoint(pid, &mut tracee, stopped.thumb) {
             logw!("{exe} (pid {pid}): cannot arm the entry breakpoint; skipping");
             ptrace::detach(pid, None);
             return Seizure::GiveUp;
@@ -482,10 +734,11 @@ impl Daemon {
         self.tracees.insert(pid, tracee);
 
         logi!(
-            "seized {exe} (pid {pid}) mid-linker, entry breakpoint at {entry:#x} ({})",
-            if header.is_64 { "64-bit" } else { "32-bit" }
+            "seized {exe} (pid {pid}) mid-linker, entry breakpoint at {:#x} ({})",
+            stopped.entry,
+            if stopped.is_64 { "64-bit" } else { "32-bit" }
         );
-        ptrace::cont(pid, resume_signal);
+        ptrace::cont(pid, stopped.resume_signal);
         Seizure::Seized
     }
 }

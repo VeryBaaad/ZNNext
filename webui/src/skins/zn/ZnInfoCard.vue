@@ -54,6 +54,7 @@ const modeText = computed(() => {
   if (mode === 'kernel') return t('config.mode.kernel');
   if (mode === 'proc') return t('config.mode.proc');
   if (mode === 'ptrace') return t('config.mode.ptrace');
+  if (mode === 'late') return t('config.mode.late');
   return t('info.unknown');
 });
 

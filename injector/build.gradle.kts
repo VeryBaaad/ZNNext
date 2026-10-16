@@ -5,6 +5,7 @@ val verName: String = rootProject.extra["verName"] as String
 val commitHash: String = rootProject.extra["commitHash"] as String
 val minSdk: Int = rootProject.extra["androidMinSdkVersion"] as Int
 val ndkVersion: String = rootProject.extra["androidNdkVersion"] as String
+val kpmVersion: String = rootProject.extra["kpmVersion"] as String
 
 val cargoVersion: String = verName.removePrefix("v")
 
@@ -87,6 +88,7 @@ variants.forEach { variant ->
             dependsOn(syncCargoVersion)
             workingDir(projectDir)
             environment("ZNN_VERSION", reportedVersion)
+            environment("KPM_VERSION", kpmVersion)
 
             if (triple == riscv64Triple) {
                 val linker = riscv64Linker()

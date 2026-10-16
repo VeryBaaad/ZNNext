@@ -45,6 +45,7 @@ const STACK_MASK: usize = !0xF;
 pub enum State {
     Traced,
     Entry,
+    Late,
     File,
     Dlopen,
     Dlsym,
@@ -269,9 +270,22 @@ impl Daemon {
         }
     }
 
+    pub(crate) fn begin_late_injection(&mut self, pid: Pid, tracee: &mut Tracee) -> bool {
+        let mut owned = tracee.clone();
+        owned.state = State::Late;
+        match self.step(pid, &mut owned) {
+            Progress::Tracing => {
+                self.tracees.insert(pid, owned);
+                true
+            }
+            Progress::Finished => false,
+        }
+    }
+
     fn step(&mut self, pid: Pid, tracee: &mut Tracee) -> Progress {
         match tracee.state {
             State::Entry => self.trap_at_entry(pid, tracee),
+            State::Late => self.trap_at_late(pid, tracee),
             State::File => self.trap_file(pid, tracee),
             State::Dlopen => self.trap_after_dlopen(pid, tracee),
             State::Dlsym => self.trap_after_dlsym(pid, tracee),
@@ -288,6 +302,37 @@ impl Daemon {
                 Progress::Tracing
             }
         }
+    }
+
+    fn trap_at_late(&mut self, pid: Pid, tracee: &mut Tracee) -> Progress {
+        let regs = match read_registers(pid, tracee.arch) {
+            Ok(regs) => regs,
+            Err(error) => {
+                loge!("failed to get regs for the late injection into pid {pid}: {error}");
+                restore_entry(pid, tracee);
+                ptrace::detach(pid, None);
+                return Progress::Finished;
+            }
+        };
+
+        let pc = regs.pc();
+        if tracee.arch == Arch::Arm32 {
+            tracee.thumb = (pc & 1) != 0;
+            tracee.entry = pc & !1;
+        } else {
+            tracee.entry = pc;
+            tracee.thumb = false;
+        }
+        tracee.saved = regs;
+
+        if !self.start_file(pid, tracee, FilePurpose::Loader, regs) {
+            loge!("late trap in pid {pid}: cannot start the loader image; giving up");
+            release_tracee(pid, tracee);
+            ptrace::detach(pid, None);
+            return Progress::Finished;
+        }
+        ptrace::cont(pid, None);
+        Progress::Tracing
     }
 
     fn trap_at_entry(&mut self, pid: Pid, tracee: &mut Tracee) -> Progress {

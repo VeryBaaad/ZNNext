@@ -31,6 +31,7 @@ const mode = computed(() => {
   if (props.status.mode === 'kernel') return t('config.mode.kernel');
   if (props.status.mode === 'proc') return t('config.mode.proc');
   if (props.status.mode === 'ptrace') return t('config.mode.ptrace');
+  if (props.status.mode === 'late') return t('config.mode.late');
   return '';
 });
 </script>
