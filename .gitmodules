@@ -22,3 +22,6 @@
 [submodule "loader/src/external/xz-embedded"]
 	path = loader/src/external/xz-embedded
 	url = https://github.com/tukaani-project/xz-embedded.git
+[submodule "loader/src/external/and64inlinehook"]
+	path = loader/src/external/and64inlinehook
+	url = https://github.com/Rprop/And64InlineHook.git

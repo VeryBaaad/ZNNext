@@ -32,6 +32,7 @@ add_library(loader SHARED
     hook/backend/dobby.cpp
     hook/backend/shadowhook.cpp
     hook/backend/rv64hook.cpp
+    hook/backend/and64inlinehook.cpp
     hook/backend/lsplt.cpp
     hook/backend/bytehook.cpp
     hook/backend/xhook.cpp
@@ -68,6 +69,9 @@ if (ANDROID_ABI STREQUAL "riscv64")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} rv64hook-static)
 else()
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} dobby)
+endif()
+if (ANDROID_ABI STREQUAL "arm64-v8a")
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} and64inlinehook)
 endif()
 if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} shadowhook)

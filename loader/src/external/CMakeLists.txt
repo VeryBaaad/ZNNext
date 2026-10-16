@@ -78,6 +78,17 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
     )
 endif ()
 
+if (ANDROID_ABI STREQUAL "arm64-v8a")
+    add_library(and64inlinehook STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/and64inlinehook/And64InlineHook.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/and64inlinehook/And64InlineHook.hpp
+    )
+    target_include_directories(and64inlinehook PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/and64inlinehook
+    )
+    target_compile_options(and64inlinehook PRIVATE -w)
+endif()
+
 add_subdirectory(plti)
 
 if (ANDROID_ABI STREQUAL "riscv64")

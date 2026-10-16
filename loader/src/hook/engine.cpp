@@ -37,6 +37,7 @@ const char* inlineEngineName(InlineEngine e) {
     switch (e) {
         case InlineEngine::kDobby: return "dobby";
         case InlineEngine::kShadowHook: return "shadowhook";
+        case InlineEngine::kAnd64InlineHook: return "and64inlinehook";
         case InlineEngine::kRv64Hook: return "rv64hook";
     }
     return "unknown";
@@ -62,6 +63,12 @@ bool inlineEngineSupported(InlineEngine e) {
 #endif
         case InlineEngine::kShadowHook:
 #if defined(__aarch64__) || defined(__arm__)
+            return true;
+#else
+            return false;
+#endif
+        case InlineEngine::kAnd64InlineHook:
+#if defined(__aarch64__)
             return true;
 #else
             return false;
@@ -115,6 +122,8 @@ bool parseInlineEngine(const char* name, InlineEngine* out) {
         e = InlineEngine::kDobby;
     } else if (strcmp(name, "shadowhook") == 0) {
         e = InlineEngine::kShadowHook;
+    } else if (strcmp(name, "and64inlinehook") == 0) {
+        e = InlineEngine::kAnd64InlineHook;
     } else if (strcmp(name, "rv64hook") == 0) {
         e = InlineEngine::kRv64Hook;
     } else {

@@ -24,6 +24,7 @@ export const ENGINE_LABELS: Record<string, string> = {
   dobby: 'Dobby',
   shadowhook: 'ShadowHook',
   rv64hook: 'rv64hook',
+  and64inlinehook: 'And64InlineHook',
   lsplt: 'LSPlt',
   bytehook: 'ByteHook',
   xhook: 'xHook',

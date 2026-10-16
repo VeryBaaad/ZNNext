@@ -40,7 +40,7 @@
   };
 
   var config = {
-    inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'rv64hook'] },
+    inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'rv64hook'] },
     pltHook: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook'] },
     mode: { value: 'proc', options: ['auto', 'kernel', 'ptrace', 'proc'] },
     debugdata: { value: 'lzma', options: ['lzma', 'xz'] },

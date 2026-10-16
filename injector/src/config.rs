@@ -61,7 +61,8 @@ pub struct HookConfigReport {
 
 pub fn inline_hook_options() -> Vec<&'static str> {
     match runtime_abi() {
-        "arm64-v8a" | "armeabi-v7a" => vec!["dobby", "shadowhook"],
+        "arm64-v8a" => vec!["dobby", "shadowhook", "and64inlinehook"],
+        "armeabi-v7a" => vec!["dobby", "shadowhook"],
         "riscv64" => vec!["rv64hook"],
         _ => vec!["dobby"],
     }
