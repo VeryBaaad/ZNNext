@@ -20,7 +20,7 @@
 #ifndef ZNN_H
 #define ZNN_H
 
-#define ZNN_NAME "znn"
+#define ZNN_NAME "zygisk-next-next"
 
 #define ZNN_RING_CAPACITY 64
 
