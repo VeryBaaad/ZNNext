@@ -18,37 +18,37 @@
  */
 
 use std::io;
-use std::os::fd::RawFd;
+use std::os::fd::{BorrowedFd, RawFd};
+
+use nix::poll::{PollFd, PollFlags, PollTimeout, poll};
 
 pub fn poll_readable(descriptors: &[RawFd], timeout_ms: i32) -> io::Result<Vec<RawFd>> {
     if descriptors.is_empty() {
         return Ok(Vec::new());
     }
 
-    let mut poll_descriptors: Vec<libc::pollfd> = descriptors
+    let mut poll_descriptors: Vec<PollFd> = descriptors
         .iter()
-        .map(|descriptor| libc::pollfd {
-            fd: *descriptor,
-            events: libc::POLLIN,
-            revents: 0,
+        .map(|descriptor| {
+            // SAFETY: the caller keeps every descriptor open for the whole call
+            PollFd::new(
+                unsafe { BorrowedFd::borrow_raw(*descriptor) },
+                PollFlags::POLLIN,
+            )
         })
         .collect();
 
-    // SAFETY: the pointer and the count describe the live vector above
-    let ready = unsafe {
-        libc::poll(
-            poll_descriptors.as_mut_ptr(),
-            poll_descriptors.len() as libc::nfds_t,
-            timeout_ms,
-        )
-    };
-    if ready < 0 {
-        return Err(io::Error::last_os_error());
-    }
+    let timeout = PollTimeout::try_from(timeout_ms).unwrap_or(PollTimeout::NONE);
+    poll(&mut poll_descriptors, timeout).map_err(io::Error::from)?;
 
     Ok(poll_descriptors
         .iter()
-        .filter(|descriptor| descriptor.revents != 0)
-        .map(|descriptor| descriptor.fd)
+        .enumerate()
+        .filter(|(_, descriptor)| {
+            descriptor
+                .revents()
+                .is_some_and(|events| !events.is_empty())
+        })
+        .map(|(index, _)| descriptors[index])
         .collect())
 }

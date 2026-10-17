@@ -17,7 +17,6 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-use std::ffi::CString;
 use std::io;
 use std::os::fd::{BorrowedFd, FromRawFd, OwnedFd, RawFd};
 use std::path::Path;
@@ -33,27 +32,8 @@ pub fn access(path: impl AsRef<Path>, mode: i32) -> bool {
     nix_access(path.as_ref(), AccessFlags::from_bits_truncate(mode)).is_ok()
 }
 
-/// Read a file's extended attribute without following a final symlink. `nix`
-/// models no xattr syscalls, so bionic provides this one directly.
 pub fn lgetxattr(path: impl AsRef<Path>, name: &str) -> io::Result<Vec<u8>> {
-    let path = path_cstring(path.as_ref())?;
-    let name = CString::new(name).map_err(|_| io::Error::from(io::ErrorKind::InvalidInput))?;
-    // An SELinux context is a few dozen bytes at most; 256 matches what the
-    // shell tools use.
-    let mut buffer = vec![0u8; 256];
-    let read = unsafe {
-        libc::lgetxattr(
-            path.as_ptr(),
-            name.as_ptr(),
-            buffer.as_mut_ptr().cast(),
-            buffer.len(),
-        )
-    };
-    if read < 0 {
-        return Err(io::Error::last_os_error());
-    }
-    buffer.truncate(read as usize);
-    Ok(buffer)
+    xattr::get(path, name)?.ok_or_else(|| io::Error::from(Errno::ENODATA))
 }
 
 /// Write a whole buffer to a descriptor that the caller keeps owning.
@@ -78,9 +58,4 @@ pub fn close(fd: RawFd) {
     // SAFETY: the caller hands over its only reference to `fd`, so taking
     // ownership performs exactly one `close(2)` when the value drops.
     drop(unsafe { OwnedFd::from_raw_fd(fd) });
-}
-
-fn path_cstring(path: &Path) -> io::Result<CString> {
-    CString::new(path.as_os_str().as_encoded_bytes())
-        .map_err(|_| io::Error::from(io::ErrorKind::InvalidInput))
 }

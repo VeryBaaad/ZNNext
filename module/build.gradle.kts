@@ -138,6 +138,15 @@ androidComponents.onVariants { variant ->
 
         val cmakeBuildType = if (buildTypeLowered == "debug") "Debug" else "RelWithDebInfo"
 
+        inputs.dir(project(":injector").layout.buildDirectory.dir("rust/$variantLowered"))
+            .withPropertyName("injectorArtifacts")
+            .optional()
+        inputs.files(
+            fileTree(project(":loader").layout.buildDirectory.dir("intermediates/cxx/$cmakeBuildType")) {
+                include("**/libloader.so")
+            },
+        ).withPropertyName("loaderArtifacts").optional()
+
         doLast {
             val dstRoot = moduleDir.get().asFile
 

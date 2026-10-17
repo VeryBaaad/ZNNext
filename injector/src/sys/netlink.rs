@@ -18,11 +18,13 @@
  */
 
 use std::io;
-use std::os::fd::RawFd;
+use std::os::fd::{AsRawFd, RawFd};
+
+use netlink_sys::protocols::NETLINK_CONNECTOR;
+use netlink_sys::{Socket, SocketAddr};
 
 use crate::sys::Pid;
 
-const NETLINK_CONNECTOR: i32 = 11;
 const CN_IDX_PROC: u32 = 1;
 const CN_VAL_PROC: u32 = 1;
 const PROC_CN_MCAST_LISTEN: u32 = 1;
@@ -44,56 +46,26 @@ pub enum ProcEvent {
 }
 
 pub struct Connector {
-    descriptor: RawFd,
+    socket: Socket,
     buffer: Vec<u8>,
 }
 
 impl Connector {
     pub fn open() -> io::Result<Self> {
-        let descriptor = unsafe {
-            libc::socket(
-                libc::AF_NETLINK,
-                libc::SOCK_DGRAM | libc::SOCK_CLOEXEC,
-                NETLINK_CONNECTOR,
-            )
-        };
-        if descriptor < 0 {
-            return Err(io::Error::last_os_error());
-        }
+        let mut socket = Socket::new(NETLINK_CONNECTOR)?;
+        socket.bind(&SocketAddr::new(std::process::id(), CN_IDX_PROC))?;
 
         let connector = Self {
-            descriptor,
+            socket,
             buffer: vec![0u8; 4096],
         };
-        connector.bind()?;
         connector.listen()?;
+        connector.socket.set_non_blocking(true)?;
         Ok(connector)
     }
 
     pub fn descriptor(&self) -> RawFd {
-        self.descriptor
-    }
-
-    fn bind(&self) -> io::Result<()> {
-        // SAFETY: `sockaddr_nl` is a plain data structure and is fully initialized
-        let mut address: libc::sockaddr_nl = unsafe { std::mem::zeroed() };
-        address.nl_family = libc::AF_NETLINK as libc::sa_family_t;
-        // SAFETY: getpid has no preconditions
-        address.nl_pid = unsafe { libc::getpid() } as u32;
-        address.nl_groups = CN_IDX_PROC;
-
-        // SAFETY: the pointer and length describe `address` correctly
-        let bound = unsafe {
-            libc::bind(
-                self.descriptor,
-                &address as *const libc::sockaddr_nl as *const libc::sockaddr,
-                std::mem::size_of::<libc::sockaddr_nl>() as libc::socklen_t,
-            )
-        };
-        if bound < 0 {
-            return Err(io::Error::last_os_error());
-        }
-        Ok(())
+        self.socket.as_raw_fd()
     }
 
     fn listen(&self) -> io::Result<()> {
@@ -101,53 +73,26 @@ impl Connector {
         let length = message.len() as u32;
         message[0..4].copy_from_slice(&length.to_ne_bytes());
         message[4..6].copy_from_slice(&NLMSG_DONE.to_ne_bytes());
-        // SAFETY: getpid has no preconditions
-        message[12..16].copy_from_slice(&(unsafe { libc::getpid() } as u32).to_ne_bytes());
+        message[12..16].copy_from_slice(&std::process::id().to_ne_bytes());
         message[16..20].copy_from_slice(&CN_IDX_PROC.to_ne_bytes());
         message[20..24].copy_from_slice(&CN_VAL_PROC.to_ne_bytes());
         message[32..34].copy_from_slice(&4u16.to_ne_bytes());
         message[36..40].copy_from_slice(&PROC_CN_MCAST_LISTEN.to_ne_bytes());
 
-        // SAFETY: the pointer and length describe `message` correctly
-        let sent = unsafe {
-            libc::send(
-                self.descriptor,
-                message.as_ptr() as *const libc::c_void,
-                message.len(),
-                0,
-            )
-        };
-        if sent < 0 {
-            return Err(io::Error::last_os_error());
-        }
+        self.socket.send_to(&message, &SocketAddr::new(0, 0), 0)?;
         Ok(())
     }
 
     pub fn drain(&mut self, events: &mut Vec<ProcEvent>) -> io::Result<()> {
         loop {
-            // SAFETY: the pointer and length describe the live buffer
-            let received = unsafe {
-                libc::recv(
-                    self.descriptor,
-                    self.buffer.as_mut_ptr() as *mut libc::c_void,
-                    self.buffer.len(),
-                    libc::MSG_DONTWAIT,
-                )
-            };
-            if received < 0 {
-                let error = io::Error::last_os_error();
-                if error.kind() == io::ErrorKind::WouldBlock {
-                    return Ok(());
-                }
-                if error.kind() == io::ErrorKind::Interrupted {
-                    continue;
-                }
-                return Err(error);
+            let mut buffer = &mut self.buffer[..];
+            match self.socket.recv(&mut buffer, 0) {
+                Ok(0) => return Ok(()),
+                Ok(received) => self.decode(received, events)?,
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => return Ok(()),
+                Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+                Err(error) => return Err(error),
             }
-            if received == 0 {
-                return Ok(());
-            }
-            self.decode(received as usize, events)?;
         }
     }
 
@@ -174,13 +119,6 @@ impl Connector {
             offset += (message_length + 3) & !3;
         }
         Ok(())
-    }
-}
-
-impl Drop for Connector {
-    fn drop(&mut self) {
-        // SAFETY: the descriptor is owned by this value and closed once
-        unsafe { libc::close(self.descriptor) };
     }
 }
 
