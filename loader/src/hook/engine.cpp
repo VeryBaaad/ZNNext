@@ -39,7 +39,7 @@ const char* inlineEngineName(InlineEngine e) {
         case InlineEngine::kShadowHook: return "shadowhook";
         case InlineEngine::kAnd64InlineHook: return "and64inlinehook";
         case InlineEngine::kRv64Hook: return "rv64hook";
-        case InlineEngine::kDisabled return "disabled";
+        case InlineEngine::kDisable: return "disable";
     }
     return "unknown";
 }
@@ -50,7 +50,7 @@ const char* pltEngineName(PltEngine e) {
         case PltEngine::kByteHook: return "bytehook";
         case PltEngine::kXHook: return "xhook";
         case PltEngine::kPlti: return "plti";
-        case PltEngine::kDisabled return "disabled";
+        case PltEngine::kDisable: return "disable";
     }
     return "unknown";
 }
@@ -81,7 +81,7 @@ bool inlineEngineSupported(InlineEngine e) {
 #else
             return false;
 #endif
-        case InlineEngine::kDisabled:
+        case InlineEngine::kDisable:
             return true;
     }
     return false;
@@ -105,8 +105,8 @@ bool pltEngineSupported(PltEngine e) {
 #endif
         case PltEngine::kPlti:
             return true;
-        case PltEngine::kDisabled:
-            return true
+        case PltEngine::kDisable:
+            return true;
     }
     return false;
 }
@@ -132,8 +132,8 @@ bool parseInlineEngine(const char* name, InlineEngine* out) {
         e = InlineEngine::kAnd64InlineHook;
     } else if (strcmp(name, "rv64hook") == 0) {
         e = InlineEngine::kRv64Hook;
-    } else if (strcmp(name, "disabled") == 0) {
-        e = InlineEngine::kDisabled;
+    } else if (strcmp(name, "disable") == 0) {
+        e = InlineEngine::kDisable;
     } else {
         return false;
     }
@@ -153,8 +153,8 @@ bool parsePltEngine(const char* name, PltEngine* out) {
         e = PltEngine::kXHook;
     } else if (strcmp(name, "plti") == 0) {
         e = PltEngine::kPlti;
-    } else if (strcmp(name, "disabled") == 0) {
-        e = PltEngine::kDisabled
+    } else if (strcmp(name, "disable") == 0) {
+        e = PltEngine::kDisable;
     } else {
         return false;
     }

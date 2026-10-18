@@ -29,7 +29,7 @@ export const ENGINE_LABELS: Record<string, string> = {
   bytehook: 'ByteHook',
   xhook: 'xHook',
   plti: 'PLTI',
-  disabled: t(`config.disabled`),
+  disable: t(`config.disable`),
 };
 
 export interface HookRow {

@@ -57,7 +57,6 @@ export const zhCN: Dictionary = {
   'modules.noProcesses': '无进程',
 
   'config.inlineHook': 'Inline Hook 实现',
-  'config.disabled': '禁用',
   'config.pltHook': 'PLT Hook 实现',
   'config.mode': '跟踪模式',
   'config.mode.auto': '自动',
@@ -74,6 +73,7 @@ export const zhCN: Dictionary = {
   'config.uiStyle': '界面样式',
   'config.saved': '已保存',
   'config.saveFailed': '保存失败',
+  'config.disable': '禁用',
 
   'ui.material': 'Material',
   'ui.miuix': 'Miuix',
