@@ -55,6 +55,7 @@ export const en: Record<string, string> = {
   'modules.noProcesses': 'No processes',
 
   'config.inlineHook': 'Inline Hook implementation',
+  'config.disabled': 'Disabled',
   'config.pltHook': 'PLT Hook implementation',
   'config.mode': 'Tracking Mode',
   'config.mode.auto': 'Auto',

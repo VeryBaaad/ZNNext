@@ -41,8 +41,8 @@
   };
 
   var config = {
-    inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'rv64hook'] },
-    pltHook: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook'] },
+    inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'rv64hook', 'disabled'] },
+    pltHook: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', "disabled"] },
     mode: { value: 'proc', options: ['auto', 'kernel', 'ptrace', 'proc', 'late'] },
     debugdata: { value: 'lzma', options: ['lzma', 'xz'] },
     disableZn: { value: 'true', options: ['true', 'false'] },
