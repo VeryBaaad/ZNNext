@@ -88,10 +88,10 @@ jobs:
         if: success()
         id: prepareArtifact
         run: |
-          releaseName=`ls module/build/outputs/release/Zygisk-Next-Next-v*-release.zip | awk -F '(/|.zip)' '{print $5}'` && echo "releaseName=$releaseName" >> $GITHUB_OUTPUT
-          debugName=`ls module/build/outputs/release/Zygisk-Next-Next-v*-debug.zip | awk -F '(/|.zip)' '{print $5}'` && echo "debugName=$debugName" >> $GITHUB_OUTPUT
-          7z x -y -oznn-release module/build/outputs/release/Zygisk-Next-Next-v*-release.zip
-          7z x -y -oznn-debug module/build/outputs/release/Zygisk-Next-Next-v*-debug.zip
+          releaseName=`ls module/build/outputs/release/ZNNext-v*-release.zip | awk -F '(/|.zip)' '{print $5}'` && echo "releaseName=$releaseName" >> $GITHUB_OUTPUT
+          debugName=`ls module/build/outputs/release/ZNNext-v*-debug.zip | awk -F '(/|.zip)' '{print $5}'` && echo "debugName=$debugName" >> $GITHUB_OUTPUT
+          7z x -y -oznn-release module/build/outputs/release/ZNNext-v*-release.zip
+          7z x -y -oznn-debug module/build/outputs/release/ZNNext-v*-debug.zip
 
       - name: Post to channel
         if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && github.ref_type != 'tag' }}
@@ -104,8 +104,8 @@ jobs:
         run: |
           if [ ! -z "${{ secrets.BOT_TOKEN }}" ]; then
             OUTPUT="module/build/outputs/release"
-            export Release=$(find $OUTPUT -name "Zygisk-Next-Next-v*-release.zip")
-            export Debug=$(find $OUTPUT -name "Zygisk-Next-Next-v*-debug.zip")
+            export Release=$(find $OUTPUT -name "ZNNext-v*-release.zip")
+            export Debug=$(find $OUTPUT -name "ZNNext-v*-debug.zip")
             URL=$(python3 .github/scripts/telegram_url.py)
             curl -v "$URL" -F Release="@$Release" -F Debug="@$Debug"
           fi

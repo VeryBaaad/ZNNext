@@ -1,18 +1,18 @@
 /*
- * This file is part of Zygisk Next Next.
+ * This file is part of ZNNext.
  *
- * Zygisk Next Next is free software: you can redistribute it and/or modify
+ * ZNNext is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Zygisk Next Next is distributed in the hope that it will be useful,
+ * ZNNext is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Zygisk Next Next. If not, see <https://www.gnu.org/licenses/>.
+ * along with ZNNext. If not, see <https://www.gnu.org/licenses/>.
  *
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
@@ -448,7 +448,7 @@ impl Daemon {
             if fd == -libc::ENOSYS {
                 loge!(
                     "pid {pid}: this kernel ({}) has no memfd_create, which needs Linux 3.17; \
-                     Zygisk Next Next cannot inject here",
+                     ZNNext cannot inject here",
                     self.system.kernel
                 );
                 self.give_up(
@@ -750,7 +750,7 @@ impl Daemon {
 
         if error.contains("Permission denied") {
             loge!(
-                "hint for pid {pid}: the loader image is a memfd created inside the target, so the target's domain needs `execute` and `getattr` on its own tmpfs label. Zygisk Next Next ships those two rules in module/src/sepolicy.rule; Magisk loads them at boot from a preinit mirror that is only rewritten when the module is installed, updated or toggled in the manager, so reinstall it after changing that file."
+                "hint for pid {pid}: the loader image is a memfd created inside the target, so the target's domain needs `execute` and `getattr` on its own tmpfs label. ZNNext ships those two rules in module/src/sepolicy.rule; Magisk loads them at boot from a preinit mirror that is only rewritten when the module is installed, updated or toggled in the manager, so reinstall it after changing that file."
             );
         } else if error.contains("not accessible") {
             loge!(

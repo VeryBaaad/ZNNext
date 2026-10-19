@@ -1,9 +1,9 @@
 {
-  "name": "zygisknextnext-webui",
+  "name": "znnext-webui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Zygisk Next Next module WebUI (KernelSU / Magisk / APatch)",
+  "description": "ZNNext module WebUI (KernelSU / Magisk / APatch)",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",

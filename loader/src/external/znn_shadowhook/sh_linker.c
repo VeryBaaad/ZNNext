@@ -676,17 +676,6 @@ end:
 }
 
 int sh_linker_init(void) {
-  // Zygisk Next Next integration: this file is compiled in place of the
-  // upstream sh_linker.c (see external/CMakeLists.txt). The upstream linker
-  // monitor — hooking the linker's soinfo::call_constructors() /
-  // call_destructors() to track dlopen/dlclose — is skipped here: the loader
-  // is statically linked and initialized right at the target's entry point,
-  // where that monitor is not reliable, and address-based inline hooking does
-  // not need it. shadowhook_init() must still report success, so just return.
-  //
-  // Consequence: shadowhook's dlopen/dlclose callbacks never fire (ByteHook's
-  // ARM dlopen monitor degrades to no-ops), which is fine for this loader:
-  // ZN modules hook already-resolved addresses of already-loaded libraries.
   return 0;
 }
 

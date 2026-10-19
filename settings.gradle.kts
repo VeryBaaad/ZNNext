@@ -16,7 +16,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ZygiskNextNext"
+rootProject.name = "ZNNext"
 include(
     ":loader",
     ":injector",

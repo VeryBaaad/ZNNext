@@ -28,7 +28,7 @@ val minKsuVersion: Int = rootProject.extra["minKsuVersion"] as Int
 val minKsudVersion: Int = rootProject.extra["minKsudVersion"] as Int
 val minMagiskVersion: Int = rootProject.extra["minMagiskVersion"] as Int
 val minApatchVersion: Int = rootProject.extra["minApatchVersion"] as Int
-val kpmId: String = "zygisk-next-next"
+val kpmId: String = "znnext"
 val commitHash: String = rootProject.extra["commitHash"] as String
 val updateUrl: String = rootProject.extra["updateUrl"] as String
 
