@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This document provides strict guidelines, context, and constraints for AI agents working on the ZygiskNextNext repository.
+This document provides strict guidelines, context, and constraints for AI agents working on the ZNNext repository.
 
 ## CORE IDENTITY AND CONSTRAINTS
 
