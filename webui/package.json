@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@m3e/icons": "^1.0.20",
-    "@m3e/web": "^2.10.0",
+    "@m3e/web": "^2.10.1",
     "@material-symbols/font-400": "^0.48.0",
     "@vueuse/core": "^15.0.0",
     "kernelsu": "^3.0.2",
