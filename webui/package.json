@@ -20,7 +20,7 @@
     "miuix-vue": "^0.1.1",
     "motion-v": "^2.7.0",
     "tslib": "^2.8.1",
-    "vue": "^3.5.43"
+    "vue": "^3.5.44"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
