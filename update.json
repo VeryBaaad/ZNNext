@@ -1,6 +1,6 @@
 {
-    "version": "v1.14.1",
-    "versionCode": 210,
-    "zipUrl": "https://github.com/VeryBaaad/ZygiskNextNext/releases/download/v1.14.1/Zygisk-Next-Next-v1.14.1-210-614eb8e-release.zip",
-    "changelog": "https://raw.githubusercontent.com/VeryBaaad/ZygiskNextNext/refs/heads/update/changelog.md"
+    "version": "v2.0.0",
+    "versionCode": 212,
+    "zipUrl": "https://github.com/VeryBaaad/ZNNext/releases/download/v2.0.0/ZNNext-v2.0.0-212-57b46bb-release.zip",
+    "changelog": "https://raw.githubusercontent.com/VeryBaaad/ZNNext/refs/heads/update/changelog.md"
 }
