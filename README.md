@@ -32,8 +32,8 @@ or
 
 ## Download
 
-- For stable releases, please go to [Github Releases page](https://github.com/VeryBaaad/ZygiskNextNext/releases)
-- For canary build, please check [Github Actions](https://github.com/VeryBaaad/ZygiskNextNext/actions/workflows/ci.yml?query=branch%3Amaster)
+- For stable releases, please go to [Github Releases page](https://github.com/VeryBaaad/ZNNext/releases)
+- For canary build, please check [Github Actions](https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster)
 
 Note: debug builds are only available in Github Actions.
 
@@ -41,7 +41,7 @@ Note: debug builds are only available in Github Actions.
 
 **Only bug reports from **THE LATEST DEBUG BUILD** will be accepted.**
 
-- GitHub issues: [Issues](https://github.com/VeryBaaad/ZygiskNextNext/issues/)
+- GitHub issues: [Issues](https://github.com/VeryBaaad/ZNNext/issues/)
 
 - (For Chinese speakers) 本项目只接受英语**标题**的issue。如果您不懂英语，请使用[翻译工具](https://www.deepl.com/zh/translator)
 

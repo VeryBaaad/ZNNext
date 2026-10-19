@@ -25,7 +25,7 @@ val moduleName = "ZNNext"
 val verName = "v1.14.1"
 val verCode = gitCommitCount
 val commitHash = gitCommitHash
-val updateUrl = "https://raw.githubusercontent.com/VeryBaaad/ZygiskNextNext/refs/heads/update/update.json"
+val updateUrl = "https://raw.githubusercontent.com/VeryBaaad/ZNNext/refs/heads/update/update.json"
 val kpmVersion = verName.removePrefix("v")
 
 val minKsuVersion = 10940

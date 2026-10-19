@@ -7,7 +7,7 @@ summary: A from-scratch, standalone implementation of the Zygisk Next module
 description: README.md
 license: GPL-3.0-only
 homepage: https://baaad.xyz/
-support: https://github.com/VeryBaaad/ZygiskNextNext/issues
+support: https://github.com/VeryBaaad/ZNNext/issues
 tags: [system]
 metamodule: false
 
