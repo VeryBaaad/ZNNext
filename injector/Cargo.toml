@@ -23,7 +23,7 @@ nix = { version = "0.31.3", default-features = false, features = [
     "socket",
     "uio",
 ] }
-object = { version = "0.39", default-features = false, features = [
+object = { version = "0.40", default-features = false, features = [
     "read",
     "std",
 ] }
