@@ -1,4 +1,4 @@
-# ZN Next
+# ZNNext
 
 A from-scratch, standalone implementation of the **Zygisk Next module**.
 

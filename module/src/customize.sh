@@ -157,4 +157,4 @@ ui_print "! This module is not a Zygisk implementation, "
 ui_print "! install it separately if you needed"
 ui_print "- "
 
-ui_print "- Welcome to ZN Next!"
+ui_print "- Welcome to ZNNext!"
