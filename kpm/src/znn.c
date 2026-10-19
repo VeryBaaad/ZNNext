@@ -42,8 +42,7 @@ KPM_NAME(ZNN_NAME);
 KPM_VERSION(ZNN_KPM_VERSION);
 KPM_LICENSE("GPL-3.0-or-later");
 KPM_AUTHOR("VeryBaaad");
-KPM_DESCRIPTION(
-    "Optional ZNNext exec observation accelerator (experimental)");
+KPM_DESCRIPTION("Optional ZNNext exec observation accelerator (experimental)");
 
 #define ZNN_PIDTYPE_PID 0
 #define ZNN_PIDTYPE_TGID 1

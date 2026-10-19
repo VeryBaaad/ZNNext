@@ -22,7 +22,8 @@ use std::os::unix::fs::FileExt;
 use std::path::Path;
 
 use object::elf::{
-    EM_386, EM_AARCH64, EM_ARM, EM_RISCV, EM_X86_64, ET_DYN, FileHeader32, FileHeader64,
+    EM_386, EM_AARCH64, EM_ARM, EM_RISCV, EM_X86_64, ET_DYN, FileHeader32, FileHeader64, FileType,
+    Machine,
 };
 use object::read::elf::FileHeader as ElfFileHeader;
 use object::{Endianness, FileKind, Object, ObjectKind, ObjectSymbol};
@@ -32,8 +33,8 @@ use crate::arch::Arch;
 #[derive(Debug, Clone, Copy)]
 pub struct ElfHeader {
     pub is_64: bool,
-    pub kind: u16,
-    pub machine: u16,
+    pub kind: FileType,
+    pub machine: Machine,
     pub entry: u64,
 }
 
