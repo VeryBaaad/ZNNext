@@ -27,7 +27,10 @@ namespace znn {
 
 struct ModuleHandle {
   std::string lib_path;
+  bool has_companion = false;
   uint32_t companion_nonce = 0;
+  uint32_t companion_index = 0;
+  uint8_t companion_token[16] = {};
   int companion_listen_fd = -1;
   int companion_channel = -1;
 };

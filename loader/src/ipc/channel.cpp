@@ -20,6 +20,7 @@
 #include "ipc/channel.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <poll.h>
 #include <stdio.h>
 #include <string.h>
@@ -72,6 +73,83 @@ size_t channelName(uint32_t nonce, uint32_t index, char* out) {
       snprintf(out + 1, kChannelNameMax - 1, "znn.%08x.%u", nonce, index);
   if (written <= 0) return 1;
   return static_cast<size_t>(written) + 1;
+}
+
+size_t directChannelName(uint32_t nonce, uint32_t index, char* out) {
+  out[0] = '\0';
+  const int written =
+      snprintf(out + 1, kChannelNameMax - 1, "znn.c.%08x.%u", nonce, index);
+  if (written <= 0) return 1;
+  return static_cast<size_t>(written) + 1;
+}
+
+bool channelUsable(int fd) {
+  if (fd < 0) return false;
+  if (fcntl(fd, F_GETFD) < 0) return false;
+  int type = 0;
+  socklen_t length = sizeof(type);
+  if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &length) != 0) return false;
+  if (type != SOCK_STREAM) return false;
+  int accepting = 0;
+  length = sizeof(accepting);
+  if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &accepting, &length) != 0)
+    return false;
+  if (accepting != 0) return false;
+  struct ucred peer{};
+  length = sizeof(peer);
+  if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &peer, &length) != 0)
+    return false;
+  return peer.uid == 0;
+}
+
+bool listenerUsable(int fd) {
+  if (fd < 0) return false;
+  if (fcntl(fd, F_GETFD) < 0) return false;
+  int type = 0;
+  socklen_t length = sizeof(type);
+  if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &length) != 0) return false;
+  if (type != SOCK_STREAM) return false;
+  int accepting = 0;
+  length = sizeof(accepting);
+  if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &accepting, &length) != 0)
+    return false;
+  return accepting != 0;
+}
+
+int connectCompanionChannel(uint32_t nonce, uint32_t index,
+                            const uint8_t* token) {
+  const int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  if (fd < 0) {
+    LOGW("companion: direct socket failed: %s", strerror(errno));
+    return -1;
+  }
+
+  struct sockaddr_un addr{};
+  addr.sun_family = AF_UNIX;
+  const size_t name_len = directChannelName(nonce, index, addr.sun_path);
+  const socklen_t addr_len =
+      static_cast<socklen_t>(offsetof(struct sockaddr_un, sun_path) + name_len);
+  if (connect(fd, reinterpret_cast<struct sockaddr*>(&addr), addr_len) != 0) {
+    LOGW("companion: cannot reach the direct channel: %s", strerror(errno));
+    close(fd);
+    return -1;
+  }
+
+  if (token) {
+    size_t off = 0;
+    while (off < kCompanionTokenBytes) {
+      const ssize_t n =
+          send(fd, token + off, kCompanionTokenBytes - off, MSG_NOSIGNAL);
+      if (n < 0 && errno == EINTR) continue;
+      if (n <= 0) {
+        LOGW("companion: cannot prove the direct channel: %s", strerror(errno));
+        close(fd);
+        return -1;
+      }
+      off += static_cast<size_t>(n);
+    }
+  }
+  return fd;
 }
 
 int bindChannel(uint32_t nonce, uint32_t index) {

@@ -20,6 +20,7 @@
 #include "module/loader.h"
 
 #include <dlfcn.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "api/api.h"
@@ -65,7 +66,11 @@ void loadEntry(const Plan& plan, const PlanModule& entry) {
   handle->lib_path = entry.path;
 
   if (entry.companion) {
+    handle->has_companion = true;
     handle->companion_nonce = plan.nonce;
+    handle->companion_index = entry.index;
+    memcpy(handle->companion_token, plan.token,
+           sizeof(handle->companion_token));
     handle->companion_listen_fd = openCompanionChannel(plan, entry);
   }
 

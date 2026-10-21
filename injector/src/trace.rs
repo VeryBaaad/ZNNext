@@ -685,6 +685,7 @@ impl Daemon {
             plt_engine: config.plt_hook,
             debugdata: config.debugdata,
             nonce: tracee.nonce,
+            token: plan::fresh_token(),
         };
         let Some(bytes) = plan.encode() else {
             self.abort(pid, tracee, "the boot plan does not fit");
@@ -703,7 +704,7 @@ impl Daemon {
         regs.set_sp(stack);
 
         for module in plan.companions() {
-            companion::spawn(&module.path, plan.nonce, module.index);
+            companion::spawn(&module.path, plan.nonce, module.index, plan.token);
         }
 
         if !setup_call(

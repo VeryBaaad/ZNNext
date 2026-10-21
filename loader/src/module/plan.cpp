@@ -80,6 +80,7 @@ bool parsePlan(const void* raw, Plan& out) {
 
   out = Plan();
   out.nonce = header.nonce;
+  memcpy(out.token, header.token, sizeof(out.token));
   if (!blobString(blob, blob_size, header.inline_engine, out.inline_engine) ||
       !blobString(blob, blob_size, header.plt_engine, out.plt_engine) ||
       !blobString(blob, blob_size, header.debugdata, out.debugdata)) {

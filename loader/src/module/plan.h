@@ -39,6 +39,7 @@ struct Plan {
   std::string plt_engine;
   std::string debugdata;
   uint32_t nonce = 0;
+  uint8_t token[16] = {};
 };
 
 bool parsePlan(const void* raw, Plan& out);

@@ -17,15 +17,17 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-use std::io::Write;
+use std::io::{Read, Write};
 #[cfg(target_os = "android")]
 use std::os::android::net::SocketAddrExt;
-use std::os::fd::{AsRawFd, RawFd};
+use std::os::fd::{AsFd, AsRawFd, IntoRawFd, RawFd};
 #[cfg(not(target_os = "android"))]
 use std::os::linux::net::SocketAddrExt;
-use std::os::unix::net::{SocketAddr, UnixStream};
+use std::os::unix::net::{SocketAddr, UnixListener, UnixStream};
 use std::path::Path;
 use std::time::{Duration, Instant};
+
+use nix::poll::{PollFd, PollFlags, poll};
 
 use crate::log::{loge, logi};
 use crate::plan;
@@ -36,10 +38,11 @@ use crate::sys::process::Forked;
 const CONNECT: u8 = 1;
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const RETRY_INTERVAL: Duration = Duration::from_millis(10);
+const PROOF_TIMEOUT: Duration = Duration::from_secs(2);
 
-pub fn spawn(library: &str, nonce: u32, index: u32) {
+pub fn spawn(library: &str, nonce: u32, index: u32, token: [u8; 16]) {
     match sys::process::fork() {
-        Ok(Forked::Child) => run_helper(library, nonce, index),
+        Ok(Forked::Child) => run_helper(library, nonce, index, token),
         Ok(Forked::Parent(pid)) => {
             logi!("companion for {library} (module {index}) started as pid {pid}");
         }
@@ -66,6 +69,50 @@ fn connect_channel(nonce: u32, index: u32) -> Option<UnixStream> {
     }
 }
 
+fn bind_direct(nonce: u32, index: u32) -> Option<UnixListener> {
+    let name = plan::direct_channel_name(nonce, index);
+    let address = SocketAddr::from_abstract_name(name.as_bytes()).ok()?;
+    let listener = match UnixListener::bind_addr(&address) {
+        Ok(listener) => listener,
+        Err(error) => {
+            loge!("companion: cannot listen on {name}: {error}");
+            return None;
+        }
+    };
+    if let Err(error) = listener.set_nonblocking(true) {
+        loge!("companion: cannot make {name} nonblocking: {error}");
+        return None;
+    }
+    Some(listener)
+}
+
+fn accept_direct(listener: &UnixListener, token: &[u8; 16], companion: &sys::dlfcn::Companion<'_>) {
+    loop {
+        let mut stream = match listener.accept() {
+            Ok((stream, _)) => stream,
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => return,
+            Err(error) => {
+                loge!("companion: direct accept failed: {error}");
+                return;
+            }
+        };
+        let _ = stream.set_nonblocking(false);
+        let _ = stream.set_read_timeout(Some(PROOF_TIMEOUT));
+        let mut proof = [0u8; 16];
+        if stream.read_exact(&mut proof).is_err() {
+            loge!("companion: a direct connection did not prove itself");
+            continue;
+        }
+        if &proof != token {
+            loge!("companion: rejected a direct connection with a bad proof");
+            continue;
+        }
+        let _ = stream.set_read_timeout(None);
+        logi!("companion: serving a direct connection");
+        companion.notify_connected(stream.into_raw_fd());
+    }
+}
+
 fn memfd_from_file(path: &str) -> Option<RawFd> {
     let contents = procfs::read_file(Path::new(path))?;
     let descriptor = sys::memfd::memfd_create("znn-companion", sys::memfd::MFD_CLOEXEC).ok()?;
@@ -76,7 +123,7 @@ fn memfd_from_file(path: &str) -> Option<RawFd> {
     Some(descriptor)
 }
 
-fn run_helper(library: &str, nonce: u32, index: u32) -> ! {
+fn run_helper(library: &str, nonce: u32, index: u32, token: [u8; 16]) -> ! {
     sys::process::set_process_name("znn-companion");
     sys::signal::reset_to_default(sys::signal::SIGHUP);
     sys::signal::reset_to_default(sys::signal::SIGTERM);
@@ -98,31 +145,80 @@ fn run_helper(library: &str, nonce: u32, index: u32) -> ! {
     };
 
     logi!("companion: serving {library}");
+    let direct = bind_direct(nonce, index);
     companion.notify_loaded();
 
-    let Some(mut channel) = connect_channel(nonce, index) else {
-        sys::process::exit_now(1);
-    };
-    if channel.write_all(&nonce.to_ne_bytes()).is_err() {
-        loge!("companion: cannot send the channel nonce");
-        sys::process::exit_now(1);
+    let mut channel = connect_channel(nonce, index);
+    let nonce_sent = channel
+        .as_mut()
+        .is_some_and(|stream| stream.write_all(&nonce.to_ne_bytes()).is_ok());
+    if !nonce_sent {
+        if channel.is_some() {
+            loge!("companion: cannot send the channel nonce");
+            channel = None;
+        } else if direct.is_none() {
+            sys::process::exit_now(1);
+        }
     }
 
     let mut command = [0u8; 1];
-    while let Ok((received, descriptor)) =
-        sys::socket::recv_with_fd(channel.as_raw_fd(), &mut command)
-    {
-        if received == 0 {
-            break;
+    loop {
+        let mut descriptors = Vec::with_capacity(2);
+        if let Some(stream) = channel.as_ref() {
+            descriptors.push(PollFd::new(stream.as_fd(), PollFlags::POLLIN));
         }
-        if command[0] != CONNECT {
-            if let Some(descriptor) = descriptor {
-                sys::fs::close(descriptor);
+        if let Some(listener) = direct.as_ref() {
+            descriptors.push(PollFd::new(listener.as_fd(), PollFlags::POLLIN));
+        }
+        match poll(&mut descriptors, 1000u16) {
+            Ok(_) => {}
+            Err(nix::errno::Errno::EINTR) => continue,
+            Err(error) => {
+                loge!("companion: poll failed: {error}");
+                sys::process::exit_now(1);
             }
-            continue;
         }
-        if let Some(descriptor) = descriptor {
-            companion.notify_connected(descriptor);
+
+        let control_ready = channel.is_some()
+            && descriptors
+                .first()
+                .is_some_and(|fd| fd.revents().is_some_and(|r| r.contains(PollFlags::POLLIN)));
+        let direct_ready = direct.is_some()
+            && descriptors
+                .last()
+                .is_some_and(|fd| fd.revents().is_some_and(|r| r.contains(PollFlags::POLLIN)));
+
+        if control_ready {
+            match sys::socket::recv_with_fd(channel.as_ref().unwrap().as_raw_fd(), &mut command) {
+                Ok((0, descriptor)) => {
+                    if let Some(descriptor) = descriptor {
+                        sys::fs::close(descriptor);
+                    }
+                    logi!("companion: the control channel closed, serving direct connections");
+                    channel = None;
+                }
+                Ok((_, descriptor)) => {
+                    if command[0] == CONNECT {
+                        if let Some(descriptor) = descriptor {
+                            companion.notify_connected(descriptor);
+                        }
+                    } else if let Some(descriptor) = descriptor {
+                        sys::fs::close(descriptor);
+                    }
+                }
+                Err(error) => {
+                    loge!("companion: control channel read failed: {error}");
+                    channel = None;
+                }
+            }
+        }
+
+        if direct_ready && let Some(listener) = direct.as_ref() {
+            accept_direct(listener, &token, &companion);
+        }
+
+        if channel.is_none() && direct.is_none() {
+            break;
         }
     }
     sys::process::exit_now(0)

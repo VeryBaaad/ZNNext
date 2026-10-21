@@ -30,6 +30,10 @@ constexpr int kChannelBacklog = 4;
 constexpr int kChannelAcceptTimeoutMs = 2000;
 
 int bindChannel(uint32_t nonce, uint32_t index);
+int connectCompanionChannel(uint32_t nonce, uint32_t index,
+                            const uint8_t* token);
+bool channelUsable(int fd);
+bool listenerUsable(int fd);
 int acceptChannel(int listen_fd, uint32_t nonce, int timeout_ms);
 
 bool makePeerPair(int* out_module_fd, int* out_helper_fd);

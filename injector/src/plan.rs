@@ -21,11 +21,11 @@ use std::fmt::Write as _;
 use std::io::Read;
 
 pub const PLAN_MAGIC: u32 = 0x5A4E_4E31; //"ZNN1"
-pub const PLAN_VERSION: u32 = 2;
+pub const PLAN_VERSION: u32 = 3;
 pub const MODULE_COMPANION: u32 = 1 << 0;
 pub const MAX_MODULES: usize = 32;
 pub const MAX_BYTES: usize = 32 * 1024;
-pub const HEADER_SIZE: usize = 44;
+pub const HEADER_SIZE: usize = 60;
 pub const MODULE_SIZE: usize = 20;
 
 const CHANNEL_PREFIX: &str = "znn";
@@ -56,6 +56,7 @@ pub struct Plan {
     pub plt_engine: String,
     pub debugdata: String,
     pub nonce: u32,
+    pub token: [u8; 16],
 }
 
 fn push_string(blob: &mut Vec<u8>, value: &str) -> (u32, u32) {
@@ -108,6 +109,7 @@ impl Plan {
         push_u32(&mut out, size as u32);
         push_u32(&mut out, self.modules.len() as u32);
         push_u32(&mut out, self.nonce);
+        out.extend_from_slice(&self.token);
         push_string_ref(&mut out, inline);
         push_string_ref(&mut out, plt);
         push_string_ref(&mut out, debugdata);
@@ -137,6 +139,33 @@ pub fn channel_name(nonce: u32, index: u32) -> String {
     let mut name = String::with_capacity(32);
     let _ = write!(name, "{CHANNEL_PREFIX}.{nonce:08x}.{index}");
     name
+}
+
+pub fn direct_channel_name(nonce: u32, index: u32) -> String {
+    let mut name = String::with_capacity(32);
+    let _ = write!(name, "{CHANNEL_PREFIX}.c.{nonce:08x}.{index}");
+    name
+}
+
+pub fn fresh_token() -> [u8; 16] {
+    let mut token = [0u8; 16];
+    if let Ok(mut urandom) = std::fs::File::open("/dev/urandom")
+        && urandom.read_exact(&mut token).is_ok()
+    {
+        return token;
+    }
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |elapsed| elapsed.as_nanos());
+    let mut state = now ^ ((std::process::id() as u128) << 32);
+    for chunk in token.chunks_mut(8) {
+        state = state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        let bytes = (state as u64).to_ne_bytes();
+        chunk.copy_from_slice(&bytes[..chunk.len()]);
+    }
+    token
 }
 
 pub fn fresh_nonce() -> u32 {
@@ -177,6 +206,7 @@ mod tests {
             plt_engine: "lsplt".to_owned(),
             debugdata: "xz".to_owned(),
             nonce: 0x1234_5678,
+            token: [0xAB; 16],
         };
 
         let bytes = plan.encode().expect("plan must fit");
@@ -190,14 +220,15 @@ mod tests {
         assert_eq!(word(12), 2);
         assert_eq!(word(16), 0x1234_5678);
 
-        assert_eq!(word(20), 0);
-        assert_eq!(word(24), 5);
+        assert_eq!(&bytes[20..36], &[0xAB; 16]);
+        assert_eq!(word(36), 0);
+        assert_eq!(word(40), 5);
         assert_eq!(&bytes[blob..blob + 5], b"dobby");
-        assert_eq!(word(28), 6);
-        assert_eq!(word(32), 5);
+        assert_eq!(word(44), 6);
+        assert_eq!(word(48), 5);
         assert_eq!(&bytes[blob + 6..blob + 11], b"lsplt");
-        assert_eq!(word(36), 12);
-        assert_eq!(word(40), 2);
+        assert_eq!(word(52), 12);
+        assert_eq!(word(56), 2);
         assert_eq!(&bytes[blob + 12..blob + 14], b"xz");
 
         assert_eq!(word(HEADER_SIZE), 12);
@@ -226,6 +257,7 @@ mod tests {
             plt_engine: String::new(),
             debugdata: String::new(),
             nonce: 1,
+            token: [0; 16],
         };
         assert!(plan.encode().is_none());
     }
@@ -233,5 +265,6 @@ mod tests {
     #[test]
     fn channel_names_match_the_loader_format() {
         assert_eq!(channel_name(0x00ab_cdef, 7), "znn.00abcdef.7");
+        assert_eq!(direct_channel_name(0x00ab_cdef, 7), "znn.c.00abcdef.7");
     }
 }
