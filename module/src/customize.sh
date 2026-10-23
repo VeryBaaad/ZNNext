@@ -59,7 +59,7 @@ ui_print "- Installing ZNNext $VERSION"
 # check android
 if [ "$API" -lt $MIN_SDK ]; then
   ui_print "! Unsupported sdk: $API"
-  abort "! Minimal supported sdk is 21 (Android 5.0)"
+  abort "! Minimal supported sdk is $MIN_SDK"
 else
   ui_print "- Device sdk: $API"
 fi
