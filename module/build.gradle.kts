@@ -31,7 +31,7 @@ val minApatchVersion: Int = rootProject.extra["minApatchVersion"] as Int
 val kpmId: String = "znnext"
 val commitHash: String = rootProject.extra["commitHash"] as String
 val updateUrl: String = rootProject.extra["updateUrl"] as String
-val androidMinSdkVersion: Int = rootProject.extra["androidMinSdkVersion] as Int
+val androidMinSdkVersion: Int = rootProject.extra["androidMinSdkVersion"] as Int
 
 android {
     androidResources {
