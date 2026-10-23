@@ -2,6 +2,7 @@
 SKIPUNZIP=1
 
 DEBUG=@DEBUG@
+MIN_SDK=@MIN_ANDROID_SDK@
 MIN_KSU_VERSION=@MIN_KSU_VERSION@
 MIN_KSUD_VERSION=@MIN_KSUD_VERSION@
 MIN_MAGISK_VERSION=@MIN_MAGISK_VERSION@
@@ -56,7 +57,7 @@ VERSION=$(grep_prop version "${TMPDIR}/module.prop")
 ui_print "- Installing ZNNext $VERSION"
 
 # check android
-if [ "$API" -lt 21 ]; then
+if [ "$API" -lt $MIN_SDK ]; then
   ui_print "! Unsupported sdk: $API"
   abort "! Minimal supported sdk is 21 (Android 5.0)"
 else
