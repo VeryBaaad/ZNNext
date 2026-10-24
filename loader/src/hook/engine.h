@@ -25,6 +25,7 @@ enum class InlineEngine {
   kDobby,
   kShadowHook,
   kAnd64InlineHook,
+  kFridaGum,
   kRv64Hook,
   kDisable
 };
