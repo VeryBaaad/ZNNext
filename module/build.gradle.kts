@@ -83,6 +83,69 @@ fun resolveSevenZip(probeRoot: File): String {
     )
 }
 
+val licenseOutputDir = layout.buildDirectory.dir("licenses")
+val externalDir = rootProject.layout.projectDirectory.dir("loader/src/external")
+val externalLicenseFiles = rootProject.fileTree("loader/src/external") {
+    include(
+        "*/LICENSE", "*/LICENSE.*", "*/LICENSE-*",
+        "*/COPYING", "*/COPYING.*", "*/COPYING-*",
+    )
+}
+
+val prepareLicensesTask = tasks.register("prepareLicenses") {
+    group = "module"
+    description = "Collects the project and external dependency licenses for the module zip."
+    inputs.file(rootProject.file("LICENSE")).withPropertyName("projectLicense")
+    inputs.files(externalLicenseFiles).withPropertyName("externalLicenses")
+    outputs.dir(licenseOutputDir)
+
+    doLast {
+        val output = licenseOutputDir.get().asFile
+        output.deleteRecursively()
+        output.mkdirs()
+
+        fun sanitize(value: String): String =
+            value.uppercase().replace(Regex("[^A-Z0-9]+"), "_").trim('_')
+
+        fun licenseSuffix(fileName: String): String {
+            val upper = fileName.uppercase()
+            val suffix = when {
+                upper.startsWith("LICENSE-") -> upper.removePrefix("LICENSE-")
+                upper.startsWith("LICENSE.") -> upper.removePrefix("LICENSE.")
+                upper.startsWith("COPYING-") -> upper.removePrefix("COPYING-")
+                upper.startsWith("COPYING.") -> upper.removePrefix("COPYING.")
+                else -> ""
+            }
+            return sanitize(suffix)
+        }
+
+        val used = mutableSetOf("LICENSE-ZNNext")
+        rootProject.file("LICENSE").copyTo(File(output, "LICENSE-ZNNext"), overwrite = true)
+        var count = 1
+
+        externalLicenseFiles.files
+            .sortedBy { it.invariantSeparatorsPath }
+            .forEach { license ->
+                val componentDir = license.parentFile?.parentFile ?: return@forEach
+                if (componentDir != externalDir.asFile) return@forEach
+
+                val component = sanitize(license.parentFile.name).ifEmpty { "EXTERNAL" }
+                val suffix = licenseSuffix(license.name)
+                val base = "LICENSE-$component" + if (suffix.isEmpty()) "" else "-$suffix"
+                var target = base
+                var duplicate = 2
+                while (!used.add(target)) {
+                    target = "$base-$duplicate"
+                    duplicate++
+                }
+                license.copyTo(File(output, target), overwrite = true)
+                count++
+            }
+
+        logger.lifecycle("licenses: packaged $count files into licenses/")
+    }
+}
+
 androidComponents.onVariants { variant ->
     val variantLowered = variant.name.lowercase()
     val variantCapped = variant.name.capitalizeUS()
@@ -98,12 +161,16 @@ androidComponents.onVariants { variant ->
             ":injector:assemble$variantCapped",
             ":kpm:assemble$variantCapped",
             ":webui:buildWebui",
+            prepareLicensesTask,
         )
         inputs.dir(project(":kpm").layout.buildDirectory.dir("kpm/$variantLowered"))
             .withPropertyName("kpmBackend")
             .optional()
         into(moduleDir)
         from("${rootProject.projectDir}/README.md")
+        from(licenseOutputDir) {
+            into("licenses")
+        }
         from("$projectDir/src") {
             exclude("module.prop", "customize.sh", "late-load.sh", "post-fs-data.sh", "mazoku")
             filter<FixCrLfFilter>("eol" to FixCrLfFilter.CrLf.newInstance("lf"))
