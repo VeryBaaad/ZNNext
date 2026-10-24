@@ -39,6 +39,10 @@ bool rv64hookUnhook(void* target);
 bool and64inlinehookHook(void* target, void* replacement, void** original);
 bool and64inlinehookUnhook(void* target);
 
+bool fridaGumInit();
+bool fridaGumHook(void* target, void* replacement, void** original);
+bool fridaGumUnhook(void* target);
+
 bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
                void** original);
 

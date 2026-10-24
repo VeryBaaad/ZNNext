@@ -41,6 +41,8 @@ const char* inlineEngineName(InlineEngine e) {
       return "shadowhook";
     case InlineEngine::kAnd64InlineHook:
       return "and64inlinehook";
+    case InlineEngine::kFridaGum:
+      return "frida-gum";
     case InlineEngine::kRv64Hook:
       return "rv64hook";
     case InlineEngine::kDisable:
@@ -81,6 +83,12 @@ bool inlineEngineSupported(InlineEngine e) {
 #endif
     case InlineEngine::kAnd64InlineHook:
 #if defined(__aarch64__)
+      return true;
+#else
+      return false;
+#endif
+    case InlineEngine::kFridaGum:
+#ifndef __riscv
       return true;
 #else
       return false;
@@ -140,6 +148,8 @@ bool parseInlineEngine(const char* name, InlineEngine* out) {
     e = InlineEngine::kShadowHook;
   } else if (strcmp(name, "and64inlinehook") == 0) {
     e = InlineEngine::kAnd64InlineHook;
+  } else if (strcmp(name, "frida-gum") == 0) {
+    e = InlineEngine::kFridaGum;
   } else if (strcmp(name, "rv64hook") == 0) {
     e = InlineEngine::kRv64Hook;
   } else if (strcmp(name, "disable") == 0) {
@@ -186,15 +196,23 @@ void setPltEngine(PltEngine e) {
 }
 
 void ensureInlineEngineReady() {
-  if (g_inline_engine != InlineEngine::kShadowHook) return;
-  if (!backend::shadowhookInit()) {
-    const InlineEngine fallback = defaultInlineEngine();
-    LOGE(
-        "shadowhook unavailable in pid %d, falling back to inline=%s for this "
-        "process",
-        getpid(), inlineEngineName(fallback));
-    g_inline_engine = fallback;
+  bool ready = true;
+  switch (g_inline_engine) {
+    case InlineEngine::kShadowHook:
+      ready = backend::shadowhookInit();
+      break;
+    case InlineEngine::kFridaGum:
+      ready = backend::fridaGumInit();
+      break;
+    default:
+      return;
   }
+  if (ready) return;
+
+  const InlineEngine fallback = defaultInlineEngine();
+  LOGE("%s unavailable in pid %d, falling back to inline=%s for this process",
+       inlineEngineName(g_inline_engine), getpid(), inlineEngineName(fallback));
+  g_inline_engine = fallback;
 }
 
 void ensurePltEngineReady() {

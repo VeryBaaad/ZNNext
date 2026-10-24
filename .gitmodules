@@ -25,3 +25,6 @@
 [submodule "loader/src/external/and64inlinehook"]
 	path = loader/src/external/and64inlinehook
 	url = https://github.com/Rprop/And64InlineHook.git
+[submodule "loader/src/external/frida-gum"]
+	path = loader/src/external/frida-gum
+	url = https://github.com/frida/frida-gum.git

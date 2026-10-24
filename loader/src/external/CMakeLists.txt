@@ -90,6 +90,7 @@ if (ANDROID_ABI STREQUAL "arm64-v8a")
 endif()
 
 add_subdirectory(plti)
+add_subdirectory(znn_frida_gum)
 
 if (ANDROID_ABI STREQUAL "riscv64")
     add_subdirectory(rv64hook)

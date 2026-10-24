@@ -33,6 +33,7 @@ add_library(loader SHARED
     hook/backend/shadowhook.cpp
     hook/backend/rv64hook.cpp
     hook/backend/and64inlinehook.cpp
+    hook/backend/frida-gum.cpp
     hook/backend/lsplt.cpp
     hook/backend/bytehook.cpp
     hook/backend/xhook.cpp
@@ -81,7 +82,13 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} xhook)
 endif()
 set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plti)
+if (TARGET frida_gum_build)
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} frida-gum)
+endif()
 target_link_libraries(loader PRIVATE ${LOADER_LINK_LIBS})
+if (TARGET frida_gum_build)
+    add_dependencies(loader frida_gum_build)
+endif()
 if (TARGET cxx::cxx)
     target_link_libraries(loader PRIVATE cxx::cxx)
 endif ()
