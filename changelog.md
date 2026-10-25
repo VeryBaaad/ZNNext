@@ -1,5 +1,5 @@
 ## What's Changed
-* feat(hooks): add UrHook by @VeryBaaad in https://github.com/VeryBaaad/ZNNext/pull/119
+* feat(inlinehook): add Whale by @VeryBaaad in https://github.com/VeryBaaad/ZNNext/pull/120
 
 
-**Full Changelog**: https://github.com/VeryBaaad/ZNNext/compare/v2.4.0...v2.5.0
+**Full Changelog**: https://github.com/VeryBaaad/ZNNext/compare/v2.5.0...v2.6.0
