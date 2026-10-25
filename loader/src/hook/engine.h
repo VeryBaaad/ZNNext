@@ -28,10 +28,18 @@ enum class InlineEngine {
   kFridaGum,
   kRv64Hook,
   kHookZz,
+  kUrHook,
   kDisable
 };
-enum class PltEngine { kLsplt, kByteHook, kXHook, kPlti, kPltHook, kDisable };
-
+enum class PltEngine {
+  kLsplt,
+  kByteHook,
+  kXHook,
+  kPlti,
+  kPltHook,
+  kUrHook,
+  kDisable
+};
 const char* inlineEngineName(InlineEngine e);
 const char* pltEngineName(PltEngine e);
 

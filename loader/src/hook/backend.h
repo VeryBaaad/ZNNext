@@ -46,6 +46,9 @@ bool fridaGumUnhook(void* target);
 bool hookzzHook(void* target, void* replacement, void** original);
 bool hookzzUnhook(void* target);
 
+bool urhookHook(void* target, void* replacement, void** original);
+bool urhookUnhook(void* target);
+
 bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
                void** original);
 
@@ -61,4 +64,8 @@ bool pltiHook(const std::string& caller_path, uintptr_t caller_base,
 
 bool plthookHook(const std::string& caller_path, uintptr_t caller_base,
                  const char* symbol, void* replacement, void** original);
+
+bool urhookPltHook(const std::string& caller_path, uintptr_t caller_base,
+                   const char* symbol, void* replacement, void** original);
+
 }  // namespace znn::hook::backend

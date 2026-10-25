@@ -40,6 +40,8 @@ bool inlineHook(void* target, void* replacement, void** original) {
       return backend::rv64hookHook(target, replacement, original);
     case InlineEngine::kHookZz:
       return backend::hookzzHook(target, replacement, original);
+    case InlineEngine::kUrHook:
+      return backend::urhookHook(target, replacement, original);
     case InlineEngine::kDisable:
       return false;
   }
@@ -62,6 +64,8 @@ bool inlineUnhook(void* target) {
       return backend::rv64hookUnhook(target);
     case InlineEngine::kHookZz:
       return backend::hookzzUnhook(target);
+    case InlineEngine::kUrHook:
+      return backend::urhookUnhook(target);
     case InlineEngine::kDisable:
       return false;
   }

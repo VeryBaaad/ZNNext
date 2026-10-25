@@ -114,8 +114,8 @@ bool collectSlots(plthook_t* handle, const char* symbol,
 }
 
 bool openPlthook(const std::string& path, uintptr_t base, plthook_t** out) {
-  if (base != 0 && plthook_open_by_address(out, reinterpret_cast<void*>(base)) ==
-                       PLTHOOK_SUCCESS) {
+  if (base != 0 && plthook_open_by_address(
+                       out, reinterpret_cast<void*>(base)) == PLTHOOK_SUCCESS) {
     return true;
   }
   if (!path.empty() && plthook_open(out, path.c_str()) == PLTHOOK_SUCCESS) {

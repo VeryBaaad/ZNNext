@@ -75,6 +75,7 @@ pub fn inline_hook_options() -> Vec<&'static str> {
             "and64inlinehook",
             "frida-gum",
             "hookzz",
+            "urhook",
             "disable",
         ],
         "armeabi-v7a" => vec!["dobby", "shadowhook", "frida-gum", "hookzz", "disable"],
@@ -85,10 +86,12 @@ pub fn inline_hook_options() -> Vec<&'static str> {
 }
 
 pub fn plt_hook_options() -> Vec<&'static str> {
-    if runtime_abi() == "riscv64" {
-        vec!["lsplt", "plti", "disable"]
-    } else {
-        vec!["lsplt", "plti", "bytehook", "xhook", "plthook", "disable"]
+    match runtime_abi() {
+        "arm64-v8a" => vec![
+            "lsplt", "plti", "bytehook", "xhook", "plthook", "urhook", "disable",
+        ],
+        "riscv64" => vec!["lsplt", "plti", "disable"],
+        _ => vec!["lsplt", "plti", "bytehook", "xhook", "plthook", "disable"],
     }
 }
 

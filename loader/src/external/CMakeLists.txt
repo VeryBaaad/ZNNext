@@ -97,6 +97,7 @@ endif()
 
 add_subdirectory(plti)
 add_subdirectory(znn_frida_gum)
+add_subdirectory(znn_urhook)
 
 if (ANDROID_ABI STREQUAL "riscv64")
     add_subdirectory(rv64hook)

@@ -92,6 +92,9 @@ bool pltHook(void* base, const char* symbol, void* replacement,
     case PltEngine::kPltHook:
       return backend::plthookHook(entry->path, entry->start, symbol,
                                   replacement, original);
+    case PltEngine::kUrHook:
+      return backend::urhookPltHook(entry->path, entry->start, symbol,
+                                    replacement, original);
     case PltEngine::kDisable:
       return false;
   }

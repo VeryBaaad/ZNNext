@@ -40,6 +40,7 @@ add_library(loader SHARED
     hook/backend/xhook.cpp
     hook/backend/plti.cpp
     hook/backend/plthook.cpp
+    hook/backend/urhook.cpp
     api/hook.cpp
     api/symbols.cpp
     api/companion.cpp
@@ -68,6 +69,10 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
     target_include_directories(loader PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/plthook)
 endif ()
+if (ANDROID_ABI STREQUAL "arm64-v8a")
+    target_include_directories(loader PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/urhook/include)
+endif ()
 
 set(LOADER_LINK_LIBS log elfutil lsplt_static)
 if (ANDROID_ABI STREQUAL "riscv64")
@@ -90,6 +95,10 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plthook)
 endif()
 set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plti)
+if (ANDROID_ABI STREQUAL "arm64-v8a")
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} urhook c++abi unwind)
+    target_link_options(loader PRIVATE -Wl,--allow-multiple-definition)
+endif()
 if (TARGET frida_gum_build)
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} frida-gum)
 endif()

@@ -34,3 +34,6 @@
 [submodule "loader/src/external/plthook"]
 	path = loader/src/external/plthook
 	url = https://github.com/metacall/plthook.git
+[submodule "loader/src/external/urhook"]
+	path = loader/src/external/urhook
+	url = https://github.com/SMlc666/urhook.git

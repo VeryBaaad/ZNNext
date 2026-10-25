@@ -47,6 +47,8 @@ const char* inlineEngineName(InlineEngine e) {
       return "rv64hook";
     case InlineEngine::kHookZz:
       return "hookzz";
+    case InlineEngine::kUrHook:
+      return "urhook";
     case InlineEngine::kDisable:
       return "disable";
   }
@@ -65,6 +67,8 @@ const char* pltEngineName(PltEngine e) {
       return "plti";
     case PltEngine::kPltHook:
       return "plthook";
+    case PltEngine::kUrHook:
+      return "urhook";
     case PltEngine::kDisable:
       return "disable";
   }
@@ -109,6 +113,12 @@ bool inlineEngineSupported(InlineEngine e) {
 #else
       return false;
 #endif
+    case InlineEngine::kUrHook:
+#if defined(__aarch64__)
+      return true;
+#else
+      return false;
+#endif
     case InlineEngine::kDisable:
       return true;
   }
@@ -135,6 +145,12 @@ bool pltEngineSupported(PltEngine e) {
       return true;
     case PltEngine::kPltHook:
 #ifndef __riscv
+      return true;
+#else
+      return false;
+#endif
+    case PltEngine::kUrHook:
+#if defined(__aarch64__)
       return true;
 #else
       return false;
@@ -170,6 +186,8 @@ bool parseInlineEngine(const char* name, InlineEngine* out) {
     e = InlineEngine::kRv64Hook;
   } else if (strcmp(name, "hookzz") == 0) {
     e = InlineEngine::kHookZz;
+  } else if (strcmp(name, "urhook") == 0) {
+    e = InlineEngine::kUrHook;
   } else if (strcmp(name, "disable") == 0) {
     e = InlineEngine::kDisable;
   } else {
@@ -193,6 +211,8 @@ bool parsePltEngine(const char* name, PltEngine* out) {
     e = PltEngine::kPlti;
   } else if (strcmp(name, "plthook") == 0) {
     e = PltEngine::kPltHook;
+  } else if (strcmp(name, "urhook") == 0) {
+    e = PltEngine::kUrHook;
   } else if (strcmp(name, "disable") == 0) {
     e = PltEngine::kDisable;
   } else {
