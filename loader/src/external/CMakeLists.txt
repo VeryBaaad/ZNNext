@@ -110,6 +110,8 @@ else ()
     target_compile_options(dobby PRIVATE -w)
 
     add_subdirectory(znn_hookzz)
+
+    add_subdirectory(znn_whale)
 endif ()
 
 add_subdirectory(lzma)

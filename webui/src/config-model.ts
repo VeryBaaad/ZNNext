@@ -27,6 +27,7 @@ export const ENGINE_LABELS: Record<string, string> = {
   and64inlinehook: "And64InlineHook",
   "frida-gum": "Frida Gum",
   hookzz: "HookZz",
+  whale: "Whale",
   lsplt: "LSPlt",
   bytehook: "ByteHook",
   xhook: "xHook",

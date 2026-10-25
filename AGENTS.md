@@ -33,7 +33,7 @@ To comply with this and maintain legal and technical independence, you must adhe
 ## DEVELOPMENT GUIDELINES
 
 1. Code Generation and Modification: Always prioritize stability and security when modifying hooking logic in loader/. Use modern C++ standards as defined in the project's build system. Ensure all new code is free of redundant or unnecessary comments. No nonsense comments.
-2. Dependency Management: When interacting with Dobby, LSPlt, rv64hook, or frida-gum, respect their individual licenses and integration patterns.
+2. Dependency Management: When interacting with Dobby, LSPlt, rv64hook, or more, respect their individual licenses and integration patterns.
 3. Error Handling: Fail gracefully. If a ZN module fails to load or a hook fails, log the error clearly and ensure both the injector and the host process continue to run without crashing.
 4. Rust Code (injector/): Keep every module small and single-purpose; a new file belongs in injector/src/ rather than growing main.rs. Confine FFI to injector/src/sys/ and wrap it in safe interfaces, then run `cargo clippy --all-targets -- -D warnings` for the Android targets before finishing.
 5. C++ Code (loader/): Keep every file small and single-purpose; a new file belongs in the loader/src/<area>/ directory it fits rather than growing an existing one. Hook backends stay one-per-file under loader/src/hook/backend/ behind the declarations in loader/src/hook/backend.h, and every index in the ZygiskNextAPI tables is chosen by the module's target_api_version in loader/src/api/table.cpp.

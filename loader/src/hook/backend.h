@@ -49,6 +49,9 @@ bool hookzzUnhook(void* target);
 bool urhookHook(void* target, void* replacement, void** original);
 bool urhookUnhook(void* target);
 
+bool whaleHook(void* target, void* replacement, void** original);
+bool whaleUnhook(void* target);
+
 bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
                void** original);
 

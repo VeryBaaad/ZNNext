@@ -29,6 +29,7 @@ enum class InlineEngine {
   kRv64Hook,
   kHookZz,
   kUrHook,
+  kWhale,
   kDisable
 };
 enum class PltEngine {

@@ -35,6 +35,7 @@ add_library(loader SHARED
     hook/backend/and64inlinehook.cpp
     hook/backend/frida-gum.cpp
     hook/backend/hookzz.cpp
+    hook/backend/whale.cpp
     hook/backend/lsplt.cpp
     hook/backend/bytehook.cpp
     hook/backend/xhook.cpp
@@ -63,6 +64,8 @@ if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
 endif ()
 if (NOT ANDROID_ABI STREQUAL "riscv64")
     target_include_directories(loader PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/znn_whale)
+    target_include_directories(loader PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/bytehook/bytehook/src/main/cpp/include)
     target_include_directories(loader PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/xhook/libxhook/jni)
@@ -90,6 +93,7 @@ if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a" OR AN
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} hookzz)
 endif()
 if (NOT ANDROID_ABI STREQUAL "riscv64")
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} whale)
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} bytehook)
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} xhook)
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plthook)

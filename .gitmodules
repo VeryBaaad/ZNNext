@@ -37,3 +37,6 @@
 [submodule "loader/src/external/urhook"]
 	path = loader/src/external/urhook
 	url = https://github.com/SMlc666/urhook.git
+[submodule "loader/src/external/whale"]
+	path = loader/src/external/whale
+	url = https://github.com/asLody/whale.git

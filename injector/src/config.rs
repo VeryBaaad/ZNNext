@@ -76,12 +76,20 @@ pub fn inline_hook_options() -> Vec<&'static str> {
             "frida-gum",
             "hookzz",
             "urhook",
+            "whale",
             "disable",
         ],
-        "armeabi-v7a" => vec!["dobby", "shadowhook", "frida-gum", "hookzz", "disable"],
-        "x86_64" => vec!["dobby", "frida-gum", "hookzz", "disable"],
+        "armeabi-v7a" => vec![
+            "dobby",
+            "shadowhook",
+            "frida-gum",
+            "hookzz",
+            "whale",
+            "disable",
+        ],
+        "x86_64" => vec!["dobby", "frida-gum", "hookzz", "whale", "disable"],
         "riscv64" => vec!["rv64hook", "disable"],
-        _ => vec!["dobby", "frida-gum", "disable"],
+        _ => vec!["dobby", "frida-gum", "whale", "disable"],
     }
 }
 
