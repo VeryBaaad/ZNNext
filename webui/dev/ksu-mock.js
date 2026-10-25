@@ -60,7 +60,7 @@
   };
 
   var config = {
-    inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'frida-gum', 'rv64hook', 'disable'] },
+    inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'frida-gum', 'rv64hook', 'hookzz', 'disable'] },
     pltHook: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'disable'] },
     mode: { value: 'proc', options: ['auto', 'kernel', 'ptrace', 'proc', 'late'] },
     debugdata: { value: 'lzma', options: ['lzma', 'xz'] },

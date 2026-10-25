@@ -45,6 +45,8 @@ const char* inlineEngineName(InlineEngine e) {
       return "frida-gum";
     case InlineEngine::kRv64Hook:
       return "rv64hook";
+    case InlineEngine::kHookZz:
+      return "hookzz";
     case InlineEngine::kDisable:
       return "disable";
   }
@@ -95,6 +97,12 @@ bool inlineEngineSupported(InlineEngine e) {
 #endif
     case InlineEngine::kRv64Hook:
 #ifdef __riscv
+      return true;
+#else
+      return false;
+#endif
+    case InlineEngine::kHookZz:
+#if defined(__aarch64__) || defined(__arm__) || defined(__x86_64__)
       return true;
 #else
       return false;
@@ -152,6 +160,8 @@ bool parseInlineEngine(const char* name, InlineEngine* out) {
     e = InlineEngine::kFridaGum;
   } else if (strcmp(name, "rv64hook") == 0) {
     e = InlineEngine::kRv64Hook;
+  } else if (strcmp(name, "hookzz") == 0) {
+    e = InlineEngine::kHookZz;
   } else if (strcmp(name, "disable") == 0) {
     e = InlineEngine::kDisable;
   } else {

@@ -43,6 +43,9 @@ bool fridaGumInit();
 bool fridaGumHook(void* target, void* replacement, void** original);
 bool fridaGumUnhook(void* target);
 
+bool hookzzHook(void* target, void* replacement, void** original);
+bool hookzzUnhook(void* target);
+
 bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
                void** original);
 

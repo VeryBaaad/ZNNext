@@ -34,6 +34,7 @@ add_library(loader SHARED
     hook/backend/rv64hook.cpp
     hook/backend/and64inlinehook.cpp
     hook/backend/frida-gum.cpp
+    hook/backend/hookzz.cpp
     hook/backend/lsplt.cpp
     hook/backend/bytehook.cpp
     hook/backend/xhook.cpp
@@ -76,6 +77,9 @@ if (ANDROID_ABI STREQUAL "arm64-v8a")
 endif()
 if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} shadowhook)
+endif()
+if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a" OR ANDROID_ABI STREQUAL "x86_64")
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} hookzz)
 endif()
 if (NOT ANDROID_ABI STREQUAL "riscv64")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} bytehook)

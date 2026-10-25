@@ -101,6 +101,8 @@ else ()
     option(BUILD_TEST "Build Dobby test" OFF)
     add_subdirectory(dobby)
     target_compile_options(dobby PRIVATE -w)
+
+    add_subdirectory(znn_hookzz)
 endif ()
 
 add_subdirectory(lzma)
