@@ -31,3 +31,6 @@
 [submodule "loader/src/external/hookzz"]
 	path = loader/src/external/hookzz
 	url = https://github.com/jmpews/HookZz.git
+[submodule "loader/src/external/plthook"]
+	path = loader/src/external/plthook
+	url = https://github.com/metacall/plthook.git

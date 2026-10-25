@@ -88,7 +88,7 @@ pub fn plt_hook_options() -> Vec<&'static str> {
     if runtime_abi() == "riscv64" {
         vec!["lsplt", "plti", "disable"]
     } else {
-        vec!["lsplt", "plti", "bytehook", "xhook", "disable"]
+        vec!["lsplt", "plti", "bytehook", "xhook", "plthook", "disable"]
     }
 }
 

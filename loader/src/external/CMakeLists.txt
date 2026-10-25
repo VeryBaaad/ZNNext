@@ -76,6 +76,12 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
         "PAGE_SIZE=sysconf(_SC_PAGESIZE)"
         "PAGE_MASK=(~(sysconf(_SC_PAGESIZE)-1))"
     )
+
+    add_library(plthook STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/plthook/plthook_elf.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/plthook/plthook.h
+    )
+    target_compile_options(plthook PRIVATE -w)
 endif ()
 
 if (ANDROID_ABI STREQUAL "arm64-v8a")

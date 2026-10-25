@@ -59,4 +59,6 @@ bool xhookHook(const std::string& caller_path, const char* symbol,
 bool pltiHook(const std::string& caller_path, uintptr_t caller_base,
               const char* symbol, void* replacement, void** original);
 
+bool plthookHook(const std::string& caller_path, uintptr_t caller_base,
+                 const char* symbol, void* replacement, void** original);
 }  // namespace znn::hook::backend

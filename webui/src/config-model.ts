@@ -31,6 +31,7 @@ export const ENGINE_LABELS: Record<string, string> = {
   bytehook: "ByteHook",
   xhook: "xHook",
   plti: "PLTI",
+  plthook: "PLTHook",
   disable: t(`config.disable`),
 };
 
