@@ -38,7 +38,7 @@ export const zhCN: Dictionary = {
 
   "zn.running": "运行中",
   "zn.stopped": "未运行",
-  "zn.injector": "注入器",
+  "zn.daemon": "守护进程",
   "zn.modules.title": "ZN 模块 ({n})",
   "zn.modules.empty": "未加载任何模块",
   "zn.modules.badge": "存在问题",
@@ -81,7 +81,7 @@ export const zhCN: Dictionary = {
 
   "empty.title": "无卡片可绘制",
 
-  "error.title": "无法从 injector 读取数据",
+  "error.title": "无法读取数据",
 
   "footer.github": "Github",
 };

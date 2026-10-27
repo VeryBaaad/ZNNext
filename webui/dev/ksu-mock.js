@@ -128,7 +128,7 @@
         var entry = key ? state.config[key] : null;
         if (!entry) {
           throw new Error(
-            'usage: injector --ctl config-set <inline|plt|mode|debugdata|disable-zn> <value>',
+            'usage: znnd --ctl config-set <inline|plt|mode|debugdata|disable-zn> <value>',
           );
         }
         if (entry.options.indexOf(value) < 0) {

@@ -5,7 +5,7 @@ $(go env GOBIN)/yamlfmt .
 cd ..
 $(go env GOBIN)/yamlfmt module.yaml
 
-cd injector
+cd daemon
 cargo fmt
 cd ..
 

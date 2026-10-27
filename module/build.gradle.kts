@@ -158,7 +158,7 @@ androidComponents.onVariants { variant ->
         group = "module"
         dependsOn(
             ":loader:assemble$variantCapped",
-            ":injector:assemble$variantCapped",
+            ":daemon:assemble$variantCapped",
             ":kpm:assemble$variantCapped",
             ":webui:buildWebui",
             prepareLicensesTask,
@@ -209,8 +209,8 @@ androidComponents.onVariants { variant ->
 
         val cmakeBuildType = if (buildTypeLowered == "debug") "Debug" else "RelWithDebInfo"
 
-        inputs.dir(project(":injector").layout.buildDirectory.dir("rust/$variantLowered"))
-            .withPropertyName("injectorArtifacts")
+        inputs.dir(project(":daemon").layout.buildDirectory.dir("rust/$variantLowered"))
+            .withPropertyName("daemonArtifacts")
             .optional()
         inputs.files(
             fileTree(project(":loader").layout.buildDirectory.dir("intermediates/cxx/$cmakeBuildType")) {
@@ -245,14 +245,12 @@ androidComponents.onVariants { variant ->
 
             collectArtifacts(":loader", "libloader.so") { abi -> File(dstRoot, "lib/$abi/libloader.so") }
 
-            // :injector is a Rust crate; its Gradle build leaves one binary per
-            // ABI under <injector>/build/rust/<variant>/<abi>/injector.
-            val injectorVariants = project(":injector").layout.buildDirectory
+            val daemonVariants = project(":daemon").layout.buildDirectory
                 .dir("rust/$variantLowered").get().asFile
-            injectorVariants.listFiles()?.forEach { abiDir ->
-                val artifact = File(abiDir, "injector")
+            daemonVariants.listFiles()?.forEach { abiDir ->
+                val artifact = File(abiDir, "znnd")
                 if (!abiDir.isDirectory || !artifact.isFile) return@forEach
-                val destination = File(dstRoot, "bin/${abiDir.name}/injector")
+                val destination = File(dstRoot, "bin/${abiDir.name}/znnd")
                 destination.parentFile.mkdirs()
                 artifact.copyTo(destination, overwrite = true)
             }
@@ -290,7 +288,7 @@ androidComponents.onVariants { variant ->
                     mapping.insert("emulated-soft-reboot.sh", null)
                     mapping.insert("sepolicy.rule", null)
                     mapping.insert("mazoku", null)
-                    mapping.insert("bin/injector", "bin/$abi/injector")
+                    mapping.insert("bin/znnd", "bin/$abi/znnd")
                     mapping.insert("lib/libloader.so", "lib/$abi32/libloader.so")
                     mapping.insert("lib64/libloader.so", "lib/$abi64/libloader.so")
                     root.asFile.resolve("webroot").walkTopDown()

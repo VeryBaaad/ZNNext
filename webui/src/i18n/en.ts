@@ -36,7 +36,7 @@ export const en: Record<string, string> = {
 
   "zn.running": "Running",
   "zn.stopped": "Not running",
-  "zn.injector": "Injector",
+  "zn.daemon": "Daemon",
   "zn.modules.title": "ZN Modules ({n})",
   "zn.modules.empty": "No modules loaded",
   "zn.modules.badge": "Has issues",
@@ -80,7 +80,7 @@ export const en: Record<string, string> = {
 
   "empty.title": "No cards to display",
 
-  "error.title": "Failed to load data from the injector",
+  "error.title": "Failed to load data",
 
   "footer.github": "Github",
 };

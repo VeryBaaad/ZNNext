@@ -21,14 +21,14 @@
 import { computed } from "vue";
 
 import { MODULE_NAME, VER_NAME } from "../../app-info";
-import type { InjectorStatus } from "../../api/injector";
+import type { DaemonStatus } from "../../api/daemon";
 import type { SystemInfo } from "../../api/system";
 import { t } from "../../i18n";
 import ZnCard from "./ZnCard.vue";
 
 const props = defineProps<{
   system: SystemInfo;
-  status: InjectorStatus | null;
+  status: DaemonStatus | null;
   error?: boolean;
 }>();
 

@@ -6,4 +6,4 @@ cd "$MODDIR" || exit 1
 
 mkdir -p /data/adb/zygisknextsu
 
-./bin/injector "$MODDIR" &
+./bin/znnd "$MODDIR" &

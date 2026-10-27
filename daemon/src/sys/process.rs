@@ -35,7 +35,7 @@ pub enum Forked {
 }
 
 pub fn fork() -> io::Result<Forked> {
-    // SAFETY: the injector forks while it is still single-threaded, so the
+    // SAFETY: the daemon forks while it is still single-threaded, so the
     // child cannot inherit a half-locked allocator or another thread's state.
     match unsafe { unistd::fork() } {
         Ok(ForkResult::Parent { child }) => Ok(Forked::Parent(child.as_raw())),

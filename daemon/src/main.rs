@@ -65,12 +65,12 @@ fn main() {
     let mut reported = false;
     while let Some(pid) = procfs::find_daemon_pid(None) {
         if !reported {
-            crate::log::logi!("waiting for the previous injector daemon ({pid}) to exit");
+            crate::log::logi!("waiting for the previous daemon ({pid}) to exit");
             reported = true;
         }
         if std::time::Instant::now() >= deadline {
             crate::log::loge!(
-                "an injector daemon ({pid}) is already running, refusing to start a second instance"
+                "an daemon ({pid}) is already running, refusing to start a second instance"
             );
             std::process::exit(1);
         }

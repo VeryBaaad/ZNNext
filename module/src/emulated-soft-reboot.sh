@@ -1,3 +1,3 @@
 MODDIR=${0%/*}
 
-$MODDIR/bin/injector --ctl exit
+$MODDIR/bin/znnd --ctl exit

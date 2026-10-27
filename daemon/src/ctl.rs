@@ -54,15 +54,13 @@ const STOP_ATTEMPTS: u32 = 80;
 /// How long `--ctl start` waits for the daemon it forked to be observable.
 const START_ATTEMPTS: u32 = 20;
 
-const USAGE: &str = "usage: injector --ctl <status|system|modules|config|config-set <inline|plt|mode|debugdata|disable-zn> <value>|apply-zn [wait]|start|restart|rescan|exit>";
+const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-set <inline|plt|mode|debugdata|disable-zn> <value>|apply-zn [wait]|start|restart|rescan|exit>";
 
 const CONFIG_SET_USAGE: &str =
-    "usage: injector --ctl config-set <inline|plt|mode|debugdata|disable-zn> <value>";
+    "usage: znnd --ctl config-set <inline|plt|mode|debugdata|disable-zn> <value>";
 
-/// The command line of the injector: either a module directory to serve, or a
-/// control command answered on the spot.
 pub fn command() -> ClapCommand {
-    ClapCommand::new("injector")
+    ClapCommand::new("znnd")
         .about("Serves the Zygisk Next module API, or answers a control command.")
         .version(VERSION)
         .arg(
@@ -103,9 +101,9 @@ pub fn ctl_main(arguments: &[String]) -> i32 {
 
     match command.as_str() {
         "rescan" => signal_daemon(signal::SIGHUP, |pid| {
-            format!("injector ({pid}) requested to rescan modules")
+            format!("daemon ({pid}) requested to rescan modules")
         }),
-        "exit" => signal_daemon(signal::SIGTERM, |pid| format!("injector ({pid}) exited")),
+        "exit" => signal_daemon(signal::SIGTERM, |pid| format!("daemon ({pid}) exited")),
         "start" => start_daemon(false),
         "restart" => start_daemon(true),
         "config" => print_json(&config::effective().report()),
@@ -206,13 +204,13 @@ fn start_daemon(restart: bool) -> i32 {
             }
         }
         if procfs::is_daemon_alive(pid) {
-            eprintln!("injector ({pid}) did not stop");
+            eprintln!("daemon ({pid}) did not stop");
             return 1;
         }
     }
 
     let Ok(executable) = fs::read_link("/proc/self/exe") else {
-        eprintln!("cannot resolve the injector path");
+        eprintln!("cannot resolve the daemon path");
         return 1;
     };
     let module_dir = module_dir_of_self();
@@ -234,18 +232,16 @@ fn start_daemon(restart: bool) -> i32 {
                 }
                 thread::sleep(STOP_INTERVAL);
             }
-            eprintln!("injector ({pid}) did not stay up");
+            eprintln!("daemon ({pid}) did not stay up");
             1
         }
         Err(error) => {
-            eprintln!("cannot start the injector: {error}");
+            eprintln!("cannot start the daemon: {error}");
             1
         }
     }
 }
 
-/// The module directory this binary was installed into, derived from its path
-/// (`<module>/bin/injector`).
 pub fn module_dir_of_self() -> PathBuf {
     let Ok(executable) = fs::read_link("/proc/self/exe") else {
         return PathBuf::new();
@@ -258,7 +254,7 @@ pub fn module_dir_of_self() -> PathBuf {
 
 fn signal_daemon(requested: i32, message: fn(Pid) -> String) -> i32 {
     let Some(pid) = daemon_pid() else {
-        println!("injector is not running");
+        println!("daemon is not running");
         return 1;
     };
     let _ = process::kill(pid, requested);
@@ -306,7 +302,7 @@ fn config_set(arguments: &[String]) -> i32 {
 
 fn apply_zn(arguments: &[String]) -> i32 {
     if arguments.iter().any(|argument| argument != "wait") {
-        eprintln!("usage: injector --ctl apply-zn [wait]");
+        eprintln!("usage: znnd --ctl apply-zn [wait]");
         return 1;
     }
 

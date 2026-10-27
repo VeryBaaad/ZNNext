@@ -29,7 +29,7 @@ import {
 import { computed, watch } from "vue";
 
 import type { HookConfig } from "../../api/config";
-import type { InjectorStatus } from "../../api/injector";
+import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import type { SystemInfo } from "../../api/system";
 import { themeScheme } from "../../theme";
@@ -46,7 +46,7 @@ import MiuixStatusCard from "./MiuixStatusCard.vue";
 const props = defineProps<{
   ksuAvailable: boolean;
   loading: boolean;
-  status: InjectorStatus | null;
+  status: DaemonStatus | null;
   system: SystemInfo | null;
   modules: ZnnModule[] | null;
   config: HookConfig | null;

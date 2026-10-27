@@ -22,7 +22,7 @@ import { MiuixCard, MiuixIcon, MiuixText } from "miuix-vue";
 import type { ExtendedIcon } from "miuix-vue/icons";
 import { computed } from "vue";
 
-import type { InjectorStatus } from "../../api/injector";
+import type { DaemonStatus } from "../../api/daemon";
 import { cleanVersion, type SystemInfo } from "../../api/system";
 import { t } from "../../i18n";
 import { GridView, HorizontalSplit, Info, Layers, Lock } from "./icons";
@@ -41,7 +41,7 @@ interface InfoRow {
 
 const props = defineProps<{
   system: SystemInfo;
-  status: InjectorStatus | null;
+  status: DaemonStatus | null;
 }>();
 
 const rootImplText = computed(() => {

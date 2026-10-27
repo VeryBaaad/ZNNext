@@ -387,7 +387,7 @@ impl Daemon {
             match procfs::read_file(Path::new(&tracee.loader)) {
                 Some(content) => tracee.content = content,
                 None => {
-                    loge!("cannot read the loader (injector side)");
+                    loge!("cannot read the loader");
                     return false;
                 }
             }

@@ -20,7 +20,7 @@
 
 import { computed } from "vue";
 
-import type { InjectorStatus } from "../../api/injector";
+import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import { cleanVersion, type RootImplementation } from "../../api/system";
 import { useAppActions } from "../../composables/app-actions";
@@ -32,7 +32,7 @@ import ZnModuleList from "./ZnModuleList.vue";
 import ZnTag from "./ZnTag.vue";
 
 const props = defineProps<{
-  status: InjectorStatus | null;
+  status: DaemonStatus | null;
   root: RootImplementation | null;
   modules: ZnnModule[] | null;
   refreshing: boolean;
@@ -53,7 +53,7 @@ const rootLabel = computed(() => {
   return entries.map((entry) => `${entry.name} (${entry.version})`).join(", ");
 });
 
-const injectorLabel = computed(() => {
+const daemonLabel = computed(() => {
   if (!props.status?.running) return t("zn.stopped");
   return props.status.pid
     ? `${t("zn.running")} (${props.status.pid})`
@@ -83,9 +83,9 @@ const injectorLabel = computed(() => {
       </div>
 
       <div class="zn-row">
-        <span class="zn-field-label">{{ t("zn.injector") }}</span>
+        <span class="zn-field-label">{{ t("zn.daemon") }}</span>
         <ZnTag :tone="props.status?.running ? 'ok' : 'warn'">{{
-          injectorLabel
+          daemonLabel
         }}</ZnTag>
       </div>
     </div>

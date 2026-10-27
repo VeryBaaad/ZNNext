@@ -19,7 +19,7 @@ dependencyResolutionManagement {
 rootProject.name = "ZNNext"
 include(
     ":loader",
-    ":injector",
+    ":daemon",
     ":kpm",
     ":module",
     ":webui",

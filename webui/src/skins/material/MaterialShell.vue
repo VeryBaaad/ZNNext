@@ -23,7 +23,7 @@ import "./elements";
 import { computed } from "vue";
 
 import type { HookConfig } from "../../api/config";
-import type { InjectorStatus } from "../../api/injector";
+import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import type { SystemInfo } from "../../api/system";
 import MaterialConfigCard from "./MaterialConfigCard.vue";
@@ -38,7 +38,7 @@ import MaterialTopBar from "./MaterialTopBar.vue";
 const props = defineProps<{
   ksuAvailable: boolean;
   loading: boolean;
-  status: InjectorStatus | null;
+  status: DaemonStatus | null;
   system: SystemInfo | null;
   modules: ZnnModule[] | null;
   config: HookConfig | null;

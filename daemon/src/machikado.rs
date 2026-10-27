@@ -30,7 +30,7 @@ const ORG_PUBLIC_KEY: [u8; 32] = [
 ];
 
 const SIGNED_FILES: [&str; 9] = [
-    "bin/injector",
+    "bin/znnd",
     "emulated-soft-reboot.sh",
     "lib/libloader.so",
     "lib64/libloader.so",

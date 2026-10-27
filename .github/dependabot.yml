@@ -26,7 +26,7 @@ updates:
       prefix: "chore"
       include: "scope"
   - package-ecosystem: "cargo"
-    directory: "/injector/"
+    directory: "/daemon/"
     schedule:
       interval: "daily"
     commit-message:

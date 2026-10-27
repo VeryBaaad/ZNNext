@@ -22,11 +22,11 @@ import { MiuixCard, MiuixIcon, MiuixText } from "miuix-vue";
 import { computed } from "vue";
 
 import { VER_NAME } from "../../app-info";
-import type { InjectorStatus } from "../../api/injector";
+import type { DaemonStatus } from "../../api/daemon";
 import { t } from "../../i18n";
 import { CHECK_CIRCLE, ERROR_CIRCLE, GLYPH_VIEW_BOX } from "./glyphs";
 
-const props = defineProps<{ status: InjectorStatus }>();
+const props = defineProps<{ status: DaemonStatus }>();
 
 const active = computed(() => props.status.running);
 

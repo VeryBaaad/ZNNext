@@ -114,7 +114,7 @@ pub fn map_path_equals_exe(map_path: &str, exe: &str) -> bool {
             && map_path[exe.len()..] == *DELETED_SUFFIX)
 }
 
-fn is_injector_process(pid: Pid) -> bool {
+fn is_znndaemon_process(pid: Pid) -> bool {
     if pid <= 1 {
         return false;
     }
@@ -125,7 +125,7 @@ fn is_injector_process(pid: Pid) -> bool {
     let Ok(read) = file.read(&mut comm) else {
         return false;
     };
-    comm[..read].starts_with(b"injector")
+    comm[..read].starts_with(b"znnd")
 }
 
 fn command_line(pid: Pid) -> Vec<String> {
@@ -143,7 +143,7 @@ fn command_line(pid: Pid) -> Vec<String> {
 /// cannot tell them apart: the daemon is the instance that was started without
 /// a control command. Never report ourselves.
 pub fn is_daemon_alive(pid: Pid) -> bool {
-    if pid <= 1 || pid == std::process::id() as Pid || !is_injector_process(pid) {
+    if pid <= 1 || pid == std::process::id() as Pid || !is_znndaemon_process(pid) {
         return false;
     }
     !command_line(pid).iter().any(|argument| argument == "--ctl")

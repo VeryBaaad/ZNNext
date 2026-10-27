@@ -3,7 +3,7 @@
 .cxx
 build
 local.properties
-injector/target/
+daemon/target/
 .build
 .build-*
 .gradle-home

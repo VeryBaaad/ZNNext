@@ -71,5 +71,5 @@ export function shellQuote(value: string): string {
 }
 
 export function apiBinary(): string {
-  return shellQuote(`${getModuleDir()}/bin/injector`);
+  return shellQuote(`${getModuleDir()}/bin/znnd`);
 }

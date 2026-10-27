@@ -21,10 +21,10 @@
 import { computed } from "vue";
 
 import { VER_NAME } from "../../app-info";
-import type { InjectorStatus } from "../../api/injector";
+import type { DaemonStatus } from "../../api/daemon";
 import { t } from "../../i18n";
 
-const props = defineProps<{ status: InjectorStatus }>();
+const props = defineProps<{ status: DaemonStatus }>();
 
 const mode = computed(() => {
   if (!props.status.running) return "";

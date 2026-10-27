@@ -46,8 +46,6 @@ extra.set("minKsudVersion", minKsudVersion)
 extra.set("minMagiskVersion", minMagiskVersion)
 extra.set("minApatchVersion", minApatchVersion)
 
-// Native build settings of the C/C++ module (:loader). :injector is a Rust
-// crate and configures its own build through cargo (see injector/Cargo.toml).
 val defaultCFlags = arrayOf(
     "-Wall", "-Wextra",
     "-fno-rtti", "-fno-exceptions",

@@ -33,7 +33,6 @@ use crate::sys::fs as raw_fs;
 use crate::system::{self, RootImpl};
 use crate::targets::{self, ModuleInfo};
 
-/// The snapshot the WebUI reads through `injector --ctl`.
 #[derive(Debug, Serialize)]
 pub struct StateReport<'a> {
     running: bool,
@@ -55,7 +54,6 @@ pub struct SystemReport<'a> {
 }
 
 impl SystemReport<'_> {
-    /// Stand-in for a device whose injector has not published any state yet.
     pub fn empty() -> SystemReport<'static> {
         SystemReport {
             kernel: "",
@@ -240,7 +238,7 @@ impl Daemon {
         let text = if !self.state.status_reason.is_empty() {
             format!("[❌ {}]", self.state.status_reason)
         } else {
-            let mut status = String::from("✅injector");
+            let mut status = String::from("✅init");
             let (implementation, version) = root_implementation(&self.system.root);
             if !implementation.is_empty() {
                 let _ = write!(status, ", Root: ✅{implementation} ({version})");

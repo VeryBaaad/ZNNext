@@ -25,14 +25,14 @@ import {
   type HookConfig,
   type HookKind,
 } from "../api/config";
-import { getInjectorStatus, type InjectorStatus } from "../api/injector";
+import { getDaemonStatus, type DaemonStatus } from "../api/daemon";
 import { isKsuAvailable } from "../api/ksu";
 import { getModules, type ZnnModule } from "../api/modules";
 import { getSystemInfo, type SystemInfo } from "../api/system";
 
 export interface AppData {
   ksuAvailable: boolean;
-  status: Ref<InjectorStatus | null>;
+  status: Ref<DaemonStatus | null>;
   system: Ref<SystemInfo | null>;
   modules: Ref<ZnnModule[] | null>;
   config: Ref<HookConfig | null>;
@@ -43,7 +43,7 @@ export interface AppData {
 
 export function useAppData(): AppData {
   const ksuAvailable = isKsuAvailable();
-  const status = ref<InjectorStatus | null>(null);
+  const status = ref<DaemonStatus | null>(null);
   const system = ref<SystemInfo | null>(null);
   const modules = ref<ZnnModule[] | null>(null);
   const config = ref<HookConfig | null>(null);
@@ -59,7 +59,7 @@ export function useAppData(): AppData {
     try {
       const [nextStatus, nextSystem, nextModules, nextConfig] =
         await Promise.all([
-          getInjectorStatus().catch((e) => {
+          getDaemonStatus().catch((e) => {
             console.warn("[znn] status:", e);
             return null;
           }),

@@ -200,11 +200,11 @@ impl Daemon {
             logw!("tracking mode changed to proc; detached init and switched to polling /proc");
         } else if wanted != config::MODE_PROC && self.mode == Tracking::Proc {
             logw!(
-                "tracking mode {wanted} only applies on the next injector start; staying in proc mode"
+                "tracking mode {wanted} only applies on the next daemon start; staying in proc mode"
             );
         } else if wanted != config::MODE_PROC && self.mode == Tracking::Late {
             logw!(
-                "tracking mode {wanted} only applies on the next injector start; staying in late mode"
+                "tracking mode {wanted} only applies on the next daemon start; staying in late mode"
             );
         }
     }

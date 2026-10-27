@@ -114,9 +114,9 @@ if [ "$ARCH" = "x86" ] || [ "$ARCH" = "x64" ]; then
   extract "$ZIPFILE" 'lib/x86_64/libloader.so' "$MODPATH/lib64" true
   if [ "$IS64BIT" = "true" ]; then
     ui_print "- Extracting x64 libraries"
-    extract "$ZIPFILE" 'bin/x86_64/injector' "$MODPATH/bin" true
+    extract "$ZIPFILE" 'bin/x86_64/znnd' "$MODPATH/bin" true
   else
-    extract "$ZIPFILE" 'bin/x86/injector' "$MODPATH/bin" true
+    extract "$ZIPFILE" 'bin/x86/znnd' "$MODPATH/bin" true
   fi
 elif [ "$ARCH" = "arm" ] || [ "$ARCH" = "arm64" ]; then
   ui_print "- Extracting arm libraries"
@@ -124,15 +124,15 @@ elif [ "$ARCH" = "arm" ] || [ "$ARCH" = "arm64" ]; then
   extract "$ZIPFILE" 'lib/arm64-v8a/libloader.so' "$MODPATH/lib64" true
   if [ "$IS64BIT" = "true" ]; then
     ui_print "- Extracting arm64 libraries"
-    extract "$ZIPFILE" 'bin/arm64-v8a/injector' "$MODPATH/bin" true
+    extract "$ZIPFILE" 'bin/arm64-v8a/znnd' "$MODPATH/bin" true
   else
-    extract "$ZIPFILE" 'bin/armeabi-v7a/injector' "$MODPATH/bin" true
+    extract "$ZIPFILE" 'bin/armeabi-v7a/znnd' "$MODPATH/bin" true
   fi
 elif [ "$ARCH" = "riscv64" ]; then
   ui_print "- Extracting RISC-V libraries"
   extract "$ZIPFILE" 'lib/riscv64/libloader.so' "$MODPATH/lib" true
   extract "$ZIPFILE" 'lib/riscv64/libloader.so' "$MODPATH/lib64" true
-  extract "$ZIPFILE" 'bin/riscv64/injector' "$MODPATH/bin" true
+  extract "$ZIPFILE" 'bin/riscv64/znnd' "$MODPATH/bin" true
 fi
 
 if [ "$APATCH" ] && [ "$ARCH" = "arm64" ]; then

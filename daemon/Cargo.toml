@@ -1,5 +1,5 @@
 [package]
-name = "injector"
+name = "daemon"
 version = "2.6.0"
 edition = "2024"
 description = "A from-scratch, standalone implementation of the Zygisk Next module."
@@ -36,7 +36,7 @@ machikado-rs = { git = "https://github.com/VeryBaaad/machikado-rs.git", tag = "v
 aya = "0.14.0"
 
 [[bin]]
-name = "injector"
+name = "znnd"
 path = "src/main.rs"
 
 [profile.dev]

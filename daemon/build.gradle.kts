@@ -84,7 +84,7 @@ variants.forEach { variant ->
     val builds = rustAbis.map { (abi, triple) ->
         tasks.register<Exec>("cargoBuild$variantCapped${abi.replace("-", "")}") {
             group = "rust"
-            description = "Builds the Rust injector for $abi ($triple)."
+            description = "Builds the Rust daemon for $abi ($triple)."
             dependsOn(syncCargoVersion)
             workingDir(projectDir)
             environment("ZNN_VERSION", reportedVersion)
@@ -126,11 +126,11 @@ variants.forEach { variant ->
             }
 
             doLast {
-                val produced = File(projectDir, "target/$triple/$profile/injector")
+                val produced = File(projectDir, "target/$triple/$profile/znnd")
                 if (!produced.isFile) {
                     throw GradleException("cargo produced no binary at $produced")
                 }
-                val destination = outputDirectory.get().asFile.resolve("$abi/injector")
+                val destination = outputDirectory.get().asFile.resolve("$abi/znnd")
                 destination.parentFile.mkdirs()
                 produced.copyTo(destination, overwrite = true)
             }
@@ -139,13 +139,13 @@ variants.forEach { variant ->
 
     val cargoBuild = tasks.register("cargoBuild$variantCapped") {
         group = "rust"
-        description = "Builds the Rust injector for every shipped ABI."
+        description = "Builds the Rust daemon for every shipped ABI."
         dependsOn(builds)
     }
 
     tasks.register("assemble$variantCapped") {
         group = "rust"
-        description = "Assembles the Rust injector for the $variant build type."
+        description = "Assembles the Rust daemon for the $variant build type."
         dependsOn(cargoBuild)
     }
 }

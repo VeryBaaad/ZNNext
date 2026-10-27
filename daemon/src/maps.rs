@@ -45,10 +45,6 @@ pub fn parse_for_pid(pid: Pid) -> Vec<MapEntry> {
 }
 
 pub fn parse_path(path: &str) -> Vec<MapEntry> {
-    // /proc/<pid>/maps is kernel output, not text. Reading it as a string makes
-    // one path with a byte that is not valid UTF-8 hide the entire file, which
-    // costs us the process without a word: everything before the path column is
-    // ASCII, so parse it as bytes and only soften the path.
     let Ok(contents) = fs::read(path) else {
         return Vec::new();
     };
@@ -59,11 +55,6 @@ pub fn parse_path(path: &str) -> Vec<MapEntry> {
 }
 
 fn parse_line(line: &[u8]) -> Option<MapEntry> {
-    // The five columns before the pathname are ASCII fields; the pathname is the
-    // rest of the line. The kernel pads it, so the remainder starts with spaces:
-    // keeping them makes every comparison against a real path fail, which is why
-    // a load base could never be found. Skip that padding, exactly like the
-    // whitespace directive of the sscanf format the C++ injector used.
     let mut fields = line.splitn(6, |byte| *byte == b' ');
     let range = fields.next()?;
     let perms = fields.next()?;
