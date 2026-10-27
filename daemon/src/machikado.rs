@@ -32,8 +32,8 @@ const ORG_PUBLIC_KEY: [u8; 32] = [
 const SIGNED_FILES: [&str; 9] = [
     "bin/znnd",
     "emulated-soft-reboot.sh",
-    "lib/libloader.so",
-    "lib64/libloader.so",
+    "lib/libzn_loader.so",
+    "lib64/libzn_loader.so",
     "mazoku",
     "module.prop.orig",
     "post-fs-data.sh",

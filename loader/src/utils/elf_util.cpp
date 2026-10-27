@@ -38,7 +38,7 @@
 #include "debugdata.h"
 
 #define ELF_LOGW(...) \
-  __android_log_print(ANDROID_LOG_WARN, "ZNNloader", __VA_ARGS__)
+  __android_log_print(ANDROID_LOG_WARN, "znnloader", __VA_ARGS__)
 
 namespace znn {
 

@@ -608,10 +608,6 @@ impl Daemon {
     }
 
     fn seize_and_stop(&mut self, pid: Pid, exe: &str) -> Result<StoppedTarget, Seizure> {
-        // A process has exactly one tracer, so a foreign one means another
-        // loader already reached this process. Wait for it to finish and take
-        // the process afterwards: this is the same outcome as a failed
-        // PTRACE_SEIZE, but decided from the tracer instead of from an errno.
         if let Some(tracer) = procfs::foreign_tracer(pid) {
             if self.yielded.insert(tracer) {
                 logi!(
@@ -641,7 +637,7 @@ impl Daemon {
             if entry.offset == 0 && procfs::map_path_equals_exe(&entry.path, exe) {
                 base = entry.start;
             }
-            if entry.path.contains("libloader.so")
+            if entry.path.contains("libzn_loader.so")
                 || entry.path.contains("memfd:loader")
                 || entry.path.contains("memfd:znn-loader")
             {
@@ -769,10 +765,6 @@ fn stop_tracee(pid: Pid, timeout_ms: u64) -> Option<Status> {
     wait_for_stop(pid, procfs::now_ms() + timeout_ms)
 }
 
-/// Whether another Zygisk-family loader is around. The exact signal is a
-/// foreign tracer, but it is blind while we hold init ourselves, so the process
-/// name scan stays as a complement. Neither is used to decide a single process:
-/// that is decided by that process's own tracer.
 pub(crate) fn monitor_present() -> bool {
     init_holder().is_some() || zygisk_named_present()
 }

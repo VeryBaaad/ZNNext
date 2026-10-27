@@ -507,7 +507,7 @@ impl Daemon {
         let library_fd_offset = if tracee.arch.is_64() { 28 } else { 20 };
         extinfo[library_fd_offset..library_fd_offset + 4].copy_from_slice(&fd.to_ne_bytes());
 
-        let name = b"libloader.so\0";
+        let name = b"libzn_loader.so\0";
         let name_size = (name.len() + 7) & !7;
         let stack = regs.sp().wrapping_sub(name_size + extinfo.len() + 0x10) & STACK_MASK;
         let name_address = stack;

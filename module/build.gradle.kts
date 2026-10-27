@@ -214,15 +214,13 @@ androidComponents.onVariants { variant ->
             .optional()
         inputs.files(
             fileTree(project(":loader").layout.buildDirectory.dir("intermediates/cxx/$cmakeBuildType")) {
-                include("**/libloader.so")
+                include("**/libzn_loader.so")
             },
         ).withPropertyName("loaderArtifacts").optional()
 
         doLast {
             val dstRoot = moduleDir.get().asFile
 
-            // CMake output directory of the loader, holding one subdirectory
-            // per ABI (e.g. <obj>/<abi>/libloader.so).
             fun cmakeObjDir(projectPath: String): File? {
                 val cxxDir = project(projectPath).layout.buildDirectory
                     .dir("intermediates/cxx/$cmakeBuildType").get().asFile
@@ -243,7 +241,7 @@ androidComponents.onVariants { variant ->
                 }
             }
 
-            collectArtifacts(":loader", "libloader.so") { abi -> File(dstRoot, "lib/$abi/libloader.so") }
+            collectArtifacts(":loader", "libzn_loader.so") { abi -> File(dstRoot, "lib/$abi/libzn_loader.so") }
 
             val daemonVariants = project(":daemon").layout.buildDirectory
                 .dir("rust/$variantLowered").get().asFile
@@ -289,8 +287,8 @@ androidComponents.onVariants { variant ->
                     mapping.insert("sepolicy.rule", null)
                     mapping.insert("mazoku", null)
                     mapping.insert("bin/znnd", "bin/$abi/znnd")
-                    mapping.insert("lib/libloader.so", "lib/$abi32/libloader.so")
-                    mapping.insert("lib64/libloader.so", "lib/$abi64/libloader.so")
+                    mapping.insert("lib/libzn_loader.so", "lib/$abi32/libzn_loader.so")
+                    mapping.insert("lib64/libzn_loader.so", "lib/$abi64/libzn_loader.so")
                     root.asFile.resolve("webroot").walkTopDown()
                         .filter { it.isFile }
                         .forEach { webrootFile ->

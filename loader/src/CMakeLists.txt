@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22.1)
-project(loader)
+project(zn_loader)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,7 +20,7 @@ if (TARGET cxx::cxx)
     target_link_libraries(elfutil PUBLIC cxx::cxx)
 endif ()
 
-add_library(loader SHARED
+add_library(zn_loader SHARED
     entry.cpp
     config/hooks.cpp
     config/debugdata.cpp
@@ -54,26 +54,26 @@ add_library(loader SHARED
     module/plan.cpp
     module/loader.cpp
 )
-target_include_directories(loader PRIVATE
+target_include_directories(zn_loader PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
-    target_include_directories(loader PRIVATE
+    target_include_directories(zn_loader PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/shadowhook/shadowhook/src/main/cpp/include)
 endif ()
 if (NOT ANDROID_ABI STREQUAL "riscv64")
-    target_include_directories(loader PRIVATE
+    target_include_directories(zn_loader PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/znn_whale)
-    target_include_directories(loader PRIVATE
+    target_include_directories(zn_loader PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/bytehook/bytehook/src/main/cpp/include)
-    target_include_directories(loader PRIVATE
+    target_include_directories(zn_loader PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/xhook/libxhook/jni)
-    target_include_directories(loader PRIVATE
+    target_include_directories(zn_loader PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/plthook)
 endif ()
 if (ANDROID_ABI STREQUAL "arm64-v8a")
-    target_include_directories(loader PRIVATE
+    target_include_directories(zn_loader PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/urhook/include)
 endif ()
 
@@ -101,17 +101,17 @@ endif()
 set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plti)
 if (ANDROID_ABI STREQUAL "arm64-v8a")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} urhook c++abi unwind)
-    target_link_options(loader PRIVATE -Wl,--allow-multiple-definition)
+    target_link_options(zn_loader PRIVATE -Wl,--allow-multiple-definition)
 endif()
 if (TARGET frida_gum_build)
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} frida-gum)
 endif()
-target_link_libraries(loader PRIVATE ${LOADER_LINK_LIBS})
+target_link_libraries(zn_loader PRIVATE ${LOADER_LINK_LIBS})
 if (TARGET frida_gum_build)
-    add_dependencies(loader frida_gum_build)
+    add_dependencies(zn_loader frida_gum_build)
 endif()
 if (TARGET cxx::cxx)
-    target_link_libraries(loader PRIVATE cxx::cxx)
+    target_link_libraries(zn_loader PRIVATE cxx::cxx)
 endif ()
 
-target_compile_options(loader PRIVATE -Wall -Wextra -fvisibility=hidden)
+target_compile_options(zn_loader PRIVATE -Wall -Wextra -fvisibility=hidden)

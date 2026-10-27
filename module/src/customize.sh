@@ -110,8 +110,8 @@ mkdir "$MODPATH/lib64"
 
 if [ "$ARCH" = "x86" ] || [ "$ARCH" = "x64" ]; then
   ui_print "- Extracting x86 libraries"
-  extract "$ZIPFILE" 'lib/x86/libloader.so' "$MODPATH/lib" true
-  extract "$ZIPFILE" 'lib/x86_64/libloader.so' "$MODPATH/lib64" true
+  extract "$ZIPFILE" 'lib/x86/libzn_loader.so' "$MODPATH/lib" true
+  extract "$ZIPFILE" 'lib/x86_64/libzn_loader.so' "$MODPATH/lib64" true
   if [ "$IS64BIT" = "true" ]; then
     ui_print "- Extracting x64 libraries"
     extract "$ZIPFILE" 'bin/x86_64/znnd' "$MODPATH/bin" true
@@ -120,8 +120,8 @@ if [ "$ARCH" = "x86" ] || [ "$ARCH" = "x64" ]; then
   fi
 elif [ "$ARCH" = "arm" ] || [ "$ARCH" = "arm64" ]; then
   ui_print "- Extracting arm libraries"
-  extract "$ZIPFILE" 'lib/armeabi-v7a/libloader.so' "$MODPATH/lib" true
-  extract "$ZIPFILE" 'lib/arm64-v8a/libloader.so' "$MODPATH/lib64" true
+  extract "$ZIPFILE" 'lib/armeabi-v7a/libzn_loader.so' "$MODPATH/lib" true
+  extract "$ZIPFILE" 'lib/arm64-v8a/libzn_loader.so' "$MODPATH/lib64" true
   if [ "$IS64BIT" = "true" ]; then
     ui_print "- Extracting arm64 libraries"
     extract "$ZIPFILE" 'bin/arm64-v8a/znnd' "$MODPATH/bin" true
@@ -130,8 +130,8 @@ elif [ "$ARCH" = "arm" ] || [ "$ARCH" = "arm64" ]; then
   fi
 elif [ "$ARCH" = "riscv64" ]; then
   ui_print "- Extracting RISC-V libraries"
-  extract "$ZIPFILE" 'lib/riscv64/libloader.so' "$MODPATH/lib" true
-  extract "$ZIPFILE" 'lib/riscv64/libloader.so' "$MODPATH/lib64" true
+  extract "$ZIPFILE" 'lib/riscv64/libzn_loader.so' "$MODPATH/lib" true
+  extract "$ZIPFILE" 'lib/riscv64/libzn_loader.so' "$MODPATH/lib64" true
   extract "$ZIPFILE" 'bin/riscv64/znnd' "$MODPATH/bin" true
 fi
 
