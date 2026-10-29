@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@m3e/icons": "^1.0.20",
+    "@m3e/icons": "^1.0.21",
     "@m3e/web": "^2.10.2",
     "@material-symbols/font-400": "^0.48.1",
     "@vueuse/core": "^15.0.0",
