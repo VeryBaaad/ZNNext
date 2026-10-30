@@ -114,4 +114,7 @@ if (TARGET cxx::cxx)
     target_link_libraries(zn_loader PRIVATE cxx::cxx)
 endif ()
 
+target_link_options(zn_loader PRIVATE
+    -Wl,-z,max-page-size=16384
+    -Wl,-z,common-page-size=16384)
 target_compile_options(zn_loader PRIVATE -Wall -Wextra -fvisibility=hidden)

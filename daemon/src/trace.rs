@@ -34,6 +34,7 @@ use crate::ptrace_ops::{
 };
 use crate::sys;
 use crate::sys::Pid;
+use crate::sys::page;
 use crate::sys::ptrace;
 use crate::sys::signal;
 use crate::sys::wait::Status;
@@ -472,22 +473,25 @@ impl Daemon {
 
         match tracee.file_purpose {
             FilePurpose::Loader => {
-                if !procfs::write_to_target_fd(pid, fd, &tracee.content) {
+                let content = page::pad(&tracee.content);
+                if !procfs::write_to_target_fd(pid, fd, &content) {
                     self.abort(pid, tracee, "cannot fill the loader image");
                     return Progress::Finished;
                 }
                 self.start_dlopen(pid, tracee, regs, fd)
             }
             FilePurpose::Module => {
-                if !procfs::write_to_target_fd(pid, fd, &tracee.module_content) {
+                let content = page::pad(&tracee.module_content);
+                if !procfs::write_to_target_fd(pid, fd, &content) {
                     self.abort(pid, tracee, "cannot fill a module library");
                     return Progress::Finished;
                 }
                 let module = tracee.module_index;
                 logi!(
-                    "pid {pid}: {} handed over as fd {fd} ({} bytes)",
+                    "pid {pid}: {} handed over as fd {fd} ({} bytes, padded to {} pages)",
                     tracee.modules[module].path,
-                    tracee.module_content.len()
+                    tracee.module_content.len(),
+                    content.len() / page::size() as usize
                 );
                 tracee.modules[module].fd = fd;
                 tracee.module_index += 1;

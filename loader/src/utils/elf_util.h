@@ -99,6 +99,9 @@ std::vector<MapEntry> parseMapsPath(const std::string& path);
 uintptr_t findLibraryBaseInMaps(const std::vector<MapEntry>& maps,
                                 const char* name, size_t whole_size = 0);
 
+bool elfLoadSegmentsFitPageSize(int fd, size_t page_size,
+                                size_t* min_align = nullptr);
+
 uintptr_t findLibraryBase(const char* name, size_t whole_size = 0);
 
 uintptr_t resolveLibrarySymbol(const char* lib_name, const char* symbol,

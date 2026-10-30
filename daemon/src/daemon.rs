@@ -31,6 +31,7 @@ use crate::mode::Candidate;
 use crate::procfs;
 use crate::state::StateWriter;
 use crate::sys::fs as raw_fs;
+use crate::sys::page;
 use crate::sys::wait;
 use crate::sys::{Pid, process, signal};
 use crate::system::{self, SystemInfo};
@@ -273,6 +274,20 @@ impl Daemon {
         }
         if unreadable > 0 {
             self.state.status_reason = "cannot read the loader".to_owned();
+        }
+
+        let page_size = page::size();
+        for path in [&self.loader64, &self.loader32] {
+            let Some(align) = crate::elf::min_load_align(path) else {
+                continue;
+            };
+            if align < page_size {
+                loge!(
+                    "loader {} is only {align}-byte aligned, but this device uses {page_size}-byte pages",
+                    path.display()
+                );
+                self.state.status_reason = format!("loader not {} KB aligned", page_size / 1024);
+            }
         }
 
         if let Ok(cap) = fs::read_to_string("/sys/fs/selinux/policy_capabilities/memfd_class")

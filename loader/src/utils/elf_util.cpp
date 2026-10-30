@@ -48,6 +48,14 @@ static bool isElf(const uint8_t* p, size_t size) {
          p[EI_MAG3] == ELFMAG3;
 }
 
+static size_t runtimePageSize() {
+  static const size_t size = [] {
+    const long value = sysconf(_SC_PAGESIZE);
+    return value > 0 ? static_cast<size_t>(value) : static_cast<size_t>(4096);
+  }();
+  return size;
+}
+
 static bool sectionInFile(const ElfW(Shdr) & sh, size_t file_size) {
   return sh.sh_offset <= file_size && sh.sh_size <= file_size - sh.sh_offset;
 }
@@ -413,6 +421,35 @@ std::vector<MapEntry> parseMapsPath(const std::string& path) {
   return result;
 }
 
+bool elfLoadSegmentsFitPageSize(int fd, size_t page_size, size_t* min_align) {
+  ElfW(Ehdr) header{};
+  if (pread(fd, &header, sizeof(header), 0) != sizeof(header)) return false;
+  if (!isElf(reinterpret_cast<const uint8_t*>(&header), sizeof(header)))
+    return false;
+  if (header.e_phentsize != sizeof(ElfW(Phdr)) || header.e_phnum == 0 ||
+      header.e_phnum > 4096) {
+    return false;
+  }
+
+  size_t smallest = SIZE_MAX;
+  for (ElfW(Half) i = 0; i < header.e_phnum; ++i) {
+    ElfW(Phdr) phdr{};
+    const off_t offset =
+        static_cast<off_t>(header.e_phoff) +
+        static_cast<off_t>(i) * static_cast<off_t>(sizeof(ElfW(Phdr)));
+    if (pread(fd, &phdr, sizeof(phdr), offset) != sizeof(phdr)) return false;
+    if (phdr.p_type != PT_LOAD || phdr.p_align <= 1) continue;
+    if (static_cast<size_t>(phdr.p_align) < smallest)
+      smallest = static_cast<size_t>(phdr.p_align);
+  }
+  if (smallest == SIZE_MAX) {
+    if (min_align) *min_align = page_size;
+    return true;
+  }
+  if (min_align) *min_align = smallest;
+  return smallest >= page_size;
+}
+
 uintptr_t findLibraryBaseInMaps(const std::vector<MapEntry>& maps,
                                 const char* name, size_t whole_size) {
   size_t matches = 0;
@@ -425,7 +462,7 @@ uintptr_t findLibraryBaseInMaps(const std::vector<MapEntry>& maps,
 
     if (matches > 1 && whole_size != 0) {
       const uintptr_t span = m.end - m.start;
-      if (span >= whole_size && span - whole_size < 4096) continue;
+      if (span >= whole_size && span - whole_size < runtimePageSize()) continue;
     }
 
     if (m.start >= m.offset) return m.start - m.offset;

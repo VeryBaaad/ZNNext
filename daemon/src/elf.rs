@@ -26,7 +26,7 @@ use object::elf::{
     Machine,
 };
 use object::read::elf::FileHeader as ElfFileHeader;
-use object::{Endianness, FileKind, Object, ObjectKind, ObjectSymbol};
+use object::{Endianness, FileKind, Object, ObjectKind, ObjectSegment, ObjectSymbol};
 
 use crate::arch::Arch;
 
@@ -68,6 +68,20 @@ pub fn header_of_file(path: &Path) -> Option<ElfHeader> {
     let mut buffer = [0u8; 64];
     let read = file.read_at(&mut buffer, 0).ok()?;
     parse_header(&buffer[..read])
+}
+
+pub fn min_load_align(path: &Path) -> Option<u64> {
+    let bytes = std::fs::read(path).ok()?;
+    let file = object::File::parse(&*bytes).ok()?;
+    let mut smallest: Option<u64> = None;
+    for segment in file.segments() {
+        let align = segment.align();
+        if align <= 1 {
+            continue;
+        }
+        smallest = Some(smallest.map_or(align, |current| current.min(align)));
+    }
+    smallest
 }
 
 pub fn arch_of(header: &ElfHeader) -> Arch {

@@ -36,6 +36,7 @@ bool shadowhookUnhook(void* target);
 bool rv64hookHook(void* target, void* replacement, void** original);
 bool rv64hookUnhook(void* target);
 
+bool and64inlinehookInit();
 bool and64inlinehookHook(void* target, void* replacement, void** original);
 bool and64inlinehookUnhook(void* target);
 

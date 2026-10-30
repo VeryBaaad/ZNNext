@@ -69,7 +69,21 @@ void flushPatch(void* target) {
 
 }  // namespace
 
+bool and64inlinehookInit() {
+  const long page_size = sysconf(_SC_PAGESIZE);
+  if (page_size <= 0) return false;
+  if (page_size > 4096) {
+    LOGE(
+        "and64inlinehook: its upstream 4 KB page alignment is invalid with "
+        "%ld-byte pages",
+        page_size);
+    return false;
+  }
+  return true;
+}
+
 bool and64inlinehookHook(void* target, void* replacement, void** original) {
+  if (!and64inlinehookInit()) return false;
   std::lock_guard<std::mutex> lk(g_mutex);
   const uintptr_t key = reinterpret_cast<uintptr_t>(target);
 
@@ -131,6 +145,8 @@ bool and64inlinehookUnhook(void* target) {
 }
 
 #else
+
+bool and64inlinehookInit() { return false; }
 
 bool and64inlinehookHook(void* target, void* replacement, void** original) {
   (void)target;

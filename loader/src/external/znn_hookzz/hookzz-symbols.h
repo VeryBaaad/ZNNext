@@ -29,5 +29,9 @@
 #define AssemblerBase ZnnHookzzAssemblerBase
 #define TurboAssembler ZnnHookzzTurboAssembler
 #define Assembler ZnnHookzzAssembler
+#define CodeGen ZnnHookzzCodeGen
+#define CodeGenBase ZnnHookzzCodeGenBase
+#define RegisterBase ZnnHookzzRegisterBase
+#define CPURegister ZnnHookzzCPURegister
 
 #endif

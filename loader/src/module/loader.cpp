@@ -28,6 +28,7 @@
 #include "log.h"
 #include "module/handle.h"
 #include "utils/dlext.h"
+#include "utils/elf_util.h"
 
 namespace znn::module {
 namespace {
@@ -41,6 +42,19 @@ int openCompanionChannel(const Plan& plan, const PlanModule& module) {
 }
 
 void loadEntry(const Plan& plan, const PlanModule& entry) {
+  const long page_size = sysconf(_SC_PAGESIZE);
+  if (page_size > 0) {
+    size_t min_align = 0;
+    if (!elfLoadSegmentsFitPageSize(entry.fd, static_cast<size_t>(page_size),
+                                    &min_align) &&
+        min_align != 0) {
+      LOGW(
+          "%s is ELF-aligned to %zu bytes, but this process uses %ld-byte "
+          "pages; rebuild it with -Wl,-z,max-page-size=%ld",
+          entry.path.c_str(), min_align, page_size, page_size);
+    }
+  }
+
   void* lib = dlopenFd(entry.fd, entry.path.c_str(), RTLD_NOW);
   if (!lib) {
     LOGE("dlopen %s (fd %d) failed: %s", entry.path.c_str(), entry.fd,

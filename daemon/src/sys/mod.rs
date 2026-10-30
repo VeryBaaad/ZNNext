@@ -26,6 +26,7 @@ pub mod kpm;
 pub mod log;
 pub mod memfd;
 pub mod netlink;
+pub mod page;
 pub mod poll;
 pub mod process;
 pub mod prop;

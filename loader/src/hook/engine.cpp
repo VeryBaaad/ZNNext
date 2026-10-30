@@ -251,6 +251,9 @@ void ensureInlineEngineReady() {
     case InlineEngine::kShadowHook:
       ready = backend::shadowhookInit();
       break;
+    case InlineEngine::kAnd64InlineHook:
+      ready = backend::and64inlinehookInit();
+      break;
     case InlineEngine::kFridaGum:
       ready = backend::fridaGumInit();
       break;
@@ -266,14 +269,20 @@ void ensureInlineEngineReady() {
 }
 
 void ensurePltEngineReady() {
-  if (g_plt_engine != PltEngine::kByteHook) return;
-  if (!backend::bytehookInit()) {
-    LOGE(
-        "bytehook unavailable in pid %d, falling back to plt=lsplt for this "
-        "process",
-        getpid());
-    g_plt_engine = PltEngine::kLsplt;
+  bool ready = true;
+  switch (g_plt_engine) {
+    case PltEngine::kByteHook:
+      ready = backend::bytehookInit();
+      break;
+    default:
+      return;
   }
+  if (ready) return;
+
+  const PltEngine fallback = defaultPltEngine();
+  LOGE("%s unavailable in pid %d, falling back to plt=%s for this process",
+       pltEngineName(g_plt_engine), getpid(), pltEngineName(fallback));
+  g_plt_engine = fallback;
 }
 
 }  // namespace znn::hook

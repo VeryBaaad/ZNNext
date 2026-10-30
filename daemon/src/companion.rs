@@ -33,6 +33,7 @@ use crate::log::{loge, logi};
 use crate::plan;
 use crate::procfs;
 use crate::sys;
+use crate::sys::page;
 use crate::sys::process::Forked;
 
 const CONNECT: u8 = 1;
@@ -114,7 +115,7 @@ fn accept_direct(listener: &UnixListener, token: &[u8; 16], companion: &sys::dlf
 }
 
 fn memfd_from_file(path: &str) -> Option<RawFd> {
-    let contents = procfs::read_file(Path::new(path))?;
+    let contents = page::pad(&procfs::read_file(Path::new(path))?);
     let descriptor = sys::memfd::memfd_create("znn-companion", sys::memfd::MFD_CLOEXEC).ok()?;
     if sys::fs::write_all(descriptor, &contents).is_err() {
         sys::fs::close(descriptor);
@@ -128,10 +129,15 @@ fn run_helper(library: &str, nonce: u32, index: u32, token: [u8; 16]) -> ! {
     sys::signal::reset_to_default(sys::signal::SIGHUP);
     sys::signal::reset_to_default(sys::signal::SIGTERM);
 
-    let module = sys::dlfcn::Library::open(library).or_else(|| {
+    let from_memfd = || {
         let descriptor = memfd_from_file(library)?;
         sys::dlfcn::Library::open_from_fd(library, descriptor)
-    });
+    };
+    let module = if page::size() > 4096 {
+        from_memfd().or_else(|| sys::dlfcn::Library::open(library))
+    } else {
+        sys::dlfcn::Library::open(library).or_else(from_memfd)
+    };
     let Some(module) = module else {
         loge!(
             "companion: dlopen {library} failed: {}",

@@ -10,7 +10,16 @@ fn main() {
         .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
     println!("cargo:rustc-env=ZNN_VERSION={version}");
 
+    android_page_alignment();
     bpf_object();
+}
+
+fn android_page_alignment() {
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("android") {
+        return;
+    }
+    println!("cargo:rustc-link-arg-bins=-Wl,-z,max-page-size=16384");
+    println!("cargo:rustc-link-arg-bins=-Wl,-z,common-page-size=16384");
 }
 
 fn bpf_object() {
