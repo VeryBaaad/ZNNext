@@ -679,10 +679,11 @@ impl Daemon {
 
     fn finish_injection(&mut self, pid: Pid, tracee: &mut Tracee) -> Progress {
         let config = config::effective();
+        let (inline_engine, plt_engine) = config.engines_for(tracee.arch.is_64());
         let plan = Plan {
             modules: tracee.modules.clone(),
-            inline_engine: config.inline_hook,
-            plt_engine: config.plt_hook,
+            inline_engine,
+            plt_engine,
             debugdata: config.debugdata,
             nonce: tracee.nonce,
             token: plan::fresh_token(),

@@ -56,8 +56,10 @@ export const zhCN: Dictionary = {
   "modules.noModules": "无模块",
   "modules.noProcesses": "无进程",
 
-  "config.inlineHook": "Inline Hook 实现",
-  "config.pltHook": "PLT Hook 实现",
+  "config.inlineHook": "Inline Hook",
+  "config.inlineHook32": "Inline Hook（32 位）",
+  "config.pltHook": "PLT Hook",
+  "config.pltHook32": "PLT Hook（32 位）",
   "config.mode": "跟踪模式",
   "config.mode.auto": "自动",
   "config.mode.kernel": "kernel events",

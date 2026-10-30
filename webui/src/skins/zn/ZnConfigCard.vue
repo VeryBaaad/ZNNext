@@ -20,7 +20,7 @@
 
 import { computed, ref } from "vue";
 
-import type { HookConfig, HookKind } from "../../api/config";
+import type { HookConfig, HookEngineEntry, HookKind } from "../../api/config";
 import { useAppActions } from "../../composables/app-actions";
 import {
   configRows,
@@ -51,22 +51,19 @@ const busy = ref(false);
 const failure = ref("");
 
 const rows = computed<ConfigRow[]>(() => {
-  const make = (row: HookRow): ConfigRow => {
-    const entry = props.config[row.field];
-    return {
-      kind: row.kind,
-      label: t(row.labelKey),
-      value: entry.value,
-      options: [...entry.options],
-    };
-  };
+  const make = (row: HookRow, entry: HookEngineEntry): ConfigRow => ({
+    kind: row.kind,
+    label: t(row.labelKey),
+    value: entry.value,
+    options: [...entry.options],
+  });
   const uiRow: ConfigRow = {
     kind: "ui",
     label: t(UI_ROW_LABEL_KEY),
     value: uiMode.value,
     options: [...UI_MODES],
   };
-  return configRows(make, uiRow);
+  return configRows(props.config, make, uiRow);
 });
 
 function optionLabel(row: ConfigRow, id: string): string {

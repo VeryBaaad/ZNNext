@@ -21,7 +21,7 @@
 import { M3eSnackbar } from "@m3e/web/snackbar";
 import { computed, ref } from "vue";
 
-import type { HookConfig, HookKind } from "../../api/config";
+import type { HookConfig, HookEngineEntry, HookKind } from "../../api/config";
 import { useAppActions } from "../../composables/app-actions";
 import {
   configRows,
@@ -54,25 +54,22 @@ const root = ref<HTMLElement | null>(null);
 const busy = ref(false);
 
 const rows = computed<ConfigRow[]>(() => {
-  const make = (row: HookRow): ConfigRow => {
-    const entry = props.config[row.field];
-    return {
-      kind: row.kind,
-      label: t(row.labelKey),
-      value: entry.value,
-      options: entry.options.map((id) => ({
-        id,
-        label: hookOptionLabel(row.kind, id),
-      })),
-    };
-  };
+  const make = (row: HookRow, entry: HookEngineEntry): ConfigRow => ({
+    kind: row.kind,
+    label: t(row.labelKey),
+    value: entry.value,
+    options: entry.options.map((id) => ({
+      id,
+      label: hookOptionLabel(row.kind, id),
+    })),
+  });
   const uiRow: ConfigRow = {
     kind: "ui",
     label: t(UI_ROW_LABEL_KEY),
     value: uiMode.value,
     options: UI_MODES.map((id) => ({ id, label: uiModeLabel(id) })),
   };
-  return configRows(make, uiRow);
+  return configRows(props.config, make, uiRow);
 });
 
 function optionLabel(row: ConfigRow, id: string): string {

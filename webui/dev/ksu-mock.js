@@ -53,7 +53,9 @@
 
   var CONFIG_KEYS = {
     inline: 'inlineHook',
+    inline32: 'inlineHook32',
     plt: 'pltHook',
+    plt32: 'pltHook32',
     mode: 'mode',
     debugdata: 'debugdata',
     'disable-zn': 'disableZn',
@@ -61,7 +63,9 @@
 
   var config = {
     inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'frida-gum', 'rv64hook', 'hookzz', 'urhook', 'whale', 'disable'] },
+    inlineHook32: { value: 'dobby', options: ['dobby', 'shadowhook', 'frida-gum', 'hookzz', 'whale', 'disable'] },
     pltHook: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'plthook', 'urhook', 'disable'] },
+    pltHook32: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'plthook', 'disable'] },
     mode: { value: 'proc', options: ['auto', 'kernel', 'ptrace', 'proc', 'late'] },
     debugdata: { value: 'lzma', options: ['lzma', 'xz'] },
     disableZn: { value: 'true', options: ['true', 'false'] },
@@ -128,7 +132,7 @@
         var entry = key ? state.config[key] : null;
         if (!entry) {
           throw new Error(
-            'usage: znnd --ctl config-set <inline|plt|mode|debugdata|disable-zn> <value>',
+            'usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn> <value>',
           );
         }
         if (entry.options.indexOf(value) < 0) {

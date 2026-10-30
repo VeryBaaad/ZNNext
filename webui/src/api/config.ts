@@ -26,13 +26,16 @@ export interface HookEngineEntry {
 
 export interface HookConfig {
   inlineHook: HookEngineEntry;
+  inlineHook32?: HookEngineEntry;
   pltHook: HookEngineEntry;
+  pltHook32?: HookEngineEntry;
   mode: HookEngineEntry;
   debugdata: HookEngineEntry;
   disableZn: HookEngineEntry;
 }
 
-export type HookKind = "inline" | "plt" | "mode" | "debugdata" | "disable-zn";
+export type HookKind =
+  "inline" | "inline32" | "plt" | "plt32" | "mode" | "debugdata" | "disable-zn";
 
 function isHookEngineEntry(value: unknown): value is HookEngineEntry {
   if (typeof value !== "object" || value === null) return false;
@@ -46,7 +49,9 @@ function isHookEngineEntry(value: unknown): value is HookEngineEntry {
 
 interface LegacyHookConfig {
   inlineHook: HookEngineEntry;
+  inlineHook32?: HookEngineEntry;
   pltHook: HookEngineEntry;
+  pltHook32?: HookEngineEntry;
   mode: HookEngineEntry;
   debugdata: HookEngineEntry;
   disableZn?: HookEngineEntry;
@@ -62,7 +67,10 @@ function isHookConfig(value: unknown): value is LegacyHookConfig {
   const config = value as Record<string, unknown>;
   return (
     isHookEngineEntry(config.inlineHook) &&
+    (config.inlineHook32 === undefined ||
+      isHookEngineEntry(config.inlineHook32)) &&
     isHookEngineEntry(config.pltHook) &&
+    (config.pltHook32 === undefined || isHookEngineEntry(config.pltHook32)) &&
     isHookEngineEntry(config.mode) &&
     isHookEngineEntry(config.debugdata) &&
     (config.disableZn === undefined || isHookEngineEntry(config.disableZn))
@@ -73,7 +81,9 @@ function parseHookConfig(raw: unknown): HookConfig {
   if (!isHookConfig(raw)) throw new Error("unexpected config response");
   return {
     inlineHook: raw.inlineHook,
+    inlineHook32: raw.inlineHook32,
     pltHook: raw.pltHook,
+    pltHook32: raw.pltHook32,
     mode: raw.mode,
     debugdata: raw.debugdata,
     disableZn: raw.disableZn ?? DEFAULT_DISABLE_ZN,

@@ -64,6 +64,32 @@ pub const fn runtime_abi() -> &'static str {
     }
 }
 
+pub fn sibling_abi() -> Option<&'static str> {
+    if cfg!(target_arch = "aarch64") {
+        Some("armeabi-v7a")
+    } else if cfg!(target_arch = "x86_64") {
+        Some("x86")
+    } else {
+        None
+    }
+}
+
+pub fn secondary_abi() -> Option<&'static str> {
+    let sibling = sibling_abi()?;
+    if advertises(sibling) {
+        Some(sibling)
+    } else {
+        None
+    }
+}
+
+fn advertises(abi: &str) -> bool {
+    ["ro.product.cpu.abilist32", "ro.product.cpu.abilist"]
+        .iter()
+        .filter_map(|key| prop::system_property(key))
+        .any(|list| list.split(',').any(|entry| entry.trim() == abi))
+}
+
 pub fn collect() -> SystemInfo {
     let mut info = SystemInfo {
         kernel: prop::kernel_release().unwrap_or_default(),

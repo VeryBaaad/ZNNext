@@ -54,10 +54,10 @@ const STOP_ATTEMPTS: u32 = 80;
 /// How long `--ctl start` waits for the daemon it forked to be observable.
 const START_ATTEMPTS: u32 = 20;
 
-const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-set <inline|plt|mode|debugdata|disable-zn> <value>|apply-zn [wait]|start|restart|rescan|exit>";
+const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn> <value>|apply-zn [wait]|start|restart|rescan|exit>";
 
 const CONFIG_SET_USAGE: &str =
-    "usage: znnd --ctl config-set <inline|plt|mode|debugdata|disable-zn> <value>";
+    "usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn> <value>";
 
 pub fn command() -> ClapCommand {
     ClapCommand::new("znnd")
@@ -77,8 +77,8 @@ pub fn command() -> ClapCommand {
                 .conflicts_with(MODULE_DIR_ARGUMENT)
                 .help(
                     "Control command: status, system, modules, config, \
-                       config-set <inline|plt|mode|debugdata|disable-zn> <value>, \
-                       apply-zn [wait], start, restart, rescan or exit.",
+                       config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn> \
+                       <value>, apply-zn [wait], start, restart, rescan or exit.",
                 ),
         )
 }
@@ -269,7 +269,11 @@ fn config_set(arguments: &[String]) -> i32 {
     };
 
     let Some(options) = config::HookConfig::options(kind) else {
-        eprintln!("{CONFIG_SET_USAGE}");
+        if kind == "inline32" || kind == "plt32" {
+            eprintln!("this device has no secondary 32-bit ABI");
+        } else {
+            eprintln!("{CONFIG_SET_USAGE}");
+        }
         return 1;
     };
     if !config::option_in(&options, value) {

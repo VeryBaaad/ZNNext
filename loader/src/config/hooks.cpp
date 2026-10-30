@@ -19,6 +19,8 @@
 
 #include "config/hooks.h"
 
+#include <unistd.h>
+
 #include "hook/engine.h"
 #include "log.h"
 
@@ -31,10 +33,18 @@ void resolveHookEngines(const std::string& inline_name,
 
   hook::InlineEngine parsed_inline;
   hook::PltEngine parsed_plt;
-  if (hook::parseInlineEngine(inline_name.c_str(), &parsed_inline))
+  if (hook::parseInlineEngine(inline_name.c_str(), &parsed_inline)) {
     inline_engine = parsed_inline;
-  if (hook::parsePltEngine(plt_name.c_str(), &parsed_plt))
+  } else if (!inline_name.empty()) {
+    LOGW("inline engine %s is unavailable in this ABI for pid %d, using %s",
+         inline_name.c_str(), getpid(), hook::inlineEngineName(inline_engine));
+  }
+  if (hook::parsePltEngine(plt_name.c_str(), &parsed_plt)) {
     plt_engine = parsed_plt;
+  } else if (!plt_name.empty()) {
+    LOGW("plt engine %s is unavailable in this ABI for pid %d, using %s",
+         plt_name.c_str(), getpid(), hook::pltEngineName(plt_engine));
+  }
 
   hook::setInlineEngine(inline_engine);
   hook::setPltEngine(plt_engine);

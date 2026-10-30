@@ -17,7 +17,7 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-import type { HookConfig, HookKind } from "./api/config";
+import type { HookConfig, HookEngineEntry, HookKind } from "./api/config";
 import { t } from "./i18n";
 
 export const ENGINE_LABELS: Record<string, string> = {
@@ -45,7 +45,9 @@ export interface HookRow {
 
 export const HOOK_ROWS: HookRow[] = [
   { kind: "inline", field: "inlineHook", labelKey: "config.inlineHook" },
+  { kind: "inline32", field: "inlineHook32", labelKey: "config.inlineHook32" },
   { kind: "plt", field: "pltHook", labelKey: "config.pltHook" },
+  { kind: "plt32", field: "pltHook32", labelKey: "config.pltHook32" },
   { kind: "mode", field: "mode", labelKey: "config.mode" },
   { kind: "debugdata", field: "debugdata", labelKey: "config.debugdata" },
   { kind: "disable-zn", field: "disableZn", labelKey: "config.disableZn" },
@@ -53,12 +55,21 @@ export const HOOK_ROWS: HookRow[] = [
 
 export const UI_ROW_LABEL_KEY = "config.uiStyle";
 
-export function configRows<T>(map: (row: HookRow) => T, uiRow: T): T[] {
-  const bottom = HOOK_ROWS.filter((row) => row.kind === "disable-zn");
-  const rows = HOOK_ROWS.filter((row) => row.kind !== "disable-zn").map(map);
-  rows.push(uiRow);
-  rows.push(...bottom.map(map));
-  return rows;
+export function configRows<T>(
+  config: HookConfig,
+  map: (row: HookRow, entry: HookEngineEntry) => T,
+  uiRow: T,
+): T[] {
+  const upper: T[] = [];
+  const lower: T[] = [];
+  for (const row of HOOK_ROWS) {
+    const entry = config[row.field];
+    if (!entry) continue;
+    (row.kind === "disable-zn" ? lower : upper).push(map(row, entry));
+  }
+  upper.push(uiRow);
+  upper.push(...lower);
+  return upper;
 }
 
 export function hookOptionLabel(kind: HookKind, id: string): string {
