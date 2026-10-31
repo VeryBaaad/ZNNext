@@ -43,3 +43,6 @@
 [submodule "loader/src/external/baaadhook"]
 	path = loader/src/external/baaadhook
 	url = https://github.com/VeryBaaad/BaaadHook.git
+[submodule "loader/src/external/lzma/src"]
+	path = loader/src/external/lzma/src
+	url = https://github.com/ip7z/7zip.git
