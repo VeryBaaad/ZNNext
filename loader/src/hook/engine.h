@@ -30,6 +30,7 @@ enum class InlineEngine {
   kHookZz,
   kUrHook,
   kWhale,
+  kBaaadHook,
   kDisable
 };
 enum class PltEngine {
@@ -39,6 +40,7 @@ enum class PltEngine {
   kPlti,
   kPltHook,
   kUrHook,
+  kBaaadHook,
   kDisable
 };
 const char* inlineEngineName(InlineEngine e);

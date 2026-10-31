@@ -62,10 +62,10 @@
   };
 
   var config = {
-    inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'frida-gum', 'rv64hook', 'hookzz', 'urhook', 'whale', 'disable'] },
-    inlineHook32: { value: 'dobby', options: ['dobby', 'shadowhook', 'frida-gum', 'hookzz', 'whale', 'disable'] },
-    pltHook: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'plthook', 'urhook', 'disable'] },
-    pltHook32: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'plthook', 'disable'] },
+    inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'frida-gum', 'rv64hook', 'hookzz', 'urhook', 'whale', 'baaadhook', 'disable'] },
+    inlineHook32: { value: 'dobby', options: ['dobby', 'shadowhook', 'frida-gum', 'hookzz', 'whale', 'baaadhook', 'disable'] },
+    pltHook: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'plthook', 'urhook', 'baaadhook', 'disable'] },
+    pltHook32: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'plthook', 'baaadhook', 'disable'] },
     mode: { value: 'proc', options: ['auto', 'kernel', 'ptrace', 'proc', 'late'] },
     debugdata: { value: 'lzma', options: ['lzma', 'xz'] },
     disableZn: { value: 'true', options: ['true', 'false'] },

@@ -53,6 +53,9 @@ bool urhookUnhook(void* target);
 bool whaleHook(void* target, void* replacement, void** original);
 bool whaleUnhook(void* target);
 
+bool baaadhookHook(void* target, void* replacement, void** original);
+bool baaadhookUnhook(void* target);
+
 bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
                void** original);
 
@@ -71,5 +74,8 @@ bool plthookHook(const std::string& caller_path, uintptr_t caller_base,
 
 bool urhookPltHook(const std::string& caller_path, uintptr_t caller_base,
                    const char* symbol, void* replacement, void** original);
+
+bool baaadhookPltHook(const std::string& caller_path, const char* symbol,
+                      void* replacement, void** original);
 
 }  // namespace znn::hook::backend

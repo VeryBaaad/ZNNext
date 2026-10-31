@@ -51,6 +51,8 @@ const char* inlineEngineName(InlineEngine e) {
       return "urhook";
     case InlineEngine::kWhale:
       return "whale";
+    case InlineEngine::kBaaadHook:
+      return "baaadhook";
     case InlineEngine::kDisable:
       return "disable";
   }
@@ -71,6 +73,8 @@ const char* pltEngineName(PltEngine e) {
       return "plthook";
     case PltEngine::kUrHook:
       return "urhook";
+    case PltEngine::kBaaadHook:
+      return "baaadhook";
     case PltEngine::kDisable:
       return "disable";
   }
@@ -127,6 +131,8 @@ bool inlineEngineSupported(InlineEngine e) {
 #else
       return false;
 #endif
+    case InlineEngine::kBaaadHook:
+      return true;
     case InlineEngine::kDisable:
       return true;
   }
@@ -163,6 +169,8 @@ bool pltEngineSupported(PltEngine e) {
 #else
       return false;
 #endif
+    case PltEngine::kBaaadHook:
+      return true;
     case PltEngine::kDisable:
       return true;
   }
@@ -198,6 +206,8 @@ bool parseInlineEngine(const char* name, InlineEngine* out) {
     e = InlineEngine::kUrHook;
   } else if (strcmp(name, "whale") == 0) {
     e = InlineEngine::kWhale;
+  } else if (strcmp(name, "baaadhook") == 0) {
+    e = InlineEngine::kBaaadHook;
   } else if (strcmp(name, "disable") == 0) {
     e = InlineEngine::kDisable;
   } else {
@@ -223,6 +233,8 @@ bool parsePltEngine(const char* name, PltEngine* out) {
     e = PltEngine::kPltHook;
   } else if (strcmp(name, "urhook") == 0) {
     e = PltEngine::kUrHook;
+  } else if (strcmp(name, "baaadhook") == 0) {
+    e = PltEngine::kBaaadHook;
   } else if (strcmp(name, "disable") == 0) {
     e = PltEngine::kDisable;
   } else {

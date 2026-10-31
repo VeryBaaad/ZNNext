@@ -42,6 +42,7 @@ add_library(zn_loader SHARED
     hook/backend/plti.cpp
     hook/backend/plthook.cpp
     hook/backend/urhook.cpp
+    hook/backend/baaadhook.cpp
     api/hook.cpp
     api/symbols.cpp
     api/companion.cpp
@@ -99,6 +100,7 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plthook)
 endif()
 set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plti)
+set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} baaadhook)
 if (ANDROID_ABI STREQUAL "arm64-v8a")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} urhook c++abi unwind)
     target_link_options(zn_loader PRIVATE -Wl,--allow-multiple-definition)

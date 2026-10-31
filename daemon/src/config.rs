@@ -83,6 +83,7 @@ fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
             "hookzz",
             "urhook",
             "whale",
+            "baaadhook",
             "disable",
         ],
         "armeabi-v7a" => vec![
@@ -91,22 +92,45 @@ fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
             "frida-gum",
             "hookzz",
             "whale",
+            "baaadhook",
             "disable",
         ],
-        "x86_64" => vec!["dobby", "frida-gum", "hookzz", "whale", "disable"],
-        "x86" => vec!["dobby", "frida-gum", "whale", "disable"],
-        "riscv64" => vec!["rv64hook", "disable"],
-        _ => vec!["dobby", "frida-gum", "whale", "disable"],
+        "x86_64" => vec![
+            "dobby",
+            "frida-gum",
+            "hookzz",
+            "whale",
+            "baaadhook",
+            "disable",
+        ],
+        "x86" => vec!["dobby", "frida-gum", "whale", "baaadhook", "disable"],
+        "riscv64" => vec!["rv64hook", "baaadhook", "disable"],
+        _ => vec!["dobby", "frida-gum", "whale", "baaadhook", "disable"],
     }
 }
 
 fn plt_hook_options_for(abi: &str) -> Vec<&'static str> {
     match abi {
         "arm64-v8a" => vec![
-            "lsplt", "plti", "bytehook", "xhook", "plthook", "urhook", "disable",
+            "lsplt",
+            "plti",
+            "bytehook",
+            "xhook",
+            "plthook",
+            "urhook",
+            "baaadhook",
+            "disable",
         ],
-        "riscv64" => vec!["lsplt", "plti", "disable"],
-        _ => vec!["lsplt", "plti", "bytehook", "xhook", "plthook", "disable"],
+        "riscv64" => vec!["lsplt", "plti", "baaadhook", "disable"],
+        _ => vec![
+            "lsplt",
+            "plti",
+            "bytehook",
+            "xhook",
+            "plthook",
+            "baaadhook",
+            "disable",
+        ],
     }
 }
 

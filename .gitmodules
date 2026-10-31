@@ -40,3 +40,6 @@
 [submodule "loader/src/external/whale"]
 	path = loader/src/external/whale
 	url = https://github.com/asLody/whale.git
+[submodule "loader/src/external/baaadhook"]
+	path = loader/src/external/baaadhook
+	url = https://github.com/VeryBaaad/BaaadHook.git

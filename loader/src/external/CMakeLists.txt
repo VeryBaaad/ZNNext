@@ -111,6 +111,8 @@ else ()
     add_subdirectory(znn_whale)
 endif ()
 
+add_subdirectory(baaadhook)
+
 add_subdirectory(lzma)
 add_subdirectory(znn_xz)
 
