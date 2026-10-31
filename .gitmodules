@@ -46,3 +46,6 @@
 [submodule "loader/src/external/lzma/src"]
 	path = loader/src/external/lzma/src
 	url = https://github.com/ip7z/7zip.git
+[submodule "loader/src/external/yukiplt"]
+	path = loader/src/external/yukiplt
+	url = https://github.com/Rouyashiki/YukiPLT.git

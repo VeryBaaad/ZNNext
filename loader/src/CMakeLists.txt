@@ -41,6 +41,7 @@ add_library(zn_loader SHARED
     hook/backend/xhook.cpp
     hook/backend/plti.cpp
     hook/backend/plthook.cpp
+    hook/backend/yukiplt.cpp
     hook/backend/urhook.cpp
     hook/backend/baaadhook.cpp
     api/hook.cpp
@@ -98,11 +99,15 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} bytehook)
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} xhook)
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plthook)
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} yukiplt)
 endif()
 set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plti)
 set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} baaadhook)
 if (ANDROID_ABI STREQUAL "arm64-v8a")
-    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} urhook c++abi unwind)
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} urhook)
+endif()
+if (NOT ANDROID_ABI STREQUAL "riscv64")
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} c++abi unwind)
     target_link_options(zn_loader PRIVATE -Wl,--allow-multiple-definition)
 endif()
 if (TARGET frida_gum_build)

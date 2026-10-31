@@ -109,6 +109,8 @@ else ()
     add_subdirectory(znn_hookzz)
 
     add_subdirectory(znn_whale)
+
+    add_subdirectory(znn_yukiplt)
 endif ()
 
 add_subdirectory(baaadhook)

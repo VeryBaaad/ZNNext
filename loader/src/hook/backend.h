@@ -78,4 +78,7 @@ bool urhookPltHook(const std::string& caller_path, uintptr_t caller_base,
 bool baaadhookPltHook(const std::string& caller_path, const char* symbol,
                       void* replacement, void** original);
 
+bool yukipltHook(const std::string& caller_path, uintptr_t caller_base,
+                 const char* symbol, void* replacement, void** original);
+
 }  // namespace znn::hook::backend
