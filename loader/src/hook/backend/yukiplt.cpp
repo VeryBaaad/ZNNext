@@ -111,8 +111,9 @@ bool yukipltHook(const std::string& caller_path, uintptr_t caller_base,
     if (error.code == YUKIPLT_C_IMAGE_INVALIDATED)
       LOGW("pltHook %s: %s is no longer loaded, dropping the hook", symbol,
            caller_path.c_str());
+    void* const previous = record.original;
     g_records.erase(it);
-    if (original) *original = record.original;
+    if (original) *original = previous;
     return true;
   }
 

@@ -146,8 +146,9 @@ bool urhookPltHook(const std::string& caller_path, uintptr_t caller_base,
       return false;
     }
     ur_plthook_destroy(record.handle);
+    void* const previous = record.original;
     g_plt_records.erase(it);
-    if (original) *original = record.original;
+    if (original) *original = previous;
     return true;
   }
 

@@ -84,8 +84,9 @@ bool baaadhookPltHook(const std::string& caller_path, const char* symbol,
            caller_path.c_str());
       return false;
     }
+    void* const previous = record.original;
     g_plt_records.erase(it);
-    if (original) *original = record.original;
+    if (original) *original = previous;
     return true;
   }
 
