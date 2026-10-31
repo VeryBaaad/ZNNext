@@ -71,6 +71,7 @@ pub struct Daemon {
     pub targets: Vec<Target>,
     pub modules: BTreeMap<String, ModuleInfo>,
     pub system: SystemInfo,
+    pub started_at_ticks: u64,
     pub loader64: PathBuf,
     pub loader32: PathBuf,
     pub module_dir: PathBuf,
@@ -90,6 +91,7 @@ pub struct Daemon {
     pub proc_scan_active: bool,
     pub last_rescan_ms: Option<u64>,
     pub last_zygisk_check_ms: u64,
+    pub last_late_sweep_ms: u64,
     pub last_state_write_ms: u64,
 }
 
@@ -105,6 +107,7 @@ impl Daemon {
             targets: Vec::new(),
             modules: BTreeMap::new(),
             system: SystemInfo::default(),
+            started_at_ticks: procfs::start_time_ticks(std::process::id() as Pid).unwrap_or(0),
             loader64: module_dir.join("lib64").join("libzn_loader.so"),
             loader32: module_dir.join("lib").join("libzn_loader.so"),
             module_dir,
@@ -124,6 +127,7 @@ impl Daemon {
             proc_scan_active: false,
             last_rescan_ms: None,
             last_zygisk_check_ms: 0,
+            last_late_sweep_ms: 0,
             last_state_write_ms: 0,
         };
 
@@ -185,6 +189,7 @@ impl Daemon {
                     } else {
                         self.poll_processes();
                     }
+                    self.sweep_late_targets();
                     self.retry_deferred();
                 }
                 Tracking::Ptrace => {

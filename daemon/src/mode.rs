@@ -17,7 +17,7 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-use std::fs::File;
+use std::fs::{self, File};
 use std::io;
 use std::io::Read;
 use std::path::Path;
@@ -44,6 +44,7 @@ const HOLD_TIMEOUT_MS: u64 = 5000;
 const INTERRUPT_TIMEOUT_MS: u64 = 200;
 const LATE_DEFER_MS: u64 = 10_000;
 const LATE_SAFE_AGE_MS: u64 = 5000;
+const LATE_SWEEP_INTERVAL_MS: u64 = 2000;
 
 #[derive(Debug, Clone)]
 pub struct Candidate {
@@ -535,13 +536,49 @@ impl Daemon {
         self.deferred.retain(|pid, _| procfs::is_alive(*pid));
     }
 
+    pub fn sweep_late_targets(&mut self) {
+        let now = procfs::now_ms();
+        if now.saturating_sub(self.last_late_sweep_ms) < LATE_SWEEP_INTERVAL_MS {
+            return;
+        }
+        self.last_late_sweep_ms = now;
+
+        let Ok(entries) = fs::read_dir("/proc") else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let file_name = entry.file_name();
+            let Ok(pid) = file_name.to_string_lossy().parse::<Pid>() else {
+                continue;
+            };
+            if pid <= 1
+                || self.tracees.contains_key(&pid)
+                || self.done.contains(&pid)
+                || self.ignored.contains(&pid)
+                || self.deferred.contains_key(&pid)
+                || self.candidates.contains_key(&pid)
+            {
+                continue;
+            }
+            let exe = procfs::read_exe_path(pid);
+            if exe.is_empty() || !crate::targets::matches(&self.targets, &exe) {
+                continue;
+            }
+            if procfs::start_time_ticks(pid).is_none_or(|ticks| ticks <= self.started_at_ticks) {
+                continue;
+            }
+            logi!("{exe} (pid {pid}) is running without a tracking event; reconciling");
+            self.observe_late_target(pid, &exe);
+        }
+    }
+
     fn seize_late_target(&mut self, pid: Pid, exe: &str) -> Seizure {
         let stopped = match self.seize_and_stop(pid, exe) {
             Ok(stopped) => stopped,
             Err(seizure) => return seizure,
         };
 
-        if !procfs::pc_in_exe_text(pid, exe, stopped.pc) {
+        if procfs::pc_in_dynamic_linker(pid, stopped.pc) {
             return self.arm_entry_injection(pid, exe, stopped);
         }
 

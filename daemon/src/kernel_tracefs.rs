@@ -40,6 +40,7 @@ pub struct TracefsTracker {
     instance: PathBuf,
     tail: Vec<u8>,
     reported_error: bool,
+    reported_loss: bool,
 }
 
 impl fmt::Debug for TracefsTracker {
@@ -100,6 +101,7 @@ impl TracefsTracker {
             instance,
             tail: Vec::new(),
             reported_error: false,
+            reported_loss: false,
         })
     }
 
@@ -135,12 +137,15 @@ impl TracefsTracker {
 
     fn emit_lines(&mut self, events: &mut Vec<KernelEvent>) {
         let mut line_start = 0;
+        let mut lost = false;
         for (index, byte) in self.tail.iter().enumerate() {
             if *byte != b'\n' {
                 continue;
             }
             let line = String::from_utf8_lossy(&self.tail[line_start..index]);
-            if let Some(event) = parse_line(&line) {
+            if is_lost_events_line(&line) {
+                lost = true;
+            } else if let Some(event) = parse_line(&line) {
                 events.push(event);
             }
             line_start = index + 1;
@@ -149,6 +154,19 @@ impl TracefsTracker {
         if self.tail.len() > MAX_TAIL_SIZE {
             self.tail.clear();
         }
+        if lost {
+            self.report_loss();
+        }
+    }
+
+    fn report_loss(&mut self) {
+        if self.reported_loss {
+            return;
+        }
+        self.reported_loss = true;
+        logw!(
+            "kernel tracking: the tracefs ring buffer dropped events; a target exec may not have been seen"
+        );
     }
 }
 
@@ -206,6 +224,10 @@ fn prefix_comm(line: &str) -> Option<&str> {
     (!comm.is_empty()).then_some(comm)
 }
 
+fn is_lost_events_line(line: &str) -> bool {
+    line.contains("[LOST ") && line.contains(" EVENTS]")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -234,5 +256,14 @@ mod tests {
     fn ignores_other_lines() {
         assert!(parse_line("sh-1234 [002] .... 4567.890123: sched_switch: prev_comm=sh").is_none());
         assert!(parse_line("").is_none());
+    }
+
+    #[test]
+    fn recognizes_lost_event_markers() {
+        assert!(is_lost_events_line("CPU:1 [LOST 8 EVENTS]"));
+        assert!(is_lost_events_line("CPU:0 [LOST 123 EVENTS]"));
+        assert!(!is_lost_events_line(
+            "sh-1234 [002] .... 4567.890123: sched_process_exec: pid=1234"
+        ));
     }
 }

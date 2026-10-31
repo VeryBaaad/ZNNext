@@ -183,14 +183,7 @@ pub fn is_single_threaded(pid: Pid) -> bool {
 }
 
 pub fn process_age_ms(pid: Pid) -> Option<u64> {
-    let stat = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
-    let starttime: u64 = stat
-        .rsplit_once(')')?
-        .1
-        .split_whitespace()
-        .nth(STARTTIME_INDEX)?
-        .parse()
-        .ok()?;
+    let starttime = start_time_ticks(pid)?;
 
     let ticks_per_second = clock_ticks_per_second();
     let uptime_seconds: f64 = fs::read_to_string("/proc/uptime")
@@ -201,6 +194,19 @@ pub fn process_age_ms(pid: Pid) -> Option<u64> {
         .ok()?;
     let uptime_ticks = (uptime_seconds * ticks_per_second as f64) as u64;
     Some(uptime_ticks.saturating_sub(starttime) * 1000 / ticks_per_second)
+}
+
+pub fn start_time_ticks(pid: Pid) -> Option<u64> {
+    parse_start_time_ticks(&fs::read_to_string(format!("/proc/{pid}/stat")).ok()?)
+}
+
+fn parse_start_time_ticks(stat: &str) -> Option<u64> {
+    stat.rsplit_once(')')?
+        .1
+        .split_whitespace()
+        .nth(STARTTIME_INDEX)?
+        .parse()
+        .ok()
 }
 
 fn clock_ticks_per_second() -> u64 {
@@ -242,6 +248,17 @@ pub fn pc_in_exe_text(pid: Pid, exe: &str, pc: usize) -> bool {
     })
 }
 
+pub fn pc_in_dynamic_linker(pid: Pid, pc: usize) -> bool {
+    maps::parse_for_pid(pid)
+        .iter()
+        .any(|entry| entry.contains(pc) && is_dynamic_linker(&entry.path))
+}
+
+fn is_dynamic_linker(path: &str) -> bool {
+    let path = path.strip_suffix(DELETED_SUFFIX).unwrap_or(path);
+    matches!(basename(path), "linker" | "linker64" | "ld-android.so")
+}
+
 pub fn read_file(path: &Path) -> Option<Vec<u8>> {
     let bytes = fs::read(path).ok()?;
     if bytes.is_empty() { None } else { Some(bytes) }
@@ -255,4 +272,31 @@ pub fn write_to_target_fd(pid: Pid, fd: RawFd, data: &[u8]) -> bool {
         return false;
     };
     file.write_all(data).is_ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn recognizes_the_dynamic_linker() {
+        assert!(is_dynamic_linker("/apex/com.android.runtime/bin/linker64"));
+        assert!(is_dynamic_linker("/system/bin/linker"));
+        assert!(is_dynamic_linker(
+            "/apex/com.android.runtime/bin/ld-android.so"
+        ));
+        assert!(is_dynamic_linker("/system/bin/linker64 (deleted)"));
+        assert!(!is_dynamic_linker(
+            "/apex/com.android.runtime/lib64/libc.so"
+        ));
+        assert!(!is_dynamic_linker("/system_ext/bin/hyos_spawner"));
+        assert!(!is_dynamic_linker(""));
+    }
+
+    #[test]
+    fn parses_the_start_time_after_a_comm_with_parentheses() {
+        let stat = "42 (a ) comm) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 98765 0";
+        assert_eq!(parse_start_time_ticks(stat), Some(98765));
+        assert_eq!(parse_start_time_ticks("garbage"), None);
+    }
 }
