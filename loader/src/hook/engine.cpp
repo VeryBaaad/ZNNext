@@ -53,6 +53,8 @@ const char* inlineEngineName(InlineEngine e) {
       return "whale";
     case InlineEngine::kBaaadHook:
       return "baaadhook";
+    case InlineEngine::kYukiIhook:
+      return "yukiihook";
     case InlineEngine::kDisable:
       return "disable";
   }
@@ -135,6 +137,12 @@ bool inlineEngineSupported(InlineEngine e) {
 #endif
     case InlineEngine::kBaaadHook:
       return true;
+    case InlineEngine::kYukiIhook:
+#if defined(__aarch64__)
+      return true;
+#else
+      return false;
+#endif
     case InlineEngine::kDisable:
       return true;
   }
@@ -216,6 +224,8 @@ bool parseInlineEngine(const char* name, InlineEngine* out) {
     e = InlineEngine::kWhale;
   } else if (strcmp(name, "baaadhook") == 0) {
     e = InlineEngine::kBaaadHook;
+  } else if (strcmp(name, "yukiihook") == 0) {
+    e = InlineEngine::kYukiIhook;
   } else if (strcmp(name, "disable") == 0) {
     e = InlineEngine::kDisable;
   } else {

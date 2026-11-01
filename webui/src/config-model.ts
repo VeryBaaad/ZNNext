@@ -28,6 +28,7 @@ export const ENGINE_LABELS: Record<string, string> = {
   "frida-gum": "Frida Gum",
   hookzz: "HookZz",
   whale: "Whale",
+  yukiihook: "yuki::ihook",
   lsplt: "LSPlt",
   bytehook: "ByteHook",
   xhook: "xHook",

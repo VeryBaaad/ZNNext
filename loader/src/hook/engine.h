@@ -31,6 +31,7 @@ enum class InlineEngine {
   kUrHook,
   kWhale,
   kBaaadHook,
+  kYukiIhook,
   kDisable
 };
 enum class PltEngine {

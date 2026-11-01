@@ -81,8 +81,8 @@ yukiplt_c_error hookImage(const yukiplt_c_image& image,
   const yukiplt_c_error named_error = yukiplt_c_hook_named(
       &named, &selector, replacement, original_storage, handle, &report);
   if (named_error.code != YUKIPLT_C_IMAGE_INVALIDATED) return named_error;
-  return yukiplt_c_hook(&image, &selector, replacement, original_storage, handle,
-                        &report);
+  return yukiplt_c_hook(&image, &selector, replacement, original_storage,
+                        handle, &report);
 }
 
 }  // namespace

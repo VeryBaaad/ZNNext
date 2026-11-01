@@ -30,13 +30,13 @@ export const LOCALE_STORAGE_KEY = "znn_locale";
 export const LOCALES: Locale[] = ["lzh", "zh-CN", "en"];
 
 const dictionaries: Record<Locale, Dictionary> = {
-  "lzh": lzh,
+  lzh: lzh,
   "zh-CN": zhCN,
   en,
 };
 
 export const LOCALE_LABELS: Record<Locale, string> = {
-  "lzh": "文言（華夏）",
+  lzh: "文言（華夏）",
   "zh-CN": "中文（简体）",
   en: "English",
 };

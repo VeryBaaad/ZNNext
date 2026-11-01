@@ -96,6 +96,10 @@ add_subdirectory(plti)
 add_subdirectory(znn_frida_gum)
 add_subdirectory(znn_urhook)
 
+if (ANDROID_ABI STREQUAL "arm64-v8a")
+    add_subdirectory(znn_yukiihook)
+endif ()
+
 if (ANDROID_ABI STREQUAL "riscv64")
     add_subdirectory(rv64hook)
         target_compile_options(rv64hook-static PRIVATE -w)
