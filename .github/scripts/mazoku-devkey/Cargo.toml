@@ -1,0 +1,9 @@
+[package]
+name = "mazoku-devkey"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "generate mazoku"
+
+[dependencies]
+machikado-rs = { git = "https://github.com/VeryBaaad/machikado-rs.git", tag = "v3.0.0" }

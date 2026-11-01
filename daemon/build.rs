@@ -12,6 +12,45 @@ fn main() {
 
     android_page_alignment();
     bpf_object();
+    mazoku_key();
+}
+
+fn mazoku_key() {
+    const SIGNATURE_LEN: usize = 64;
+    const BLOB_LEN: usize = SIGNATURE_LEN + 32;
+
+    let source = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"))
+        .join("../module/src/mazoku");
+    let destination =
+        PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR is set by cargo")).join("mazoku.rs");
+
+    println!("cargo:rerun-if-changed={}", source.display());
+
+    let blob = fs::read(&source)
+        .unwrap_or_else(|error| panic!("cannot read {}: {error}", source.display()));
+    assert!(
+        blob.len() == BLOB_LEN,
+        "{} must be a {BLOB_LEN}-byte signed blob, found {} bytes",
+        source.display(),
+        blob.len()
+    );
+
+    let mut generated = String::from("pub const ORG_PUBLIC_KEY: [u8; 32] = [\n");
+    for chunk in blob[SIGNATURE_LEN..].chunks(8) {
+        generated.push_str("    ");
+        for (index, byte) in chunk.iter().enumerate() {
+            if index > 0 {
+                generated.push(' ');
+            }
+            generated.push_str(&byte.to_string());
+            generated.push(',');
+        }
+        generated.push('\n');
+    }
+    generated.push_str("];\n");
+
+    fs::write(&destination, generated)
+        .unwrap_or_else(|error| panic!("cannot write {}: {error}", destination.display()));
 }
 
 fn android_page_alignment() {

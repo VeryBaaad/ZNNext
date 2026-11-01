@@ -22,10 +22,18 @@ jobs:
         with:
           submodules: "recursive"
           fetch-depth: 0
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android, i686-linux-android
+          components: rust-src
       - name: Write key
-        if: ${{ ( github.event_name != 'pull_request' && github.ref == 'refs/heads/master' ) || github.ref_type == 'tag' }}
+        if: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/master' || github.ref_type == 'tag' }}
         run: |
-          if [ ! -z "${{ secrets.PRIVATE_KEY }}" ]; then
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            cargo run --quiet --locked --manifest-path .github/scripts/mazoku-devkey/Cargo.toml --
+          elif [ -n "${{ secrets.PRIVATE_KEY }}" ]; then
             echo '${{ secrets.PRIVATE_KEY }}' | base64 --decode > module/private_key
           fi
       - name: Setup Java
@@ -53,12 +61,6 @@ jobs:
           key: ${{ runner.os }}
           restore-keys: ${{ runner.os }}
           save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: nightly
-          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android, i686-linux-android
-          components: rust-src
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
       - name: Build with Gradle

@@ -24,10 +24,7 @@ use machikado_rs::{FileEntry, verify};
 
 use crate::daemon::MODULE_ID;
 
-const ORG_PUBLIC_KEY: [u8; 32] = [
-    123, 192, 97, 178, 44, 86, 95, 77, 138, 95, 46, 239, 113, 227, 151, 200, 0, 120, 148, 124, 95,
-    104, 121, 88, 173, 152, 219, 116, 71, 200, 239, 190,
-];
+use crate::mazoku::ORG_PUBLIC_KEY;
 
 const SIGNED_FILES: [&str; 9] = [
     "bin/znnd",
