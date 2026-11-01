@@ -34,6 +34,7 @@ mod kernel_tracefs;
 mod log;
 mod machikado;
 mod maps;
+mod mazoku;
 mod mode;
 mod paths;
 mod plan;
