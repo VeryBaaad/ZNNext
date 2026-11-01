@@ -44,6 +44,7 @@ add_library(zn_loader SHARED
     hook/backend/yukiplt.cpp
     hook/backend/urhook.cpp
     hook/backend/baaadhook.cpp
+    hook/backend/yukiihook.cpp
     api/hook.cpp
     api/symbols.cpp
     api/companion.cpp
@@ -87,6 +88,7 @@ else()
 endif()
 if (ANDROID_ABI STREQUAL "arm64-v8a")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} and64inlinehook)
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} yukiihook)
 endif()
 if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} shadowhook)

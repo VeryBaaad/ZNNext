@@ -49,3 +49,6 @@
 [submodule "loader/src/external/yukiplt"]
 	path = loader/src/external/yukiplt
 	url = https://github.com/Rouyashiki/YukiPLT.git
+[submodule "loader/src/external/yukizygisk"]
+	path = loader/src/external/yukizygisk
+	url = https://github.com/Rouyashiki/YukiZygisk.git
