@@ -33,7 +33,7 @@ xattr = { version = "1.6.1", default-features = false }
 machikado-rs = { git = "https://github.com/VeryBaaad/machikado-rs.git", tag = "v3.0.0" }
 
 [target.'cfg(target_pointer_width = "64")'.dependencies]
-aya = "0.14.0"
+aya = "0.16.0"
 
 [[bin]]
 name = "znnd"
