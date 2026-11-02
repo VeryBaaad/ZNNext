@@ -15,7 +15,7 @@
     "@m3e/web": "^2.10.3",
     "@material-symbols/font-400": "^0.48.2",
     "@vueuse/core": "^15.0.0",
-    "kernelsu": "^3.0.2",
+    "kernelsu": "^3.3.0",
     "lit": "^3.3.3",
     "miuix-vue": "^0.1.1",
     "motion-v": "^2.8.0",
