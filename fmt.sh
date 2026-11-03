@@ -2,6 +2,11 @@ shopt -s globstar
 
 cd .github
 $(go env GOBIN)/yamlfmt .
+
+cd scripts/mazoku-devkey
+cargo fmt
+cd ../..
+
 cd ..
 $(go env GOBIN)/yamlfmt module.yaml
 
