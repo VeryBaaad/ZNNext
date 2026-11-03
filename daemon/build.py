@@ -47,10 +47,9 @@ def riscv64_linker(ndk):
     return candidates[-1]
 
 
-def build_abi(abi, variant, jobs, ndk):
+def build_abi(abi, variant, jobs, ndk, target_dir):
     target = znn.RUST_TARGETS[abi]
     profile = "debug" if variant == "debug" else "release"
-    target_dir = DAEMON_DIR / "target" / abi
     target_dir.mkdir(parents=True, exist_ok=True)
 
     environment = os.environ.copy()
@@ -116,19 +115,33 @@ def main(argv=None):
     jobs = max(1, options.jobs)
     abis = options.abi or list(znn.ANDROID_ABIS)
     ndk = znn.ndk_dir(options.ndk)
-    per_abi = max(1, jobs // len(abis))
+    parallel = jobs >= 8 and len(abis) > 1
+    per_abi = max(1, jobs // len(abis)) if parallel else jobs
 
     sync_cargo_version()
     print(
-        f"daemon: {options.variant}, {len(abis)} ABI(s), {per_abi} job(s) each, "
-        f"NDK {ndk.name}",
+        f"daemon: {options.variant}, {len(abis)} ABI(s), {per_abi} job(s), "
+        f"{'parallel' if parallel else 'shared target'}, NDK {ndk.name}",
         flush=True,
     )
+
+    if not parallel:
+        shared = DAEMON_DIR / "target"
+        for abi in abis:
+            build_abi(abi, options.variant, jobs, ndk, shared)
+        return 0
 
     errors = []
     with ThreadPoolExecutor(max_workers=len(abis)) as pool:
         futures = {
-            pool.submit(build_abi, abi, options.variant, per_abi, ndk): abi
+            pool.submit(
+                build_abi,
+                abi,
+                options.variant,
+                per_abi,
+                ndk,
+                DAEMON_DIR / "target" / abi,
+            ): abi
             for abi in abis
         }
         for future in as_completed(futures):
