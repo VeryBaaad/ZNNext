@@ -14,6 +14,10 @@ cd daemon
 cargo fmt
 cd ..
 
+cd module/sign
+cargo fmt
+cd ../..
+
 cd loader
 git ls-files | grep -E "\.(cpp|h|hpp|c)$" | xargs clang-format -style=Google -i
 git restore src/external/lzma src/external/znn_shadowhook
