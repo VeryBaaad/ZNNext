@@ -4,6 +4,9 @@
 build
 local.properties
 daemon/target/
+module/sign/target/
+__pycache__/
+*.pyc
 .build
 .build-*
 .gradle-home

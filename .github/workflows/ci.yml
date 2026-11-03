@@ -36,24 +36,23 @@ jobs:
           elif [ -n "${{ secrets.PRIVATE_KEY }}" ]; then
             echo '${{ secrets.PRIVATE_KEY }}' | base64 --decode > module/private_key
           fi
-      - name: Setup Java
-        uses: actions/setup-java@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
         with:
-          distribution: "temurin"
-          java-version: "21"
+          python-version: "3.12"
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
         with:
           log-accepted-android-sdk-licenses: 'false'
           packages: ''
       - name: Setup Android NDK
+        id: setup-ndk
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r30
           add-to-path: true
+          link-to-sdk: true
           local-cache: ${{ github.event_name == 'push' }}
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
       - name: Set up ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
@@ -63,14 +62,10 @@ jobs:
           save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
-      - name: Build with Gradle
-        run: |
-          echo 'org.gradle.parallel=true' >> gradle.properties
-          echo 'org.gradle.vfs.watch=true' >> gradle.properties
-          echo 'org.gradle.jvmargs=-Xmx2048m' >> gradle.properties
-          echo 'android.native.buildOutput=verbose' >> gradle.properties
-          sed -i 's/org.gradle.unsafe.configuration-cache=true//g' gradle.properties
-          ./gradlew zipRelease zipDebug
+      - name: Build
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: python3 build.py zipRelease zipDebug
       - name: Prepare artifact
         if: success()
         id: prepareArtifact
