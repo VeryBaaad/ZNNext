@@ -13,8 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
-      CCACHE_NOHASHDIR: "true"
-      CCACHE_HARDLINK: "true"
+      CCACHE_NOHARDLINK: "true"
       CCACHE_BASEDIR: "${{ github.workspace }}"
     steps:
       - name: Checkout
@@ -57,8 +56,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           max-size: 2G
-          key: ${{ runner.os }}-python
-          restore-keys: ${{ runner.os }}-python
+          key: ${{ runner.os }}
+          restore-keys: ${{ runner.os }}
           save: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
