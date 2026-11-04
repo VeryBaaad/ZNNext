@@ -37,7 +37,7 @@ jobs:
             echo '${{ secrets.PRIVATE_KEY }}' | base64 --decode > module/private_key
           fi
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Setup Android SDK
