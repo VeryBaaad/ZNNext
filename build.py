@@ -213,12 +213,22 @@ def ndk_revision(path):
     return None
 
 
+def ndk_usable(path):
+    binaries = path / "toolchains" / "llvm" / "prebuilt" / host_tag() / "bin"
+    suffix = ".exe" if sys.platform == "win32" else ""
+    return (binaries / f"clang{suffix}").is_file() and (
+        binaries / f"ld.lld{suffix}"
+    ).is_file()
+
+
 @lru_cache(maxsize=None)
 def ndk_dir(override=None):
     if override:
         path = Path(override).expanduser()
         if not path.is_dir():
             raise BuildError(f"Android NDK directory not found: {path}")
+        if not ndk_usable(path):
+            raise BuildError(f"Android NDK is incomplete (clang/ld.lld missing): {path}")
         return path.resolve()
 
     candidates = []
@@ -235,17 +245,25 @@ def ndk_dir(override=None):
         pass
 
     existing = [path for path in candidates if path.is_dir()]
-    if not existing:
+    usable = [path for path in existing if ndk_usable(path)]
+    if not usable:
         raise BuildError(
-            "no Android NDK found; set ANDROID_NDK_HOME to "
+            "no usable Android NDK found; set ANDROID_NDK_HOME to "
             f"NDK {ANDROID_NDK_VERSION} or install it under <sdk>/ndk/"
+            + (
+                " (checked: "
+                + ", ".join(str(path) for path in existing)
+                + ")"
+                if existing
+                else ""
+            )
         )
-    for path in existing:
+    for path in usable:
         if ndk_revision(path) == ANDROID_NDK_VERSION:
             return path.resolve()
     raise BuildError(
         f"Android NDK {ANDROID_NDK_VERSION} is required, found "
-        + ", ".join(f"{path} ({ndk_revision(path) or 'unknown'})" for path in existing)
+        + ", ".join(f"{path} ({ndk_revision(path) or 'unknown'})" for path in usable)
     )
 
 

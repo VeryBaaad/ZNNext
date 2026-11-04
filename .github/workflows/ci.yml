@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
-      CCACHE_NOHARDLINK: "true"
       CCACHE_BASEDIR: "${{ github.workspace }}"
     steps:
       - name: Checkout
@@ -43,15 +42,10 @@ jobs:
         uses: android-actions/setup-android@v4
         with:
           log-accepted-android-sdk-licenses: 'false'
-          packages: ''
-      - name: Setup Android NDK
-        id: setup-ndk
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r30
-          add-to-path: true
-          link-to-sdk: true
-          local-cache: ${{ github.event_name == 'push' }}
+          accept-android-sdk-licenses: 'true'
+          packages: 'ndk;30.0.16248370'
+      - name: Resolve Android NDK
+        run: python3 -c "import build; print('Android NDK:', build.ndk_dir())"
       - name: Set up ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
@@ -62,8 +56,6 @@ jobs:
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
       - name: Build
-        env:
-          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: python3 build.py zipRelease zipDebug
       - name: Prepare artifact
         if: success()
