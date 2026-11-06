@@ -44,7 +44,7 @@ const HOLD_TIMEOUT_MS: u64 = 5000;
 const INTERRUPT_TIMEOUT_MS: u64 = 200;
 const LATE_DEFER_MS: u64 = 10_000;
 const LATE_SAFE_AGE_MS: u64 = 5000;
-const LATE_SWEEP_INTERVAL_MS: u64 = 2000;
+const SWEEP_INTERVAL_MS: u64 = 2000;
 
 #[derive(Debug, Clone)]
 pub struct Candidate {
@@ -448,7 +448,7 @@ impl Daemon {
     }
 
     pub(crate) fn observe_target(&mut self, pid: Pid, exe: &str) {
-        if self.mode == Tracking::Late {
+        if matches!(self.mode, Tracking::Kernel | Tracking::Late) {
             self.observe_late_target(pid, exe);
             return;
         }
@@ -477,9 +477,11 @@ impl Daemon {
 
         match self.seize_late_target(pid, exe) {
             Seizure::Retry => {
-                self.deferred
-                    .entry(pid)
-                    .or_insert(procfs::now_ms() + LATE_DEFER_MS);
+                if procfs::foreign_tracer(pid).is_some() {
+                    self.deferred
+                        .entry(pid)
+                        .or_insert(procfs::now_ms() + LATE_DEFER_MS);
+                }
             }
             Seizure::Seized | Seizure::GiveUp => {
                 self.deferred.remove(&pid);
@@ -536,12 +538,12 @@ impl Daemon {
         self.deferred.retain(|pid, _| procfs::is_alive(*pid));
     }
 
-    pub fn sweep_late_targets(&mut self) {
+    pub fn reconcile_targets(&mut self) {
         let now = procfs::now_ms();
-        if now.saturating_sub(self.last_late_sweep_ms) < LATE_SWEEP_INTERVAL_MS {
+        if now.saturating_sub(self.last_sweep_ms) < SWEEP_INTERVAL_MS {
             return;
         }
-        self.last_late_sweep_ms = now;
+        self.last_sweep_ms = now;
 
         let Ok(entries) = fs::read_dir("/proc") else {
             return;

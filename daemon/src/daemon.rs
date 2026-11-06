@@ -91,7 +91,7 @@ pub struct Daemon {
     pub proc_scan_active: bool,
     pub last_rescan_ms: Option<u64>,
     pub last_zygisk_check_ms: u64,
-    pub last_late_sweep_ms: u64,
+    pub last_sweep_ms: u64,
     pub last_state_write_ms: u64,
 }
 
@@ -127,7 +127,7 @@ impl Daemon {
             proc_scan_active: false,
             last_rescan_ms: None,
             last_zygisk_check_ms: 0,
-            last_late_sweep_ms: 0,
+            last_sweep_ms: 0,
             last_state_write_ms: 0,
         };
 
@@ -181,7 +181,11 @@ impl Daemon {
             }
 
             match self.mode {
-                Tracking::Kernel => self.poll_kernel(),
+                Tracking::Kernel => {
+                    self.poll_kernel();
+                    self.reconcile_targets();
+                    self.retry_deferred();
+                }
                 Tracking::Proc => self.poll_processes(),
                 Tracking::Late => {
                     if self.kernel.is_some() {
@@ -189,7 +193,7 @@ impl Daemon {
                     } else {
                         self.poll_processes();
                     }
-                    self.sweep_late_targets();
+                    self.reconcile_targets();
                     self.retry_deferred();
                 }
                 Tracking::Ptrace => {
@@ -228,7 +232,7 @@ impl Daemon {
                     self.prune_kernel_bookkeeping();
                     self.upgrade_kernel_sources();
                 }
-                if self.mode == Tracking::Late {
+                if self.mode == Tracking::Kernel || self.mode == Tracking::Late {
                     self.prune_deferred();
                 }
                 self.recheck.retain(|pid, _| procfs::is_alive(*pid));
