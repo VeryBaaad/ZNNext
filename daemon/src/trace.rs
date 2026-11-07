@@ -728,10 +728,6 @@ impl Daemon {
         }
         regs.set_sp(stack);
 
-        for module in plan.companions() {
-            companion::spawn(&module.path, plan.nonce, module.index, plan.token);
-        }
-
         if !setup_call(
             pid,
             &mut regs,
@@ -743,6 +739,11 @@ impl Daemon {
             self.abort(pid, tracee, "cannot enter znn_loader_init");
             return Progress::Finished;
         }
+
+        for module in plan.companions() {
+            companion::spawn(&module.path, plan.nonce, module.index, plan.token);
+        }
+
         logi!(
             "pid {pid}: boot plan ({} bytes, {} module(s), nonce {:#010x}) handed to the loader",
             bytes.len(),
