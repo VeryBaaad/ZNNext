@@ -45,13 +45,13 @@ impl KpmTracker {
         }
     }
 
-    pub fn drain(&mut self, events: &mut Vec<KernelEvent>) {
+    pub fn drain(&mut self, events: &mut Vec<KernelEvent>) -> bool {
         for _ in 0..MAX_ROUNDS {
             let Ok(read) = kpm::read_records(&mut self.buffer, self.since_seq) else {
-                return;
+                return false;
             };
             if read == 0 {
-                return;
+                return true;
             }
             let filled = read.min(self.buffer.len());
             let mut last_seq = self.since_seq;
@@ -76,9 +76,10 @@ impl KpmTracker {
             }
             self.since_seq = last_seq;
             if filled < self.buffer.len() {
-                return;
+                return true;
             }
         }
+        true
     }
 }
 

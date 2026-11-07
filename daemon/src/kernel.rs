@@ -214,8 +214,13 @@ impl KernelTracker {
         if let Some(fanotify) = &mut self.fanotify {
             fanotify.drain(events);
         }
+        let mut kpm_failed = false;
         if let Some(kpm) = &mut self.kpm {
-            kpm.drain(events);
+            kpm_failed = !kpm.drain(events);
+        }
+        if kpm_failed {
+            logw!("kernel tracking: KernelPatch znn source failed; dropping it");
+            self.kpm = None;
         }
     }
 }
