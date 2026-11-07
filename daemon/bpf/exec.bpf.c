@@ -39,6 +39,7 @@ struct bpf_raw_tracepoint_args {
 
 struct task_struct {
     int pid;
+    int tgid;
     struct task_struct *real_parent;
 } __attribute__((preserve_access_index));
 
@@ -72,7 +73,7 @@ int handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     event->tgid = (__u32)pid_tgid;
     event->pid = (__u32)(pid_tgid >> 32);
     event->uid = (__u32)uid_gid;
-    event->ppid = bpf_get_current_task_btf()->real_parent->pid;
+    event->ppid = bpf_get_current_task_btf()->real_parent->tgid;
     event->pad = 0;
     bpf_get_current_comm(event->comm, sizeof(event->comm));
 

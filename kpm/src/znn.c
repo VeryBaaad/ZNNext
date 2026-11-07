@@ -78,7 +78,7 @@ static int32_t znn_task_nr(void* task, int type) {
 static int32_t znn_parent_nr(void* task) {
   if (znn_real_parent_offset <= 0 || !task) return -1;
   return znn_task_nr(*(void**)((char*)task + znn_real_parent_offset),
-                     ZNN_PIDTYPE_PID);
+                     ZNN_PIDTYPE_TGID);
 }
 
 static void znn_note_exec(void) {
