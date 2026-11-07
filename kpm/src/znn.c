@@ -291,8 +291,8 @@ static long znn_init(const char* args, const char* event, void* reserved) {
   }
 #else
   pr_info(
-      "znn: built without BTF lookups, ppid is -1 and every caller is "
-      "served\n");
+      "znn: built without BTF lookups, ppid is -1 and the uid gate fails "
+      "closed\n");
 #endif
 
   hook_err_t error = hook_syscalln(__NR_execve, 3, znn_before_execve, 0, 0);
