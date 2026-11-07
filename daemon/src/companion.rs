@@ -87,6 +87,33 @@ fn bind_direct(nonce: u32, index: u32) -> Option<UnixListener> {
     Some(listener)
 }
 
+fn read_proof(stream: &mut UnixStream, proof: &mut [u8]) -> bool {
+    let deadline = Instant::now() + PROOF_TIMEOUT;
+    let mut filled = 0;
+    while filled < proof.len() {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return false;
+        }
+        let timeout = remaining.as_millis().clamp(1, u16::MAX as u128) as u16;
+        let mut descriptor = [PollFd::new(stream.as_fd(), PollFlags::POLLIN)];
+        match poll(&mut descriptor, timeout) {
+            Ok(0) => return false,
+            Ok(_) => {}
+            Err(nix::errno::Errno::EINTR) => continue,
+            Err(_) => return false,
+        }
+        match stream.read(&mut proof[filled..]) {
+            Ok(0) => return false,
+            Ok(read) => filled += read,
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => continue,
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(_) => return false,
+        }
+    }
+    true
+}
+
 fn accept_direct(listener: &UnixListener, token: &[u8; 16], companion: &sys::dlfcn::Companion<'_>) {
     loop {
         let mut stream = match listener.accept() {
@@ -97,10 +124,11 @@ fn accept_direct(listener: &UnixListener, token: &[u8; 16], companion: &sys::dlf
                 return;
             }
         };
-        let _ = stream.set_nonblocking(false);
-        let _ = stream.set_read_timeout(Some(PROOF_TIMEOUT));
+        if stream.set_nonblocking(true).is_err() {
+            continue;
+        }
         let mut proof = [0u8; 16];
-        if stream.read_exact(&mut proof).is_err() {
+        if !read_proof(&mut stream, &mut proof) {
             loge!("companion: a direct connection did not prove itself");
             continue;
         }
@@ -108,7 +136,7 @@ fn accept_direct(listener: &UnixListener, token: &[u8; 16], companion: &sys::dlf
             loge!("companion: rejected a direct connection with a bad proof");
             continue;
         }
-        let _ = stream.set_read_timeout(None);
+        let _ = stream.set_nonblocking(false);
         logi!("companion: serving a direct connection");
         companion.notify_connected(stream.into_raw_fd());
     }
