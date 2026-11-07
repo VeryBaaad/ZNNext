@@ -752,6 +752,31 @@ impl Daemon {
             ptrace::detach(pid, None);
             return Err(Seizure::GiveUp);
         };
+
+        let current_exe = procfs::read_exe_path(pid);
+        let Some(current_header) = elf::header_of_file(Path::new(&format!("/proc/{pid}/exe")))
+        else {
+            logw!("{exe} (pid {pid}): cannot re-read its elf header; skipping");
+            ptrace::detach(pid, resume_signal);
+            return Err(Seizure::GiveUp);
+        };
+        let current_base = maps::parse_for_pid(pid)
+            .into_iter()
+            .find(|entry| {
+                entry.offset == 0 && procfs::map_path_equals_exe(&entry.path, &current_exe)
+            })
+            .map_or(0, |entry| entry.start);
+        if current_exe != exe
+            || current_base != base
+            || current_header.machine != header.machine
+            || current_header.entry != header.entry
+            || current_header.is_64 != header.is_64
+        {
+            logw!("{exe} (pid {pid}): changed image while being seized; skipping");
+            ptrace::detach(pid, resume_signal);
+            return Err(Seizure::GiveUp);
+        }
+
         Ok(StoppedTarget {
             arch,
             is_64: header.is_64,
