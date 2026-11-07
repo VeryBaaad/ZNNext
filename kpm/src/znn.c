@@ -229,8 +229,8 @@ static int znn_parse_read_command(const char* args, uint32_t* count) {
 static long znn_control(const char* ctl_args, char* __user out_msg,
                         int outlen) {
   uint32_t requested = 0;
-  if (!out_msg || outlen <= 0) return -1;
-  if (znn_parse_read_command(ctl_args, &requested)) return -1;
+  if (!out_msg || outlen <= 0) return -EINVAL;
+  if (znn_parse_read_command(ctl_args, &requested)) return -EINVAL;
 
   uint64_t written = __atomic_load_n(&znn_ring_written, __ATOMIC_ACQUIRE);
   uint64_t available =
