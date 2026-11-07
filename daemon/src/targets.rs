@@ -221,8 +221,8 @@ pub fn resolve_library(module_dir: &Path, library: &str) -> Option<String> {
 }
 
 pub fn libraries_for(modules: &BTreeMap<String, ModuleInfo>, exe: &str) -> Vec<ModuleLibrary> {
-    let mut libraries = Vec::new();
-    let mut seen = BTreeSet::new();
+    let mut libraries: Vec<ModuleLibrary> = Vec::new();
+    let mut seen: BTreeMap<String, usize> = BTreeMap::new();
     for module in modules.values() {
         let module_dir = PathBuf::from(paths::MODULES_DIR).join(&module.id);
         for declaration in &module.declarations {
@@ -232,9 +232,13 @@ pub fn libraries_for(modules: &BTreeMap<String, ModuleInfo>, exe: &str) -> Vec<M
             let Some(path) = resolve_library(&module_dir, &declaration.library) else {
                 continue;
             };
-            if !seen.insert(path.clone()) {
+            if let Some(index) = seen.get(&path).copied() {
+                if declaration.companion {
+                    libraries[index].companion = true;
+                }
                 continue;
             }
+            seen.insert(path.clone(), libraries.len());
             libraries.push(ModuleLibrary {
                 path,
                 companion: declaration.companion,
