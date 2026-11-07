@@ -99,15 +99,21 @@ impl Connector {
     fn decode(&self, length: usize, events: &mut Vec<ProcEvent>) -> io::Result<()> {
         let length = length.min(self.buffer.len());
         let mut offset = 0usize;
-        while offset + NLMSG_HEADER_SIZE <= length {
-            let header = &self.buffer[offset..offset + NLMSG_HEADER_SIZE];
+        while let Some(header_end) = offset.checked_add(NLMSG_HEADER_SIZE) {
+            if header_end > length {
+                break;
+            }
+            let header = &self.buffer[offset..header_end];
             let message_length = read_u32(header, 0) as usize;
             let message_type = read_u16(header, 4);
-            if message_length < NLMSG_HEADER_SIZE || offset + message_length > length {
+            let Some(message_end) = offset.checked_add(message_length) else {
+                break;
+            };
+            if message_length < NLMSG_HEADER_SIZE || message_end > length {
                 break;
             }
 
-            let payload = &self.buffer[offset + NLMSG_HEADER_SIZE..offset + message_length];
+            let payload = &self.buffer[header_end..message_end];
             if message_type == NLMSG_DONE {
                 decode_payload(payload, events);
             } else if message_type == NLMSG_ERROR && payload.len() >= 4 {
@@ -116,7 +122,14 @@ impl Connector {
                     return Err(io::Error::from_raw_os_error(-error));
                 }
             }
-            offset += (message_length + 3) & !3;
+            let Some(aligned) = message_end.checked_add(3) else {
+                break;
+            };
+            let next = aligned & !3;
+            if next <= offset {
+                break;
+            }
+            offset = next;
         }
         Ok(())
     }
