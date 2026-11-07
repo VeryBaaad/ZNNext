@@ -268,6 +268,11 @@ impl Daemon {
             return;
         }
 
+        if event.kind == EventKind::Exec {
+            self.ignored.remove(&pid);
+            self.done.remove(&pid);
+        }
+
         match event.kind {
             EventKind::Fork => return,
             EventKind::Exit => {

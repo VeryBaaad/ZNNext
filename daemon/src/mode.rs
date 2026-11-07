@@ -327,8 +327,13 @@ impl Daemon {
     }
 
     pub fn poll_processes(&mut self) {
+        let now = procfs::now_ms();
         let last_pid = procfs::last_allocated_pid();
-        if last_pid.is_some() && last_pid == self.last_allocated_pid && self.candidates.is_empty() {
+        if last_pid.is_some()
+            && last_pid == self.last_allocated_pid
+            && self.candidates.is_empty()
+            && now.saturating_sub(self.last_proc_scan_ms) < SWEEP_INTERVAL_MS
+        {
             self.proc_scan_active = false;
             return;
         }
@@ -350,10 +355,7 @@ impl Daemon {
             }
             seen.insert(pid);
 
-            if self.tracees.contains_key(&pid)
-                || self.done.contains(&pid)
-                || self.ignored.contains(&pid)
-            {
+            if self.tracees.contains_key(&pid) {
                 continue;
             }
 
@@ -363,6 +365,14 @@ impl Daemon {
             }
             let is_target = crate::targets::matches(&self.targets, &exe);
             active |= is_target;
+
+            if self.done.contains(&pid) || self.ignored.contains(&pid) {
+                if !is_target {
+                    continue;
+                }
+                self.done.remove(&pid);
+                self.ignored.remove(&pid);
+            }
 
             match self.candidates.get(&pid).cloned() {
                 None => {
@@ -423,6 +433,7 @@ impl Daemon {
         self.done.retain(|pid| seen.contains(pid));
         self.yielded.retain(|pid| seen.contains(pid));
         self.proc_scan_active = active;
+        self.last_proc_scan_ms = now;
         self.ignored_rescans += 1;
         if self.ignored_rescans >= 15000 {
             self.ignored_rescans = 0;
