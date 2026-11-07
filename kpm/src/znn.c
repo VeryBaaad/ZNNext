@@ -250,7 +250,7 @@ static long znn_control(const char* ctl_args, char* __user out_msg,
   uint32_t count = (requested == 0 || requested > available)
                        ? (uint32_t)available
                        : requested;
-  uint64_t first = written - count;
+  uint64_t first = written - count + 1;
   int total = 0;
 
   for (uint32_t i = 0; i < count; i++) {
