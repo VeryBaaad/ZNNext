@@ -1,0 +1,25 @@
+[package]
+name = "srx_hook_ffi"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+srx_hook = { path = "srx_hook" }
+
+[workspace]
+exclude = ["srx_hook"]
+
+[profile.dev]
+panic = "abort"
+opt-level = "s"
+debug = 1
+
+[profile.release]
+panic = "abort"
+opt-level = "z"
+codegen-units = 1
+lto = true

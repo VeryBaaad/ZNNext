@@ -121,6 +121,10 @@ endif ()
 
 add_subdirectory(baaadhook)
 
+if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "x86_64")
+    add_subdirectory(srx_hook)
+endif ()
+
 add_subdirectory(lzma)
 add_subdirectory(xz-embedded)
 
