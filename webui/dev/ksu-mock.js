@@ -67,7 +67,7 @@
     pltHook: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'plthook', 'urhook', 'baaadhook', 'yukiplt', 'profilo', 'srxhook', 'disable'] },
     pltHook32: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'plthook', 'baaadhook', 'yukiplt', 'profilo', 'disable'] },
     mode: { value: 'proc', options: ['auto', 'kernel', 'ptrace', 'proc', 'late'] },
-    debugdata: { value: 'lzma', options: ['lzma', 'xz'] },
+    debugdata: { value: 'lzma', options: ['lzma', 'xz', 'libarchive'] },
     disableZn: { value: 'true', options: ['true', 'false'] },
   };
 

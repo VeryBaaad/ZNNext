@@ -71,6 +71,7 @@ export const en: Record<string, string> = {
   "config.debugdata": "gnu_debugdata decompressor",
   "config.debugdata.lzma": "LZMA SDK",
   "config.debugdata.xz": "XZ Embedded",
+  "config.debugdata.libarchive": "libarchive",
   "config.uiStyle": "UI style",
   "config.saved": "Saved",
   "config.saveFailed": "Failed to save configuration",

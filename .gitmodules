@@ -58,3 +58,6 @@
 [submodule "loader/src/external/srx_hook/srx_hook"]
 	path = loader/src/external/srx_hook/srx_hook
 	url = https://github.com/Kindness-Kismet/srx_hook.git
+[submodule "loader/src/external/libarchive"]
+	path = loader/src/external/libarchive
+	url = https://github.com/libarchive/libarchive.git

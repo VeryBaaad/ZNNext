@@ -72,6 +72,7 @@ export const zhCN: Dictionary = {
   "config.debugdata": "gnu_debugdata 解压后端",
   "config.debugdata.lzma": "LZMA SDK",
   "config.debugdata.xz": "XZ Embedded",
+  "config.debugdata.libarchive": "libarchive",
   "config.uiStyle": "界面样式",
   "config.saved": "已保存",
   "config.saveFailed": "保存失败",

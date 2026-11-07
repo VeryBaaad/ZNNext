@@ -72,6 +72,7 @@ export const lzh: Dictionary = {
   "config.debugdata": "符節秘錄解封考校",
   "config.debugdata.lzma": "太乙神數祕法",
   "config.debugdata.xz": "奇門遁甲祕法",
+  "config.debugdata.libarchive": "六壬神課",
   "config.uiStyle": "容貌",
   "config.saved": "已識",
   "config.saveFailed": "未載",
