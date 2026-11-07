@@ -97,7 +97,8 @@ int registerModule(const void* module) {
   if (!module) return ZN_FAILED;
   const auto* m = static_cast<const ZygiskNextHyosModule*>(module);
   if (!m->onAppSpecialized) return ZN_FAILED;
-  if (m->target_api_version > ZYGISK_NEXT_HYOS_API_VERSION) {
+  if (m->target_api_version < 1 ||
+      m->target_api_version > ZYGISK_NEXT_HYOS_API_VERSION) {
     LOGE("HYOS: module targets API version %d, only up to %d supported",
          m->target_api_version, ZYGISK_NEXT_HYOS_API_VERSION);
     return ZN_FAILED;
