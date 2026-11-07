@@ -250,7 +250,10 @@ fn signal_daemon(requested: i32, message: fn(Pid) -> String) -> i32 {
         println!("daemon is not running");
         return 1;
     };
-    let _ = process::kill(pid, requested);
+    if let Err(error) = process::kill(pid, requested) {
+        eprintln!("cannot signal daemon ({pid}): {error}");
+        return 1;
+    }
     println!("{}", message(pid));
     0
 }
