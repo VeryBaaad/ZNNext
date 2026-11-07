@@ -269,6 +269,7 @@ fn config_set(arguments: &[String]) -> i32 {
         }
         return 1;
     };
+    let mut zn_failed = false;
     if !config::option_in(&options, value) {
         eprintln!("invalid {kind} value \"{value}\" for this device");
         return 1;
@@ -284,6 +285,7 @@ fn config_set(arguments: &[String]) -> i32 {
     if kind == "disable-zn" {
         let disable = value == config::DISABLE_ZN_TRUE;
         if !crate::zn::apply_now(disable) {
+            zn_failed = true;
             eprintln!(
                 "the setting was saved, but Zygisk Next could not be updated; see the module log"
             );
@@ -294,7 +296,8 @@ fn config_set(arguments: &[String]) -> i32 {
         let _ = process::kill(pid, signal::SIGHUP);
     }
 
-    print_json(&updated.report())
+    let code = print_json(&updated.report());
+    if zn_failed { 1 } else { code }
 }
 
 fn apply_zn(arguments: &[String]) -> i32 {
