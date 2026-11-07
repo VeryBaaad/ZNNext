@@ -102,12 +102,12 @@ static void znn_before_execveat(hook_fargs5_t* args, void* udata) {
 }
 
 static int znn_caller_uid_is_root(void) {
-  if (znn_task_cred_offset < 0 || znn_cred_uid_offset < 0) return 1;
+  if (znn_task_cred_offset < 0 || znn_cred_uid_offset < 0) return 0;
 
   void* task = current;
-  if (!task) return 1;
+  if (!task) return 0;
   void* cred = *(void**)((char*)task + znn_task_cred_offset);
-  if (!cred) return 1;
+  if (!cred) return 0;
   return *(uint32_t*)((char*)cred + znn_cred_uid_offset) == 0;
 }
 
@@ -283,8 +283,7 @@ static long znn_init(const char* args, const char* event, void* reserved) {
 #ifdef ZNN_WITH_BTF
   if (znn_task_cred_offset < 0)
     pr_info(
-        "znn: cred offsets unresolved, uid gate disabled, serving every "
-        "caller\n");
+        "znn: cred offsets unresolved, uid gate fails closed\n");
 #endif
 
   pr_info(
