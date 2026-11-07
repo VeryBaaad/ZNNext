@@ -175,7 +175,7 @@ fn daemon_present() -> bool {
         let Ok(comm) = fs::read_to_string(format!("/proc/{pid}/comm")) else {
             continue;
         };
-        if comm.trim_start_matches('/').starts_with("zygiskd") {
+        if matches!(comm.trim(), "zygiskd" | "zygiskd64" | "zygiskd32") {
             return true;
         }
     }
