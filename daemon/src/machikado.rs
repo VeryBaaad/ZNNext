@@ -26,7 +26,7 @@ use crate::daemon::MODULE_ID;
 
 use crate::mazoku::ORG_PUBLIC_KEY;
 
-const SIGNED_FILES: [&str; 9] = [
+const SIGNED_FILES: [&str; 10] = [
     "bin/znnd",
     "emulated-soft-reboot.sh",
     "lib/libzn_loader.so",
@@ -36,6 +36,7 @@ const SIGNED_FILES: [&str; 9] = [
     "post-fs-data.sh",
     "late-load.sh",
     "sepolicy.rule",
+    "uninstall.sh",
 ];
 
 fn load_entry(path: &Path, relative_path: &str) -> Result<FileEntry, String> {

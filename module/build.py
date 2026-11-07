@@ -18,7 +18,7 @@ STAGE_ROOT = MODULE_DIR / "build" / "outputs" / "module"
 PRIVATE_KEY = MODULE_DIR / "private_key"
 SIGNER = MODULE_DIR / "sign" / "Cargo.toml"
 
-TEMPLATED_FILES = {"module.prop", "customize.sh", "late-load.sh", "post-fs-data.sh"}
+TEMPLATED_FILES = {"module.prop", "customize.sh", "late-load.sh", "post-fs-data.sh", "uninstall.sh"}
 SKIPPED_FILES = {*TEMPLATED_FILES, "mazoku"}
 
 MACHIKADO_LAYOUT = {
@@ -120,7 +120,7 @@ def expand_scripts(stage, variant):
         "MIN_APATCH_VERSION": str(znn.MIN_APATCH_VERSION),
         "KPM_ID": znn.KPM_ID,
     }
-    for name in ("customize.sh", "late-load.sh", "post-fs-data.sh"):
+    for name in ("customize.sh", "late-load.sh", "post-fs-data.sh", "uninstall.sh"):
         contents = (SOURCE_DIR / name).read_text(encoding="utf-8")
         expanded = re.sub(
             r"@([A-Z0-9_]+)@",
@@ -201,6 +201,7 @@ def sign_stage(stage):
             ("late-load.sh", "late-load.sh"),
             ("emulated-soft-reboot.sh", "emulated-soft-reboot.sh"),
             ("sepolicy.rule", "sepolicy.rule"),
+            ("uninstall.sh", "uninstall.sh"),
             ("mazoku", "mazoku"),
             ("bin/znnd", f"bin/{abi}/znnd"),
             ("lib/libzn_loader.so", f"lib/{abi32}/libzn_loader.so"),
