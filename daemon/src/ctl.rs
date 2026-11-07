@@ -195,16 +195,9 @@ fn start_daemon(restart: bool) -> i32 {
             thread::sleep(STOP_INTERVAL);
         }
         if procfs::is_daemon_alive(pid) {
-            let _ = process::kill(pid, signal::SIGKILL);
-            for _ in 0..STOP_ATTEMPTS {
-                if !procfs::is_daemon_alive(pid) {
-                    break;
-                }
-                thread::sleep(STOP_INTERVAL);
-            }
-        }
-        if procfs::is_daemon_alive(pid) {
-            eprintln!("daemon ({pid}) did not stop");
+            eprintln!(
+                "daemon ({pid}) is still running; it may be holding an armed breakpoint, so it is not killed"
+            );
             return 1;
         }
     }
