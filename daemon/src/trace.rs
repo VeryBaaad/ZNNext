@@ -164,7 +164,13 @@ impl Daemon {
                     ptrace::cont(pid, None);
                 }
                 _ => {
-                    if self.tracees.contains_key(&pid) {
+                    if self
+                        .tracees
+                        .get(&pid)
+                        .is_some_and(|tracee| tracee.state == State::Traced)
+                    {
+                        ptrace::cont(pid, Some(signal::SIGTRAP));
+                    } else if self.tracees.contains_key(&pid) {
                         self.handle_trap(pid);
                     } else {
                         ptrace::cont(pid, None);
