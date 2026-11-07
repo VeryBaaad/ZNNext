@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(xz_embedded C)
 
-set(XZ_EMBEDDED_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../xz-embedded)
+set(XZ_EMBEDDED_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_library(xz_embedded STATIC
     ${XZ_EMBEDDED_SRC}/linux/lib/xz/xz_crc32.c

@@ -14,7 +14,7 @@ add_subdirectory(lsplt/lsplt/src/main/jni)
 
 if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
     enable_language(ASM)
-    set(SHADOWHOOK_SRC ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/shadowhook/src/main/cpp)
+    set(SHADOWHOOK_SRC ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/src/shadowhook/src/main/cpp)
     if (ANDROID_ABI STREQUAL "arm64-v8a")
         set(SHADOWHOOK_ARCH "arm64")
     else ()
@@ -30,7 +30,7 @@ if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
     # DO NOT TOUCH THIS.
     list(REMOVE_ITEM SHADOWHOOK_SOURCES ${SHADOWHOOK_SRC}/sh_linker.c)
     list(APPEND SHADOWHOOK_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/znn_shadowhook/sh_linker.c)
+        ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/sh_linker.c)
     add_library(shadowhook STATIC ${SHADOWHOOK_SOURCES})
     target_include_directories(shadowhook PRIVATE
         ${SHADOWHOOK_SRC}
@@ -61,7 +61,7 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
     )
     if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
         target_include_directories(bytehook PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/shadowhook/src/main/cpp/include)
+            ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/src/shadowhook/src/main/cpp/include)
         target_link_libraries(bytehook PRIVATE shadowhook)
     endif ()
     target_compile_options(bytehook PRIVATE -w)
@@ -93,11 +93,11 @@ if (ANDROID_ABI STREQUAL "arm64-v8a")
 endif()
 
 add_subdirectory(plti)
-add_subdirectory(znn_frida_gum)
-add_subdirectory(znn_urhook)
+add_subdirectory(frida-gum)
+add_subdirectory(urhook)
 
 if (ANDROID_ABI STREQUAL "arm64-v8a")
-    add_subdirectory(znn_yukiihook)
+    add_subdirectory(yukizygisk)
 endif ()
 
 if (ANDROID_ABI STREQUAL "riscv64")
@@ -110,17 +110,17 @@ else ()
     add_subdirectory(dobby)
     target_compile_options(dobby PRIVATE -w)
 
-    add_subdirectory(znn_hookzz)
+    add_subdirectory(hookzz)
 
-    add_subdirectory(znn_whale)
+    add_subdirectory(whale)
 
-    add_subdirectory(znn_yukiplt)
+    add_subdirectory(yukiplt)
 endif ()
 
 add_subdirectory(baaadhook)
 
 add_subdirectory(lzma)
-add_subdirectory(znn_xz)
+add_subdirectory(xz-embedded)
 
 if (TARGET cxx::cxx)
     if (ANDROID_ABI STREQUAL "riscv64")

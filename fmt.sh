@@ -20,7 +20,7 @@ cd ../..
 
 cd loader
 git ls-files | grep -E "\.(cpp|h|hpp|c)$" | xargs clang-format -style=Google -i
-git restore src/external/lzma src/external/znn_shadowhook
+git restore src/external/lzma src/external/shadowhook
 cd ..
 
 cd webui

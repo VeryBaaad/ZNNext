@@ -4,7 +4,7 @@ if (ANDROID_ABI STREQUAL "riscv64")
     return()
 endif ()
 
-set(FRIDA_GUM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../frida-gum")
+set(FRIDA_GUM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(FRIDA_GUM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/frida-gum-${ANDROID_ABI}")
 set(FRIDA_GUM_DEPS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.build/frida-gum-deps"
     CACHE PATH "Shared Frida dependency cache")

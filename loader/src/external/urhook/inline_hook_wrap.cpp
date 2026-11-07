@@ -18,12 +18,22 @@
  */
 
 // clang-format off
-#include <cmath>
+#include <sys/mman.h>
+#include <unistd.h>
+
+#include <algorithm>
+#include <cstring>
+#include <list>
+#include <map>
+#include <mutex>
 #include <stdexcept>
 
-#include <ur/assembler/arm64-v8a/assembler.h>
+#include <ur/assembler.h>
+#include <ur/disassembler.h>
+#include <ur/inline_hook.h>
+#include <ur/memory.h>
 
 #include "urhook_exception_compat.h"
 
-#include "../urhook/src/assembler/arm64-v8a/assembler.cpp"
+#include "src/src/inline_hook.cpp"
 // clang-format on
