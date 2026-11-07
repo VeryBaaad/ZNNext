@@ -18,8 +18,10 @@
  */
 
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Command, Output, Stdio};
+use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -95,48 +97,11 @@ fn identity_is_original() -> bool {
 }
 
 fn supports_znmod(cli: &Path) -> bool {
-    let mut child = match Command::new(cli)
-        .arg("znmod")
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-    {
-        Ok(child) => child,
-        Err(error) => {
-            logw!("zn modules: cannot probe {}: {error}", cli.display());
-            return false;
-        }
-    };
-
-    let deadline = Instant::now() + PROBE_TIMEOUT;
-    loop {
-        match child.try_wait() {
-            Ok(Some(_)) => break,
-            Ok(None) => {
-                if Instant::now() >= deadline {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    logw!("zn modules: znmod probe timed out; treating it as unsupported");
-                    return false;
-                }
-                thread::sleep(Duration::from_millis(50));
-            }
-            Err(error) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                logw!("zn modules: znmod probe failed: {error}");
-                return false;
-            }
-        }
-    }
-
-    let output = match child.wait_with_output() {
-        Ok(output) => output,
-        Err(error) => {
-            logw!("zn modules: cannot read the znmod probe result: {error}");
-            return false;
-        }
+    let mut command = Command::new(cli);
+    command.arg("znmod").stdin(Stdio::null());
+    let Some(output) = run_with_timeout(&mut command, PROBE_TIMEOUT) else {
+        logw!("zn modules: znmod probe failed or timed out; treating it as unsupported");
+        return false;
     };
     let mut text = String::from_utf8_lossy(&output.stdout).to_lowercase();
     text.push_str(&String::from_utf8_lossy(&output.stderr).to_lowercase());
@@ -217,16 +182,63 @@ fn daemon_present() -> bool {
     false
 }
 
+fn run_with_timeout(command: &mut Command, timeout: Duration) -> Option<Output> {
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = command.spawn().ok()?;
+    let mut stdout = child.stdout.take()?;
+    let mut stderr = child.stderr.take()?;
+    let (stdout_tx, stdout_rx) = mpsc::channel();
+    let (stderr_tx, stderr_rx) = mpsc::channel();
+    thread::spawn(move || {
+        let mut buffer = Vec::new();
+        let _ = stdout.read_to_end(&mut buffer);
+        let _ = stdout_tx.send(buffer);
+    });
+    thread::spawn(move || {
+        let mut buffer = Vec::new();
+        let _ = stderr.read_to_end(&mut buffer);
+        let _ = stderr_tx.send(buffer);
+    });
+
+    let deadline = Instant::now() + timeout;
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let remaining = deadline.saturating_duration_since(Instant::now());
+                let stdout = stdout_rx.recv_timeout(remaining).unwrap_or_default();
+                let stderr = stderr_rx.recv_timeout(remaining).unwrap_or_default();
+                return Some(Output {
+                    status,
+                    stdout,
+                    stderr,
+                });
+            }
+            Ok(None) => {
+                if Instant::now() >= deadline {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return None;
+                }
+                thread::sleep(Duration::from_millis(50));
+            }
+            Err(_) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return None;
+            }
+        }
+    }
+}
+
 fn run_action(cli: &Path, action: &str, module: &str) -> Result<(), String> {
-    let output = Command::new(cli)
+    let mut command = Command::new(cli);
+    command
         .arg("znmod")
         .arg(action)
         .arg(module)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .map_err(|error| format!("cannot run {}: {error}", cli.display()))?;
+        .stdin(Stdio::null());
+    let output = run_with_timeout(&mut command, Duration::from_secs(5))
+        .ok_or_else(|| format!("{}: timed out", cli.display()))?;
 
     if output.status.success() {
         return Ok(());
