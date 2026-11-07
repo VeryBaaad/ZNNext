@@ -141,10 +141,10 @@ def parse_arguments(argv):
 
 def main(argv=None):
     options = parse_arguments(argv)
-    sync_version()
     if options.no_kpm:
         print(f"kpm ({options.variant}): disabled", flush=True)
         return 0
+    sync_version()
     ndk = znn.ndk_dir(options.ndk)
     compile_kpm(ndk, znn.kpm_output(options.variant), options.btf)
     return 0
