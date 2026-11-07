@@ -174,12 +174,19 @@ void installHooks() {
       void* h = dlopen("libselinux.so", RTLD_NOW);
       if (h) fn = dlsym(h, "selinux_android_setcontext");
     }
+    SetcontextFn fallback = s.fallback_setcontext;
+    s.fallback_setcontext = nullptr;
     if (fn && api::inlineHook(fn, reinterpret_cast<void*>(setcontextHook),
                               reinterpret_cast<void**>(&s.orig_setcontext)) ==
                   ZN_SUCCESS) {
-      LOGI("HYOS: inline hooked selinux_android_setcontext");
-    } else if (fn) {
-      LOGW("HYOS: cannot inline hook selinux_android_setcontext");
+      if (s.orig_setcontext) {
+        LOGI("HYOS: inline hooked selinux_android_setcontext");
+      } else {
+        LOGW("HYOS: inline setcontext hook reported no original");
+      }
+    } else {
+      s.fallback_setcontext = fallback;
+      if (fn) LOGW("HYOS: cannot inline hook selinux_android_setcontext");
     }
   }
   if (!s.orig_setname) {
@@ -188,12 +195,19 @@ void installHooks() {
       void* h = dlopen("libc.so", RTLD_NOW);
       if (h) fn = dlsym(h, "pthread_setname_np");
     }
+    SetnameFn fallback = s.fallback_setname;
+    s.fallback_setname = nullptr;
     if (fn && api::inlineHook(fn, reinterpret_cast<void*>(setnameHook),
                               reinterpret_cast<void**>(&s.orig_setname)) ==
                   ZN_SUCCESS) {
-      LOGI("HYOS: inline hooked pthread_setname_np");
-    } else if (fn) {
-      LOGW("HYOS: cannot inline hook pthread_setname_np");
+      if (s.orig_setname) {
+        LOGI("HYOS: inline hooked pthread_setname_np");
+      } else {
+        LOGW("HYOS: inline setname hook reported no original");
+      }
+    } else {
+      s.fallback_setname = fallback;
+      if (fn) LOGW("HYOS: cannot inline hook pthread_setname_np");
     }
   }
   if (!s.orig_setcontext && !s.warned) {
