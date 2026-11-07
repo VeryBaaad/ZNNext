@@ -36,6 +36,7 @@ pub const MODE_LATE: &str = "late";
 
 pub const DEBUGDATA_LZMA: &str = "lzma";
 pub const DEBUGDATA_XZ: &str = "xz";
+pub const DEBUGDATA_LIBARCHIVE: &str = "libarchive";
 
 pub const DISABLE_ZN_TRUE: &str = "true";
 pub const DISABLE_ZN_FALSE: &str = "false";
@@ -175,7 +176,7 @@ pub fn tracking_mode_options() -> Vec<&'static str> {
 }
 
 pub fn debugdata_options() -> Vec<&'static str> {
-    vec![DEBUGDATA_LZMA, DEBUGDATA_XZ]
+    vec![DEBUGDATA_LZMA, DEBUGDATA_XZ, DEBUGDATA_LIBARCHIVE]
 }
 
 pub fn disable_zn_options() -> Vec<&'static str> {

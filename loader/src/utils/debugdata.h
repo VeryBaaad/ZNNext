@@ -29,6 +29,7 @@ namespace znn::debugdata {
 enum class Backend {
   kLzma,
   kXz,
+  kArchive,
 };
 
 Backend backend();

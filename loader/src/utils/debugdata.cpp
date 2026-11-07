@@ -26,16 +26,13 @@
 #include <mutex>
 
 #include "LzmaDec.h"
+#include "debugdata_internal.h"
 #include "xz.h"
 
 namespace znn::debugdata {
 namespace {
 
-constexpr size_t kMaxDecompressedSize = 64u * 1024u * 1024u;
-
 constexpr uint32_t kMaxDictionarySize = 64u * 1024u * 1024u;
-
-constexpr size_t kInitialOutputSize = 256u * 1024u;
 
 constexpr uint8_t kXzMagic[] = {0xFD, '7', 'z', 'X', 'Z', 0x00};
 
@@ -62,6 +59,8 @@ void* lzmaAlloc(ISzAllocPtr, size_t size) { return malloc(size); }
 void lzmaFree(ISzAllocPtr, void* address) { free(address); }
 
 const ISzAlloc g_lzma_alloc = {lzmaAlloc, lzmaFree};
+
+}  // namespace
 
 bool lzmaAlone(const uint8_t* data, size_t size, std::vector<uint8_t>& out) {
   if (size < 13 || isXzStream(data, size)) return false;
@@ -139,10 +138,18 @@ bool xzStream(const uint8_t* data, size_t size, std::vector<uint8_t>& out) {
   return done;
 }
 
+namespace {
+
 bool tryBackend(Backend backend, const uint8_t* data, size_t size,
                 std::vector<uint8_t>& out) {
-  return backend == Backend::kXz ? xzStream(data, size, out)
-                                 : lzmaAlone(data, size, out);
+  switch (backend) {
+    case Backend::kXz:
+      return xzStream(data, size, out);
+    case Backend::kArchive:
+      return archiveStream(data, size, out);
+    default:
+      return lzmaAlone(data, size, out);
+  }
 }
 
 }  // namespace
@@ -157,6 +164,8 @@ bool parseBackend(const char* name, Backend* out) {
     *out = Backend::kLzma;
   } else if (strcmp(name, "xz") == 0) {
     *out = Backend::kXz;
+  } else if (strcmp(name, "libarchive") == 0) {
+    *out = Backend::kArchive;
   } else {
     return false;
   }
@@ -164,7 +173,14 @@ bool parseBackend(const char* name, Backend* out) {
 }
 
 const char* backendName(Backend value) {
-  return value == Backend::kXz ? "xz" : "lzma";
+  switch (value) {
+    case Backend::kXz:
+      return "xz";
+    case Backend::kArchive:
+      return "libarchive";
+    default:
+      return "lzma";
+  }
 }
 
 bool decompress(const uint8_t* data, size_t size, std::vector<uint8_t>& out) {
@@ -172,10 +188,11 @@ bool decompress(const uint8_t* data, size_t size, std::vector<uint8_t>& out) {
   if (!data || size == 0) return false;
 
   const Backend preferred = backend();
-  const Backend fallback =
-      preferred == Backend::kXz ? Backend::kLzma : Backend::kXz;
+  if (tryBackend(preferred, data, size, out)) return true;
+  out.clear();
 
-  for (Backend candidate : {preferred, fallback}) {
+  for (Backend candidate : {Backend::kLzma, Backend::kXz, Backend::kArchive}) {
+    if (candidate == preferred) continue;
     if (tryBackend(candidate, data, size, out)) return true;
     out.clear();
   }

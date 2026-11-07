@@ -13,9 +13,10 @@ endif ()
 add_library(elfutil STATIC
     utils/elf_util.cpp
     utils/debugdata.cpp
+    utils/debugdata_archive.cpp
 )
 target_include_directories(elfutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(elfutil PUBLIC lzma xz_embedded)
+target_link_libraries(elfutil PUBLIC archive_static lzma xz_embedded)
 if (TARGET cxx::cxx)
     target_link_libraries(elfutil PUBLIC cxx::cxx)
 endif ()
