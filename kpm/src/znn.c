@@ -265,7 +265,8 @@ static long znn_control(const char* ctl_args, char* __user out_msg,
         znn_format_exec_record(line, (int)sizeof(line), seq, pid, tgid, ppid);
     if (length <= 0) break;
     if (total + length > outlen) break;
-    if (compat_copy_to_user(out_msg + total, line, length) != length) break;
+    if (compat_copy_to_user(out_msg + total, line, length) != length)
+      return -EFAULT;
     total += length;
   }
   return total;
