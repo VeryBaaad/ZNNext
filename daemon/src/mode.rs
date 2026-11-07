@@ -267,6 +267,19 @@ impl Daemon {
                 continue;
             };
 
+            let at_entry = read_registers(pid, tracee.arch).is_ok_and(|regs| {
+                let pc = regs.pc();
+                pc == tracee.entry
+                    || pc == tracee.entry + 1
+                    || (tracee.arch == Arch::Arm32
+                        && (pc == tracee.entry + 2 || pc == tracee.entry + 4))
+            });
+            if status.is_stopped() && at_entry {
+                self.tracees.insert(pid, tracee);
+                self.handle_event(pid, status);
+                continue;
+            }
+
             logw!("entry breakpoint for pid {pid} never hit (already past entry?), detaching");
             if status.is_stopped() {
                 release_tracee(pid, &tracee);
