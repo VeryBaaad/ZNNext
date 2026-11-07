@@ -181,8 +181,13 @@ void installHooks() {
                   ZN_SUCCESS) {
       if (s.orig_setcontext) {
         LOGI("HYOS: inline hooked selinux_android_setcontext");
+      } else if (api::inlineUnhook(fn) == ZN_SUCCESS) {
+        s.fallback_setcontext = fallback;
+        LOGW("HYOS: inline setcontext hook had no original and was removed");
       } else {
-        LOGW("HYOS: inline setcontext hook reported no original");
+        LOGW(
+            "HYOS: inline setcontext hook has no original and cannot be "
+            "removed; replacements fail closed");
       }
     } else {
       s.fallback_setcontext = fallback;
@@ -202,8 +207,13 @@ void installHooks() {
                   ZN_SUCCESS) {
       if (s.orig_setname) {
         LOGI("HYOS: inline hooked pthread_setname_np");
+      } else if (api::inlineUnhook(fn) == ZN_SUCCESS) {
+        s.fallback_setname = fallback;
+        LOGW("HYOS: inline setname hook had no original and was removed");
       } else {
-        LOGW("HYOS: inline setname hook reported no original");
+        LOGW(
+            "HYOS: inline setname hook has no original and cannot be removed; "
+            "replacements fail closed");
       }
     } else {
       s.fallback_setname = fallback;
