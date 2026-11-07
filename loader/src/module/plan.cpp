@@ -20,6 +20,7 @@
 #include "module/plan.h"
 
 #include <string.h>
+#include <unistd.h>
 
 #include "ipc/plan.h"
 #include "log.h"
@@ -77,6 +78,14 @@ bool parsePlan(const void* raw, Plan& out) {
   const auto* base = static_cast<const char*>(raw);
   const char* blob = base + kMinPlanBytes + records;
   const size_t blob_size = header.size - kMinPlanBytes - records;
+  const auto* mods =
+      reinterpret_cast<const ipc::PlanModule*>(base + kMinPlanBytes);
+  auto fail = [&] {
+    for (uint32_t i = 0; i < header.module_count; ++i) {
+      if (mods[i].fd >= 0) close(mods[i].fd);
+    }
+    return false;
+  };
 
   out = Plan();
   out.nonce = header.nonce;
@@ -85,11 +94,9 @@ bool parsePlan(const void* raw, Plan& out) {
       !blobString(blob, blob_size, header.plt_engine, out.plt_engine) ||
       !blobString(blob, blob_size, header.debugdata, out.debugdata)) {
     LOGE("boot plan: option names are out of bounds");
-    return false;
+    return fail();
   }
 
-  const auto* mods =
-      reinterpret_cast<const ipc::PlanModule*>(base + kMinPlanBytes);
   out.modules.reserve(header.module_count);
   for (uint32_t i = 0; i < header.module_count; ++i) {
     PlanModule m;
@@ -98,15 +105,15 @@ bool parsePlan(const void* raw, Plan& out) {
     m.index = mods[i].index;
     if (m.fd < 0) {
       LOGE("boot plan: module %u has no library descriptor", i);
-      return false;
+      return fail();
     }
     if (m.index >= ipc::kPlanMaxModules) {
       LOGE("boot plan: module %u has an implausible index %u", i, m.index);
-      return false;
+      return fail();
     }
     if (!blobString(blob, blob_size, mods[i].path, m.path)) {
       LOGE("boot plan: module %u path is out of bounds", i);
-      return false;
+      return fail();
     }
     out.modules.push_back(std::move(m));
   }
