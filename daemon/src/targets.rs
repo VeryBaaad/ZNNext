@@ -257,6 +257,13 @@ impl Daemon {
             if !module_matches(module, exe) {
                 continue;
             }
+            let failures = module.failed.len();
+            module
+                .failed
+                .retain(|(failed_name, _)| failed_name != &name);
+            if module.failed.len() != failures {
+                changed = true;
+            }
             if module.processes.iter().any(|(known, _)| *known == pid) {
                 continue;
             }
