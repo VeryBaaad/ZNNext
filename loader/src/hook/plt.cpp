@@ -74,6 +74,8 @@ bool pltHook(void* base, const char* symbol, void* replacement,
     LOGE("pltHook %s: base %p has no path in maps", symbol, base);
     return false;
   }
+  const uintptr_t load_base =
+      hit->start >= hit->offset ? hit->start - hit->offset : entry->start;
   LOGI("pltHook base=%p symbol=%s path=%s dev=%llu inode=%llu", base, symbol,
        entry->path.c_str(), static_cast<unsigned long long>(entry->dev),
        static_cast<unsigned long long>(entry->inode));
@@ -87,25 +89,25 @@ bool pltHook(void* base, const char* symbol, void* replacement,
     case PltEngine::kXHook:
       return backend::xhookHook(entry->path, symbol, replacement, original);
     case PltEngine::kPlti:
-      return backend::pltiHook(entry->path, entry->start, symbol, replacement,
+      return backend::pltiHook(entry->path, load_base, symbol, replacement,
                                original);
     case PltEngine::kPltHook:
-      return backend::plthookHook(entry->path, entry->start, symbol,
-                                  replacement, original);
+      return backend::plthookHook(entry->path, load_base, symbol, replacement,
+                                  original);
     case PltEngine::kUrHook:
-      return backend::urhookPltHook(entry->path, entry->start, symbol,
-                                    replacement, original);
+      return backend::urhookPltHook(entry->path, load_base, symbol, replacement,
+                                    original);
     case PltEngine::kBaaadHook:
       return backend::baaadhookPltHook(entry->path, symbol, replacement,
                                        original);
     case PltEngine::kYukiPlt:
-      return backend::yukipltHook(entry->path, entry->start, symbol,
-                                  replacement, original);
+      return backend::yukipltHook(entry->path, load_base, symbol, replacement,
+                                  original);
     case PltEngine::kProfilo:
-      return backend::profiloHook(entry->path, entry->start, symbol,
-                                  replacement, original);
+      return backend::profiloHook(entry->path, load_base, symbol, replacement,
+                                  original);
     case PltEngine::kSrxHook:
-      return backend::srxhookPltHook(entry->path, entry->start, symbol,
+      return backend::srxhookPltHook(entry->path, load_base, symbol,
                                      replacement, original);
     case PltEngine::kDisable:
       return false;
