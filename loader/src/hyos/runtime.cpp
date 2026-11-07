@@ -116,11 +116,12 @@ int registerModule(const void* module) {
       }
       s.modules[index] = *m;
       s.module_count.store(index + 1, std::memory_order_release);
+      if (!s.in_child && !s.atfork_registered) {
+        s.atfork_registered = true;
+        pthread_atfork(atForkPrepare, nullptr, atForkChild);
+      }
     }
 
-    if (!s.in_child) {
-      pthread_atfork(atForkPrepare, nullptr, atForkChild);
-    }
     installHooks();
     LOGI("HYOS: module registered (%d)", index + 1);
     return ZN_SUCCESS;

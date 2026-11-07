@@ -52,6 +52,7 @@ struct State {
   ZygiskNextHyosModule modules[kMaxModules] = {};
   std::atomic<int> module_count{0};
   bool in_child = false;
+  bool atfork_registered = false;
   std::atomic<bool> fired{false};  // delivered already, once
   bool warned = false;
   bool plt_fork_tried = false;
