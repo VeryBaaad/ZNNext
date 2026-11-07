@@ -84,4 +84,8 @@ bool baaadhookPltHook(const std::string& caller_path, const char* symbol,
 bool yukipltHook(const std::string& caller_path, uintptr_t caller_base,
                  const char* symbol, void* replacement, void** original);
 
+bool profiloInit();
+bool profiloHook(const std::string& caller_path, uintptr_t caller_base,
+                 const char* symbol, void* replacement, void** original);
+
 }  // namespace znn::hook::backend

@@ -43,6 +43,7 @@ enum class PltEngine {
   kUrHook,
   kBaaadHook,
   kYukiPlt,
+  kProfilo,
   kDisable
 };
 const char* inlineEngineName(InlineEngine e);

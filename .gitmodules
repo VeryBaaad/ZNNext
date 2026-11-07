@@ -52,3 +52,6 @@
 [submodule "loader/src/external/yukizygisk"]
 	path = loader/src/external/yukizygisk/src
 	url = https://github.com/Rouyashiki/YukiZygisk.git
+[submodule "loader/src/external/profilo/src"]
+	path = loader/src/external/profilo/src
+	url = https://github.com/facebookarchive/profilo.git

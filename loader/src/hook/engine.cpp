@@ -79,6 +79,8 @@ const char* pltEngineName(PltEngine e) {
       return "baaadhook";
     case PltEngine::kYukiPlt:
       return "yukiplt";
+    case PltEngine::kProfilo:
+      return "profilo";
     case PltEngine::kDisable:
       return "disable";
   }
@@ -187,6 +189,12 @@ bool pltEngineSupported(PltEngine e) {
 #else
       return false;
 #endif
+    case PltEngine::kProfilo:
+#ifndef __riscv
+      return true;
+#else
+      return false;
+#endif
     case PltEngine::kDisable:
       return true;
   }
@@ -255,6 +263,8 @@ bool parsePltEngine(const char* name, PltEngine* out) {
     e = PltEngine::kBaaadHook;
   } else if (strcmp(name, "yukiplt") == 0) {
     e = PltEngine::kYukiPlt;
+  } else if (strcmp(name, "profilo") == 0) {
+    e = PltEngine::kProfilo;
   } else if (strcmp(name, "disable") == 0) {
     e = PltEngine::kDisable;
   } else {
@@ -305,6 +315,9 @@ void ensurePltEngineReady() {
   switch (g_plt_engine) {
     case PltEngine::kByteHook:
       ready = backend::bytehookInit();
+      break;
+    case PltEngine::kProfilo:
+      ready = backend::profiloInit();
       break;
     default:
       return;
