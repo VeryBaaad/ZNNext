@@ -19,6 +19,7 @@
 
 #include <lsplt.hpp>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 
@@ -33,8 +34,19 @@ struct Record {
   void* original = nullptr;
 };
 
+struct Slot {
+  void* value = nullptr;
+};
+
+struct Pending {
+  void* replacement = nullptr;
+  bool restoring = false;
+  std::unique_ptr<Slot> slot;
+};
+
 std::mutex g_mutex;
 std::map<std::string, Record> g_records;
+std::map<std::string, Pending> g_pending;
 
 std::string recordKey(dev_t dev, ino_t inode, const char* symbol) {
   std::string key = std::to_string(static_cast<unsigned long long>(dev));
@@ -45,65 +57,118 @@ std::string recordKey(dev_t dev, ino_t inode, const char* symbol) {
   return key;
 }
 
+void reconcileLocked() {
+  for (auto it = g_pending.begin(); it != g_pending.end();) {
+    if (it->second.slot->value == nullptr) {
+      ++it;
+      continue;
+    }
+    if (it->second.restoring) {
+      auto record = g_records.find(it->first);
+      if (record != g_records.end() &&
+          record->second.replacement == it->second.replacement) {
+        g_records.erase(record);
+      }
+    } else {
+      g_records[it->first] =
+          Record{it->second.replacement, it->second.slot->value};
+    }
+    it = g_pending.erase(it);
+  }
+}
+
+bool finishPending(std::map<std::string, Pending>::iterator pending,
+                   bool committed) {
+  void* const original = pending->second.slot->value;
+  if (!original) {
+    if (!committed) {
+      LOGE("pltHook: CommitHook failed");
+    } else {
+      LOGE("pltHook: symbol not found in PLT");
+    }
+    return false;
+  }
+  if (!committed) {
+    LOGW("pltHook: CommitHook reported failures for another registration");
+  }
+  if (pending->second.restoring) {
+    g_records.erase(pending->first);
+  } else {
+    g_records[pending->first] = Record{pending->second.replacement, original};
+  }
+  g_pending.erase(pending);
+  return true;
+}
+
 }  // namespace
 
 bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
                void** original) {
+  if (!symbol) return false;
+
+  std::lock_guard<std::mutex> lk(g_mutex);
+  reconcileLocked();
+
   const std::string key = recordKey(dev, inode, symbol);
-
-  void* previous = nullptr;
-  {
-    std::lock_guard<std::mutex> lk(g_mutex);
-    if (auto it = g_records.find(key); it != g_records.end())
-      previous = it->second.original;
-  }
-
-  void* backup = nullptr;
-  if (previous) {
+  auto record = g_records.find(key);
+  if (record != g_records.end()) {
+    void* const previous = record->second.original;
     if (replacement != previous) {
       LOGE("pltHook %s: already hooked, unhook first", symbol);
       return false;
     }
 
-    lsplt::RegisterHook(dev, inode, symbol, previous, &backup);
-    const bool committed = lsplt::CommitHook();
-    if (!backup) {
-      if (!committed) {
-        LOGE("pltHook %s: CommitHook failed", symbol);
-      } else {
-        LOGE("pltHook %s: symbol not found in PLT", symbol);
+    auto pending = g_pending.find(key);
+    if (pending == g_pending.end()) {
+      auto slot = std::make_unique<Slot>();
+      Pending state;
+      state.replacement = record->second.replacement;
+      state.restoring = true;
+      state.slot = std::move(slot);
+      pending = g_pending.emplace(key, std::move(state)).first;
+      if (!lsplt::RegisterHook(dev, inode, symbol, previous,
+                               &pending->second.slot->value)) {
+        g_pending.erase(pending);
+        LOGE("pltHook %s: RegisterHook failed", symbol);
+        return false;
       }
-      return false;
     }
-    if (!committed) {
-      LOGW("pltHook %s: the commit failed after the hook was removed", symbol);
-    }
-    {
-      std::lock_guard<std::mutex> lk(g_mutex);
-      g_records.erase(key);
-    }
+
+    const bool committed = lsplt::CommitHook();
+    if (!finishPending(pending, committed)) return false;
     if (original) *original = previous;
     return true;
   }
 
-  lsplt::RegisterHook(dev, inode, symbol, replacement, &backup);
-  const bool committed = lsplt::CommitHook();
-  if (!backup) {
-    if (!committed) {
-      LOGE("pltHook %s: CommitHook failed", symbol);
-    } else {
-      LOGE("pltHook %s: symbol not found in PLT", symbol);
+  auto pending = g_pending.find(key);
+  if (pending != g_pending.end()) {
+    if (pending->second.restoring ||
+        pending->second.replacement != replacement) {
+      LOGE("pltHook %s: another installation is pending", symbol);
+      return false;
     }
+    const bool committed = lsplt::CommitHook();
+    if (!finishPending(pending, committed)) return false;
+    if (original) *original = g_records[key].original;
+    return true;
+  }
+
+  auto slot = std::make_unique<Slot>();
+  Pending state;
+  state.replacement = replacement;
+  state.restoring = false;
+  state.slot = std::move(slot);
+  pending = g_pending.emplace(key, std::move(state)).first;
+  if (!lsplt::RegisterHook(dev, inode, symbol, replacement,
+                           &pending->second.slot->value)) {
+    g_pending.erase(pending);
+    LOGE("pltHook %s: RegisterHook failed", symbol);
     return false;
   }
-  if (!committed) {
-    LOGW("pltHook %s: the commit failed after the hook was installed", symbol);
-  }
-  {
-    std::lock_guard<std::mutex> lk(g_mutex);
-    g_records[key] = Record{replacement, backup};
-  }
-  if (original) *original = backup;
+
+  const bool committed = lsplt::CommitHook();
+  if (!finishPending(pending, committed)) return false;
+  if (original) *original = g_records[key].original;
   return true;
 }
 
