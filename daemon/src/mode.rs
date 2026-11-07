@@ -379,11 +379,13 @@ impl Daemon {
             let is_target = crate::targets::matches(&self.targets, &exe);
             active |= is_target;
 
-            if self.done.contains(&pid) || self.ignored.contains(&pid) {
+            if self.done.contains(&pid) {
+                continue;
+            }
+            if self.ignored.contains(&pid) {
                 if !is_target {
                     continue;
                 }
-                self.done.remove(&pid);
                 self.ignored.remove(&pid);
             }
 
