@@ -195,7 +195,10 @@ void installHooks() {
     void* fn = dlsym(RTLD_DEFAULT, "selinux_android_setcontext");
     if (!fn) {
       void* h = dlopen("libselinux.so", RTLD_NOW);
-      if (h) fn = dlsym(h, "selinux_android_setcontext");
+      if (h) {
+        fn = dlsym(h, "selinux_android_setcontext");
+        dlclose(h);
+      }
     }
     SetcontextFn fallback =
         s.fallback_setcontext.load(std::memory_order_acquire);
@@ -224,7 +227,10 @@ void installHooks() {
     void* fn = dlsym(RTLD_DEFAULT, "pthread_setname_np");
     if (!fn) {
       void* h = dlopen("libc.so", RTLD_NOW);
-      if (h) fn = dlsym(h, "pthread_setname_np");
+      if (h) {
+        fn = dlsym(h, "pthread_setname_np");
+        dlclose(h);
+      }
     }
     SetnameFn fallback = s.fallback_setname.load(std::memory_order_acquire);
     s.fallback_setname.store(nullptr, std::memory_order_release);
