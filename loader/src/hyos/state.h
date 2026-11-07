@@ -59,6 +59,9 @@ struct State {
   ForkFn orig_fork = nullptr;
   SetcontextFn orig_setcontext = nullptr;
   SetnameFn orig_setname = nullptr;
+  ForkFn fallback_fork = nullptr;
+  SetcontextFn fallback_setcontext = nullptr;
+  SetnameFn fallback_setname = nullptr;
   SpawnerImage spawner{};
   char captured_name[256] = {};
   std::atomic<int> name_state{kNameEmpty};

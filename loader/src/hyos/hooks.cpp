@@ -58,9 +58,9 @@ void findSpawnerImage() {
 int setcontextHook(uid_t uid, int is_system_server, const char* se_info,
                    const char* pkg_name) {
   State& s = state();
-  int ret = s.orig_setcontext
-                ? s.orig_setcontext(uid, is_system_server, se_info, pkg_name)
-                : -1;
+  SetcontextFn original =
+      s.orig_setcontext ? s.orig_setcontext : s.fallback_setcontext;
+  int ret = original ? original(uid, is_system_server, se_info, pkg_name) : -1;
   if (ret == 0) {
     deliverAppSpecialized(pkg_name, se_info);
   } else if (!s.fired && s.in_child) {
@@ -71,7 +71,8 @@ int setcontextHook(uid_t uid, int is_system_server, const char* se_info,
 
 int setnameHook(pthread_t thread, const char* name) {
   State& s = state();
-  int ret = s.orig_setname ? s.orig_setname(thread, name) : -1;
+  SetnameFn original = s.orig_setname ? s.orig_setname : s.fallback_setname;
+  int ret = original ? original(thread, name) : -1;
   if (ret == 0 && s.in_child && !s.fired.load(std::memory_order_relaxed) &&
       thread == pthread_self() && name && name[0] != '\0') {
     int expected = kNameEmpty;
@@ -88,7 +89,8 @@ int setnameHook(pthread_t thread, const char* name) {
 
 pid_t forkHook() {
   State& s = state();
-  pid_t res = s.orig_fork ? s.orig_fork() : -1;
+  ForkFn original = s.orig_fork ? s.orig_fork : s.fallback_fork;
+  pid_t res = original ? original() : -1;
   if (res == 0) {
     atForkChild();
   } else if (res > 0 && g_reinstall) {
@@ -120,23 +122,35 @@ void atForkPrepare() {
   }
 }
 
+void resolveFallbacks() {
+  State& s = state();
+  if (!s.fallback_fork) {
+    s.fallback_fork = reinterpret_cast<ForkFn>(dlsym(RTLD_DEFAULT, "fork"));
+  }
+  if (!s.fallback_setcontext) {
+    s.fallback_setcontext = reinterpret_cast<SetcontextFn>(
+        dlsym(RTLD_DEFAULT, "selinux_android_setcontext"));
+  }
+  if (!s.fallback_setname) {
+    s.fallback_setname =
+        reinterpret_cast<SetnameFn>(dlsym(RTLD_DEFAULT, "pthread_setname_np"));
+  }
+}
+
 void installHooks() {
   State& s = state();
+  resolveFallbacks();
   findSpawnerImage();
 
   if (s.spawner.inode != 0 && !s.plt_fork_tried) {
-    if (s.orig_fork) {
+    void* backup = nullptr;
+    if (hook::pltHook(reinterpret_cast<void*>(s.spawner.base), "fork",
+                      reinterpret_cast<void*>(forkHook), &backup)) {
+      s.orig_fork = reinterpret_cast<ForkFn>(backup);
       s.plt_fork_tried = true;
+      LOGI("HYOS: PLT hooked fork");
     } else {
-      void* backup = nullptr;
-      if (hook::pltHook(reinterpret_cast<void*>(s.spawner.base), "fork",
-                        reinterpret_cast<void*>(forkHook), &backup)) {
-        s.orig_fork = reinterpret_cast<ForkFn>(backup);
-        s.plt_fork_tried = true;
-        LOGI("HYOS: PLT hooked fork");
-      } else {
-        LOGW("HYOS: cannot hook fork, app specialization will not fire");
-      }
+      LOGW("HYOS: cannot hook fork, app specialization will not fire");
     }
   }
   if (s.spawner.inode != 0 && !s.plt_ctx_tried) {
