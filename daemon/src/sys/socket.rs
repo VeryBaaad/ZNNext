@@ -34,7 +34,7 @@ pub fn recv_with_fd(socket: RawFd, payload: &mut [u8]) -> io::Result<(usize, Opt
             socket,
             &mut payload,
             Some(&mut control),
-            MsgFlags::empty(),
+            MsgFlags::MSG_CMSG_CLOEXEC,
         ) {
             Ok(message) => break message,
             Err(nix::errno::Errno::EINTR) => continue,
