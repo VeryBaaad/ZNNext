@@ -89,7 +89,19 @@ enum Liveness {
     Unknown,
 }
 
+fn process_state(pid: Pid) -> Option<u8> {
+    let contents = fs::read(format!("/proc/{pid}/stat")).ok()?;
+    let close = contents.iter().rposition(|byte| *byte == b')')?;
+    contents[close + 1..]
+        .iter()
+        .find(|byte| !byte.is_ascii_whitespace())
+        .copied()
+}
+
 fn liveness(pid: Pid) -> Liveness {
+    if process_state(pid) == Some(b'Z') {
+        return Liveness::Gone;
+    }
     match fs::read_link(format!("/proc/{pid}/exe")) {
         Ok(_) => Liveness::Alive,
         Err(error) => match error.raw_os_error() {
@@ -143,7 +155,11 @@ fn command_line(pid: Pid) -> Vec<String> {
 /// cannot tell them apart: the daemon is the instance that was started without
 /// a control command. Never report ourselves.
 pub fn is_daemon_alive(pid: Pid) -> bool {
-    if pid <= 1 || pid == std::process::id() as Pid || !is_znndaemon_process(pid) {
+    if pid <= 1
+        || pid == std::process::id() as Pid
+        || !is_znndaemon_process(pid)
+        || process_gone(pid)
+    {
         return false;
     }
     !command_line(pid).iter().any(|argument| argument == "--ctl")
