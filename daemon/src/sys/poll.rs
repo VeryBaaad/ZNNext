@@ -38,7 +38,7 @@ pub fn poll_readable(descriptors: &[RawFd], timeout_ms: i32) -> io::Result<Vec<R
         })
         .collect();
 
-    let timeout = PollTimeout::try_from(timeout_ms).unwrap_or(PollTimeout::NONE);
+    let timeout = PollTimeout::try_from(timeout_ms).unwrap_or(PollTimeout::ZERO);
     poll(&mut poll_descriptors, timeout).map_err(io::Error::from)?;
 
     Ok(poll_descriptors
