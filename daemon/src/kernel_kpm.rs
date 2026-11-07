@@ -32,6 +32,9 @@ pub struct KpmTracker {
 
 impl KpmTracker {
     pub fn start() -> Result<Self, String> {
+        if cfg!(target_pointer_width = "32") {
+            return Err("KernelPatch tracking requires a 64-bit daemon".to_owned());
+        }
         let mut buffer = vec![0u8; kpm::MAX_PAYLOAD];
         match kpm::read_records(&mut buffer, 0) {
             Ok(_) => {
