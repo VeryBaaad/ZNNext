@@ -161,15 +161,23 @@ impl Daemon {
                 logi!("shutting down: releasing the tracees we are holding");
                 self.write_state_snapshot();
                 let deadline = procfs::now_ms() + SHUTDOWN_RELEASE_BUDGET_MS;
-                while !self.release_tracees() && procfs::now_ms() < deadline {
+                while !self.release_tracees() {
+                    if procfs::now_ms() >= deadline {
+                        loge!(
+                            "cannot release every tracee; aborting shutdown to avoid leaving a trap instruction in a target"
+                        );
+                        self.state.dirty = true;
+                        break;
+                    }
                     thread::sleep(Duration::from_millis(25));
                 }
-                for (pid, tracee) in &self.tracees {
-                    if tracee.state != State::Traced {
-                        logw!("pid {pid} does not stop; its entry breakpoint is left in place");
-                    }
+                if self
+                    .tracees
+                    .values()
+                    .all(|tracee| tracee.state == State::Traced)
+                {
+                    break;
                 }
-                break;
             }
 
             if RESCAN.swap(false, Ordering::SeqCst) {
