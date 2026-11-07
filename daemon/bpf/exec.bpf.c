@@ -26,6 +26,8 @@ typedef unsigned long long __u64;
 
 #define EVENT_EXEC 0
 
+char _license[] SEC("license") = "GPL";
+
 struct {
     __uint(type, 27); /* BPF_MAP_TYPE_RINGBUF */
     __uint(max_entries, 262144);
