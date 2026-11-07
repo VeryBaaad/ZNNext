@@ -124,9 +124,16 @@ void atForkChild() {
 
 void atForkPrepare() {
   State& s = state();
-  if (!s.in_child && s.module_count.load(std::memory_order_acquire) > 0 &&
-      (!s.orig_setcontext.load(std::memory_order_acquire) ||
-       !s.orig_setname.load(std::memory_order_acquire))) {
+  if (s.in_child || s.module_count.load(std::memory_order_acquire) == 0) return;
+  if (s.orig_fork.load(std::memory_order_acquire) &&
+      s.orig_setcontext.load(std::memory_order_acquire) &&
+      s.orig_setname.load(std::memory_order_acquire)) {
+    return;
+  }
+  installHooks();
+  if (!s.orig_fork.load(std::memory_order_acquire) ||
+      !s.orig_setcontext.load(std::memory_order_acquire) ||
+      !s.orig_setname.load(std::memory_order_acquire)) {
     g_reinstall.store(true, std::memory_order_release);
   }
 }
