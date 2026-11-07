@@ -208,6 +208,11 @@ impl Daemon {
             logw!(
                 "tracking mode {wanted} only applies on the next daemon start; staying in late mode"
             );
+        } else if wanted == config::MODE_PTRACE && self.mode != Tracking::Ptrace {
+            logw!(
+                "tracking mode ptrace only applies on the next daemon start; staying in {} mode",
+                self.mode.as_str()
+            );
         }
     }
 
