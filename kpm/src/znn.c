@@ -46,6 +46,8 @@ KPM_DESCRIPTION("Optional ZNNext exec observation accelerator (experimental)");
 
 #define ZNN_PIDTYPE_PID 0
 #define ZNN_PIDTYPE_TGID 1
+#define ZNN_COMPAT_NR_EXECVE 11
+#define ZNN_COMPAT_NR_EXECVEAT 387
 
 struct znn_exec_record {
   uint64_t seq;
@@ -59,6 +61,8 @@ static struct znn_exec_record znn_ring[ZNN_RING_CAPACITY];
 static uint64_t znn_ring_written;
 static int znn_execve_hooked;
 static int znn_execveat_hooked;
+static int znn_compat_execve_hooked;
+static int znn_compat_execveat_hooked;
 static int znn_channel_hooked;
 
 static int32_t (*znn_task_pid_nr_ns)(void* task, int type, void* ns);
@@ -194,6 +198,14 @@ static void znn_unhook_all(void) {
     unhook_syscalln(__NR_prctl, znn_channel_before, 0);
     znn_channel_hooked = 0;
   }
+  if (znn_compat_execveat_hooked) {
+    unhook_compat_syscalln(ZNN_COMPAT_NR_EXECVEAT, znn_before_execveat, 0);
+    znn_compat_execveat_hooked = 0;
+  }
+  if (znn_compat_execve_hooked) {
+    unhook_compat_syscalln(ZNN_COMPAT_NR_EXECVE, znn_before_execve, 0);
+    znn_compat_execve_hooked = 0;
+  }
   if (znn_execveat_hooked) {
     unhook_syscalln(__NR_execveat, znn_before_execveat, 0);
     znn_execveat_hooked = 0;
@@ -298,6 +310,22 @@ static long znn_init(const char* args, const char* event, void* reserved) {
     return error;
   }
   znn_execveat_hooked = 1;
+
+  error =
+      hook_compat_syscalln(ZNN_COMPAT_NR_EXECVE, 3, znn_before_execve, 0, 0);
+  if (error) {
+    pr_info("znn: cannot hook compat execve: %d\n", error);
+  } else {
+    znn_compat_execve_hooked = 1;
+  }
+
+  error = hook_compat_syscalln(ZNN_COMPAT_NR_EXECVEAT, 5, znn_before_execveat,
+                               0, 0);
+  if (error) {
+    pr_info("znn: cannot hook compat execveat: %d\n", error);
+  } else {
+    znn_compat_execveat_hooked = 1;
+  }
 
   hook_err_t channel_error =
       hook_syscalln_override(__NR_prctl, 5, znn_channel_before, 0, 0);
