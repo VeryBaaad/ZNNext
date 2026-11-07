@@ -309,6 +309,21 @@ impl Daemon {
             }
         }
 
+        for (path, is_64) in [(&self.loader64, true), (&self.loader32, false)] {
+            let Some(header) = crate::elf::header_of_file(path) else {
+                continue;
+            };
+            if header.is_64 != is_64 {
+                loge!(
+                    "loader {} is {}-bit, but the daemon expects {}-bit",
+                    path.display(),
+                    if header.is_64 { 64 } else { 32 },
+                    if is_64 { 64 } else { 32 }
+                );
+                self.state.status_reason = "loader architecture mismatch".to_owned();
+            }
+        }
+
         if let Ok(cap) = fs::read_to_string("/sys/fs/selinux/policy_capabilities/memfd_class")
             && cap.trim() == "1"
         {
