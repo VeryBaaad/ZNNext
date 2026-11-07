@@ -88,4 +88,8 @@ bool profiloInit();
 bool profiloHook(const std::string& caller_path, uintptr_t caller_base,
                  const char* symbol, void* replacement, void** original);
 
+bool srxhookInit();
+bool srxhookPltHook(const std::string& caller_path, uintptr_t caller_base,
+                    const char* symbol, void* replacement, void** original);
+
 }  // namespace znn::hook::backend

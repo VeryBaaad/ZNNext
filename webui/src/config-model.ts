@@ -36,6 +36,7 @@ export const ENGINE_LABELS: Record<string, string> = {
   plthook: "PLTHook",
   yukiplt: "YukiPLT",
   profilo: "Profilo",
+  srxhook: "srx_hook",
   urhook: "UrHook",
   baaadhook: "BaaadHook",
   disable: t(`config.disable`),

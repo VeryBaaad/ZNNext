@@ -104,6 +104,9 @@ bool pltHook(void* base, const char* symbol, void* replacement,
     case PltEngine::kProfilo:
       return backend::profiloHook(entry->path, entry->start, symbol,
                                   replacement, original);
+    case PltEngine::kSrxHook:
+      return backend::srxhookPltHook(entry->path, entry->start, symbol,
+                                     replacement, original);
     case PltEngine::kDisable:
       return false;
   }

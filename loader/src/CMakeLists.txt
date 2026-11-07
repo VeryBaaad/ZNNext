@@ -46,6 +46,7 @@ add_library(zn_loader SHARED
     hook/backend/urhook.cpp
     hook/backend/baaadhook.cpp
     hook/backend/yukiihook.cpp
+    hook/backend/srx_hook.cpp
     api/hook.cpp
     api/symbols.cpp
     api/companion.cpp
@@ -110,6 +111,9 @@ set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} baaadhook)
 if (ANDROID_ABI STREQUAL "arm64-v8a")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} urhook)
 endif()
+if (TARGET srx_hook_ffi)
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} srx_hook_ffi)
+endif()
 if (NOT ANDROID_ABI STREQUAL "riscv64")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} c++abi unwind)
     target_link_options(zn_loader PRIVATE -Wl,--allow-multiple-definition)
@@ -120,6 +124,9 @@ endif()
 target_link_libraries(zn_loader PRIVATE ${LOADER_LINK_LIBS})
 if (TARGET frida_gum_build)
     add_dependencies(zn_loader frida_gum_build)
+endif()
+if (TARGET srx_hook_ffi_archive)
+    add_dependencies(zn_loader srx_hook_ffi_archive)
 endif()
 if (TARGET cxx::cxx)
     target_link_libraries(zn_loader PRIVATE cxx::cxx)

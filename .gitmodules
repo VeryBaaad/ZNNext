@@ -55,3 +55,6 @@
 [submodule "loader/src/external/profilo/src"]
 	path = loader/src/external/profilo/src
 	url = https://github.com/facebookarchive/profilo.git
+[submodule "loader/src/external/srx_hook/srx_hook"]
+	path = loader/src/external/srx_hook/srx_hook
+	url = https://github.com/Kindness-Kismet/srx_hook.git
