@@ -26,6 +26,7 @@
 
 #include "hook/backend.h"
 #include "log.h"
+#include "utils/elf_util.h"
 
 #if defined(__aarch64__) || defined(__arm__) || defined(__x86_64__)
 #include <hookzz.h>
@@ -52,20 +53,43 @@ struct HookRecord {
   uint8_t backup[kPatchBytes];
 };
 
+struct PatchRange {
+  uintptr_t begin;
+  size_t length;
+  int prot;
+};
+
 std::mutex g_mutex;
 std::map<uintptr_t, HookRecord> g_records;
 
-bool makePatchWritable(void* target) {
+bool makePatchWritable(void* target, PatchRange* patch) {
   const long page_size = sysconf(_SC_PAGESIZE);
   if (page_size <= 0) return false;
 
+  const uintptr_t address = reinterpret_cast<uintptr_t>(target);
   const uintptr_t align_mask = static_cast<uintptr_t>(page_size) - 1;
-  const uintptr_t begin = reinterpret_cast<uintptr_t>(target) & ~align_mask;
-  const uintptr_t end =
-      (reinterpret_cast<uintptr_t>(target) + kPatchBytes + align_mask) &
-      ~align_mask;
-  return mprotect(reinterpret_cast<void*>(begin), end - begin,
-                  PROT_READ | PROT_WRITE | PROT_EXEC) == 0;
+  patch->begin = address & ~align_mask;
+  const uintptr_t end = (address + kPatchBytes + align_mask) & ~align_mask;
+  patch->length = end - patch->begin;
+  patch->prot = PROT_READ | PROT_EXEC;
+  for (const auto& mapping : znn::parseMaps("self")) {
+    if (address < mapping.start || address >= mapping.end) continue;
+    patch->prot = 0;
+    if (mapping.perms & PROT_READ) patch->prot |= PROT_READ;
+    if (mapping.perms & PROT_WRITE) patch->prot |= PROT_WRITE;
+    if (mapping.perms & PROT_EXEC) patch->prot |= PROT_EXEC;
+    break;
+  }
+  return mprotect(reinterpret_cast<void*>(patch->begin), patch->length,
+                  patch->prot | PROT_WRITE) == 0;
+}
+
+void restorePatchProtection(const PatchRange& patch) {
+  if (mprotect(reinterpret_cast<void*>(patch.begin), patch.length,
+               patch.prot) != 0) {
+    LOGE("inlineHook: cannot restore protection at %p",
+         reinterpret_cast<void*>(patch.begin));
+  }
 }
 
 void flushPatch(void* target) {
@@ -91,9 +115,11 @@ bool hookzzHook(void* target, void* replacement, void** original) {
   void* relocated = nullptr;
   if (ZzReplace(target, replacement, &relocated) != RS_SUCCESS ||
       relocated == nullptr) {
-    if (makePatchWritable(target)) {
+    PatchRange patch{};
+    if (makePatchWritable(target, &patch)) {
       memcpy(target, record.backup, kPatchBytes);
       flushPatch(target);
+      restorePatchProtection(patch);
     }
     LOGE("inlineHook %p failed", target);
     return false;
@@ -113,13 +139,15 @@ bool hookzzUnhook(void* target) {
     LOGE("inlineUnhook %p failed: not hooked", target);
     return false;
   }
-  if (!makePatchWritable(target)) {
+  PatchRange patch{};
+  if (!makePatchWritable(target, &patch)) {
     LOGE("inlineUnhook %p failed: the target is not writable", target);
     return false;
   }
 
   memcpy(target, it->second.backup, kPatchBytes);
   flushPatch(target);
+  restorePatchProtection(patch);
   g_records.erase(it);
   return true;
 }
