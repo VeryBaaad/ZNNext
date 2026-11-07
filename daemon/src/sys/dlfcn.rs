@@ -57,17 +57,23 @@ impl Library {
     }
 
     pub fn open_from_fd(path: &str, fd: RawFd) -> Option<Self> {
-        let path = CString::new(path).ok()?;
-        let extinfo = AndroidDlextinfo {
-            flags: ANDROID_DLEXT_USE_LIBRARY_FD,
-            reserved_addr: std::ptr::null_mut(),
-            reserved_size: 0,
-            relro_fd: -1,
-            library_fd: fd,
-            library_fd_offset: 0,
-            library_namespace: std::ptr::null_mut(),
+        let path = CString::new(path).ok();
+        let handle = match &path {
+            Some(path) => {
+                let extinfo = AndroidDlextinfo {
+                    flags: ANDROID_DLEXT_USE_LIBRARY_FD,
+                    reserved_addr: std::ptr::null_mut(),
+                    reserved_size: 0,
+                    relro_fd: -1,
+                    library_fd: fd,
+                    library_fd_offset: 0,
+                    library_namespace: std::ptr::null_mut(),
+                };
+                unsafe { android_dlopen_ext(path.as_ptr(), libc::RTLD_NOW, &extinfo) }
+            }
+            None => std::ptr::null_mut(),
         };
-        let handle = unsafe { android_dlopen_ext(path.as_ptr(), libc::RTLD_NOW, &extinfo) };
+        crate::sys::fs::close(fd);
         Self::from_handle(handle)
     }
 
