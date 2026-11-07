@@ -73,11 +73,18 @@ const ZygiskNextAPI kApiV4 = {
 }  // namespace
 
 const ZygiskNextAPI* apiForVersion(int target_api_version) {
-  if (target_api_version >= 4) return &kApiV4;
-  if (target_api_version == 3) return &kApiV3;
-  if (target_api_version == 2) return &kApiV2;
-  if (target_api_version == 1) return &kApiV1;
-  return &kApiV4;
+  switch (target_api_version) {
+    case 1:
+      return &kApiV1;
+    case 2:
+      return &kApiV2;
+    case 3:
+      return &kApiV3;
+    case 4:
+      return &kApiV4;
+    default:
+      return nullptr;
+  }
 }
 
 }  // namespace znn::api
