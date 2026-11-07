@@ -239,6 +239,14 @@ impl Daemon {
                 entry.offset == 0 && procfs::map_path_equals_exe(&entry.path, &tracee.exe)
             })
             .map_or(0, |entry| entry.start);
+        if base == 0 && header.is_position_independent() {
+            loge!(
+                "{} (pid {pid}) has no load base in maps; skipping",
+                tracee.exe
+            );
+            self.record_failure(pid, &tracee.exe, "no load base in maps");
+            return false;
+        }
         let (entry, thumb) = entry_point(tracee.arch, &header, base);
         if entry == 0 {
             return false;
