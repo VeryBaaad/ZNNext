@@ -82,11 +82,14 @@ static void znn_note_exec(void) {
   uint64_t seq = __atomic_add_fetch(&znn_ring_written, 1, __ATOMIC_RELAXED);
   struct znn_exec_record* record = &znn_ring[(seq - 1) % ZNN_RING_CAPACITY];
 
-  record->seq = seq;
-  record->pid = znn_task_nr(task, ZNN_PIDTYPE_PID);
-  record->tgid = znn_task_nr(task, ZNN_PIDTYPE_TGID);
-  record->ppid = znn_parent_nr(task);
-  record->reserved = 0;
+  __atomic_store_n(&record->seq, 0, __ATOMIC_RELAXED);
+  __atomic_store_n(&record->pid, znn_task_nr(task, ZNN_PIDTYPE_PID),
+                   __ATOMIC_RELAXED);
+  __atomic_store_n(&record->tgid, znn_task_nr(task, ZNN_PIDTYPE_TGID),
+                   __ATOMIC_RELAXED);
+  __atomic_store_n(&record->ppid, znn_parent_nr(task), __ATOMIC_RELAXED);
+  __atomic_store_n(&record->reserved, 0, __ATOMIC_RELAXED);
+  __atomic_store_n(&record->seq, seq, __ATOMIC_RELEASE);
 }
 
 static void znn_before_execve(hook_fargs3_t* args, void* udata) {
@@ -111,6 +114,24 @@ static int znn_caller_uid_is_root(void) {
   return *(uint32_t*)((char*)cred + znn_cred_uid_offset) == 0;
 }
 
+static int znn_snapshot_record(uint64_t seq, int32_t* pid, int32_t* tgid,
+                               int32_t* ppid) {
+  const struct znn_exec_record* record =
+      &znn_ring[(seq - 1) % ZNN_RING_CAPACITY];
+  uint64_t marker = __atomic_load_n(&record->seq, __ATOMIC_ACQUIRE);
+  if (marker != seq) return 0;
+
+  int32_t pid_value = __atomic_load_n(&record->pid, __ATOMIC_RELAXED);
+  int32_t tgid_value = __atomic_load_n(&record->tgid, __ATOMIC_RELAXED);
+  int32_t ppid_value = __atomic_load_n(&record->ppid, __ATOMIC_RELAXED);
+  if (__atomic_load_n(&record->seq, __ATOMIC_ACQUIRE) != marker) return 0;
+
+  *pid = pid_value;
+  *tgid = tgid_value;
+  *ppid = ppid_value;
+  return 1;
+}
+
 static long znn_channel_write_records(char __user* user_buffer,
                                       uint64_t buffer_length,
                                       uint64_t since_seq) {
@@ -126,11 +147,14 @@ static long znn_channel_write_records(char __user* user_buffer,
   long total = 0;
   for (uint64_t i = 0; i < count; i++) {
     uint64_t seq = first + i;
-    const struct znn_exec_record* record =
-        &znn_ring[(seq - 1) % ZNN_RING_CAPACITY];
+    int32_t pid = 0;
+    int32_t tgid = 0;
+    int32_t ppid = 0;
+    if (!znn_snapshot_record(seq, &pid, &tgid, &ppid)) continue;
+
     char line[ZNN_LINE_CAPACITY];
-    int length = znn_format_exec_record(
-        line, (int)sizeof(line), seq, record->pid, record->tgid, record->ppid);
+    int length =
+        znn_format_exec_record(line, (int)sizeof(line), seq, pid, tgid, ppid);
     if (length <= 0) break;
     if ((uint64_t)total + (uint64_t)length > buffer_length) break;
     if (compat_copy_to_user(user_buffer + total, line, length) != length)
@@ -218,12 +242,15 @@ static long znn_control(const char* ctl_args, char* __user out_msg,
   int total = 0;
 
   for (uint32_t i = 0; i < count; i++) {
-    const struct znn_exec_record* record =
-        &znn_ring[(first + i) % ZNN_RING_CAPACITY];
+    uint64_t seq = first + i;
+    int32_t pid = 0;
+    int32_t tgid = 0;
+    int32_t ppid = 0;
+    if (!znn_snapshot_record(seq, &pid, &tgid, &ppid)) continue;
+
     char line[ZNN_LINE_CAPACITY];
     int length =
-        znn_format_exec_record(line, (int)sizeof(line), record->seq,
-                               record->pid, record->tgid, record->ppid);
+        znn_format_exec_record(line, (int)sizeof(line), seq, pid, tgid, ppid);
     if (length <= 0) break;
     if (total + length > outlen) break;
     if (compat_copy_to_user(out_msg + total, line, length) != length) break;
@@ -282,8 +309,7 @@ static long znn_init(const char* args, const char* event, void* reserved) {
 
 #ifdef ZNN_WITH_BTF
   if (znn_task_cred_offset < 0)
-    pr_info(
-        "znn: cred offsets unresolved, uid gate fails closed\n");
+    pr_info("znn: cred offsets unresolved, uid gate fails closed\n");
 #endif
 
   pr_info(
