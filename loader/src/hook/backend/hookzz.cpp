@@ -89,7 +89,12 @@ bool hookzzHook(void* target, void* replacement, void** original) {
   memcpy(record.backup, target, kPatchBytes);
 
   void* relocated = nullptr;
-  if (ZzReplace(target, replacement, &relocated) != RS_SUCCESS) {
+  if (ZzReplace(target, replacement, &relocated) != RS_SUCCESS ||
+      relocated == nullptr) {
+    if (makePatchWritable(target)) {
+      memcpy(target, record.backup, kPatchBytes);
+      flushPatch(target);
+    }
     LOGE("inlineHook %p failed", target);
     return false;
   }
