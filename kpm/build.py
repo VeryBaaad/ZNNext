@@ -45,8 +45,9 @@ def sync_version():
 
 def manifest_version():
     for line in MANIFEST.read_text(encoding="utf-8").splitlines():
-        if line.strip().startswith("version"):
-            return line.split("=", 1)[1].strip()
+        match = re.match(r"^\s*version\s*=\s*(.*)$", line)
+        if match:
+            return match.group(1).strip()
     return ""
 
 
