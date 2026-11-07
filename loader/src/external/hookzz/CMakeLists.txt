@@ -6,7 +6,7 @@ if (NOT ANDROID_ABI STREQUAL "arm64-v8a"
     return()
 endif ()
 
-set(HOOKZZ_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../hookzz")
+set(HOOKZZ_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 if (ANDROID_ABI STREQUAL "arm64-v8a")
     set(HOOKZZ_ARCH "arm64")

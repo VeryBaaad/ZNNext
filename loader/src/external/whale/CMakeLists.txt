@@ -4,7 +4,7 @@ if (ANDROID_ABI STREQUAL "riscv64")
     return()
 endif ()
 
-set(WHALE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../whale/whale")
+set(WHALE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/whale")
 set(WHALE_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/znn_whale.cpp"
     "${WHALE_SOURCE_DIR}/src/assembler/assembler.cc"

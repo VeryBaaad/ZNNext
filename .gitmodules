@@ -8,7 +8,7 @@
 	path = loader/src/external/rv64hook
 	url = https://github.com/eirv/riscv64-inline-hook.git
 [submodule "loader/src/external/shadowhook"]
-	path = loader/src/external/shadowhook
+	path = loader/src/external/shadowhook/src
 	url = https://github.com/bytedance/android-inline-hook.git
 [submodule "loader/src/external/bytehook"]
 	path = loader/src/external/bytehook
@@ -20,25 +20,25 @@
 	path = loader/src/external/plti
 	url = https://github.com/PerformanC/PLTI.git
 [submodule "loader/src/external/xz-embedded"]
-	path = loader/src/external/xz-embedded
+	path = loader/src/external/xz-embedded/src
 	url = https://github.com/tukaani-project/xz-embedded.git
 [submodule "loader/src/external/and64inlinehook"]
 	path = loader/src/external/and64inlinehook
 	url = https://github.com/Rprop/And64InlineHook.git
 [submodule "loader/src/external/frida-gum"]
-	path = loader/src/external/frida-gum
+	path = loader/src/external/frida-gum/src
 	url = https://github.com/frida/frida-gum.git
 [submodule "loader/src/external/hookzz"]
-	path = loader/src/external/hookzz
+	path = loader/src/external/hookzz/src
 	url = https://github.com/jmpews/HookZz.git
 [submodule "loader/src/external/plthook"]
 	path = loader/src/external/plthook
 	url = https://github.com/metacall/plthook.git
 [submodule "loader/src/external/urhook"]
-	path = loader/src/external/urhook
+	path = loader/src/external/urhook/src
 	url = https://github.com/SMlc666/urhook.git
 [submodule "loader/src/external/whale"]
-	path = loader/src/external/whale
+	path = loader/src/external/whale/src
 	url = https://github.com/asLody/whale.git
 [submodule "loader/src/external/baaadhook"]
 	path = loader/src/external/baaadhook
@@ -47,8 +47,8 @@
 	path = loader/src/external/lzma/src
 	url = https://github.com/ip7z/7zip.git
 [submodule "loader/src/external/yukiplt"]
-	path = loader/src/external/yukiplt
+	path = loader/src/external/yukiplt/src
 	url = https://github.com/Rouyashiki/YukiPLT.git
 [submodule "loader/src/external/yukizygisk"]
-	path = loader/src/external/yukizygisk
+	path = loader/src/external/yukizygisk/src
 	url = https://github.com/Rouyashiki/YukiZygisk.git

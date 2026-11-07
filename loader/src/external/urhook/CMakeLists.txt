@@ -4,7 +4,7 @@ if (NOT ANDROID_ABI STREQUAL "arm64-v8a")
     return()
 endif ()
 
-set(URHOOK_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../urhook")
+set(URHOOK_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 add_library(urhook STATIC
     "${CMAKE_CURRENT_SOURCE_DIR}/assembler_wrap.cpp"

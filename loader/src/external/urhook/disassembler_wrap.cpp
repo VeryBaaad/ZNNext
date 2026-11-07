@@ -18,22 +18,14 @@
  */
 
 // clang-format off
-#include <sys/mman.h>
-#include <unistd.h>
+#include <iomanip>
+#include <sstream>
 
-#include <algorithm>
-#include <cstring>
-#include <list>
-#include <map>
-#include <mutex>
-#include <stdexcept>
+#if !_LIBCPP_HAS_LOCALIZATION
+#include "urhook_iostream_shim.h"
+#endif
 
-#include <ur/assembler.h>
 #include <ur/disassembler.h>
-#include <ur/inline_hook.h>
-#include <ur/memory.h>
 
-#include "urhook_exception_compat.h"
-
-#include "../urhook/src/inline_hook.cpp"
+#include "src/src/disassembler.cpp"
 // clang-format on

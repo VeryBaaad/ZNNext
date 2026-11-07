@@ -63,11 +63,11 @@ target_include_directories(zn_loader PRIVATE
 )
 if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
     target_include_directories(zn_loader PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/shadowhook/shadowhook/src/main/cpp/include)
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/shadowhook/src/shadowhook/src/main/cpp/include)
 endif ()
 if (NOT ANDROID_ABI STREQUAL "riscv64")
     target_include_directories(zn_loader PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/znn_whale)
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/whale)
     target_include_directories(zn_loader PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/external/bytehook/bytehook/src/main/cpp/include)
     target_include_directories(zn_loader PRIVATE
@@ -77,7 +77,7 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
 endif ()
 if (ANDROID_ABI STREQUAL "arm64-v8a")
     target_include_directories(zn_loader PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/urhook/include)
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/urhook/src/include)
 endif ()
 
 set(LOADER_LINK_LIBS log elfutil lsplt_static)

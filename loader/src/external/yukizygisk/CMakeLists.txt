@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 
 set(YUKIZYGISK_IHOOK_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../yukizygisk/userspace/zygisk/core/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/userspace/zygisk/core/src)
 
 enable_language(ASM)
 
