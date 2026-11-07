@@ -42,6 +42,7 @@ add_library(zn_loader SHARED
     hook/backend/plti.cpp
     hook/backend/plthook.cpp
     hook/backend/yukiplt.cpp
+    hook/backend/profilo.cpp
     hook/backend/urhook.cpp
     hook/backend/baaadhook.cpp
     hook/backend/yukiihook.cpp
@@ -102,6 +103,7 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} xhook)
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plthook)
     set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} yukiplt)
+    set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} profilo)
 endif()
 set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} plti)
 set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} baaadhook)
@@ -127,3 +129,5 @@ target_link_options(zn_loader PRIVATE
     -Wl,-z,max-page-size=16384
     -Wl,-z,common-page-size=16384)
 target_compile_options(zn_loader PRIVATE -Wall -Wextra -fvisibility=hidden)
+set_source_files_properties(hook/backend/profilo.cpp PROPERTIES
+    COMPILE_OPTIONS "-fexceptions;-funwind-tables")

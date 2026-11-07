@@ -115,6 +115,8 @@ else ()
     add_subdirectory(whale)
 
     add_subdirectory(yukiplt)
+
+    add_subdirectory(profilo)
 endif ()
 
 add_subdirectory(baaadhook)
