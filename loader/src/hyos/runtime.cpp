@@ -59,7 +59,7 @@ void deliverAppSpecialized(const char* pkg_name, const char* se_info) {
 
   static char process_name[256];
   static char package_name[256];
-  static char se_info_buf[64];
+  static char se_info_buf[512];
 
   if (s.name_state.load(std::memory_order_acquire) == kNameReady) {
     strlcpy(process_name, s.captured_name, sizeof(process_name));
