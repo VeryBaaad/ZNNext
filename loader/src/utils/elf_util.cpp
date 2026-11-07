@@ -170,6 +170,7 @@ bool ElfImage::parseGnuDebugData(const uint8_t* data, size_t size) const {
     if (size <= off) continue;
     std::vector<uint8_t> out;
     if (!debugdata::decompress(data + off, size - off, out)) continue;
+    if (out.size() < sizeof(ElfW(Ehdr))) continue;
     if (!isElf(out.data(), out.size())) continue;
 
     debugdata_ = std::move(out);
