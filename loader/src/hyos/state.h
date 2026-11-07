@@ -50,18 +50,18 @@ struct SpawnerImage {
 struct State {
   bool active = false;
   ZygiskNextHyosModule modules[kMaxModules] = {};
-  int module_count = 0;
+  std::atomic<int> module_count{0};
   bool in_child = false;
   std::atomic<bool> fired{false};  // delivered already, once
   bool warned = false;
   bool plt_fork_tried = false;
   bool plt_ctx_tried = false;
-  ForkFn orig_fork = nullptr;
-  SetcontextFn orig_setcontext = nullptr;
-  SetnameFn orig_setname = nullptr;
-  ForkFn fallback_fork = nullptr;
-  SetcontextFn fallback_setcontext = nullptr;
-  SetnameFn fallback_setname = nullptr;
+  std::atomic<ForkFn> orig_fork{nullptr};
+  std::atomic<SetcontextFn> orig_setcontext{nullptr};
+  std::atomic<SetnameFn> orig_setname{nullptr};
+  std::atomic<ForkFn> fallback_fork{nullptr};
+  std::atomic<SetcontextFn> fallback_setcontext{nullptr};
+  std::atomic<SetnameFn> fallback_setname{nullptr};
   SpawnerImage spawner{};
   char captured_name[256] = {};
   std::atomic<int> name_state{kNameEmpty};

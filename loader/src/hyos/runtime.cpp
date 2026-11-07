@@ -23,12 +23,16 @@
 #include <string.h>
 #include <sys/prctl.h>
 
+#include <mutex>
+
 #include "hyos/hooks.h"
 #include "hyos/state.h"
 #include "log.h"
 
 namespace znn::hyos {
 namespace {
+
+std::mutex g_register_mutex;
 
 const ZygiskNextRuntime kRuntime = {
     .type = ZN_RUNTIME_HYOS,
@@ -44,7 +48,8 @@ void setActive(bool value) { state().active = value; }
 
 void deliverAppSpecialized(const char* pkg_name, const char* se_info) {
   State& s = state();
-  if (!s.in_child || s.module_count == 0) return;
+  if (!s.in_child || s.module_count.load(std::memory_order_acquire) == 0)
+    return;
   bool expected = false;
   if (!s.fired.compare_exchange_strong(expected, true,
                                        std::memory_order_acq_rel,
@@ -72,7 +77,8 @@ void deliverAppSpecialized(const char* pkg_name, const char* se_info) {
   ZnHyosAppSpecializeArgs args = {process_name, package_name, se_info_buf};
   LOGI("HYOS app specialized: process=%s package=%s se_info=%s", process_name,
        package_name, se_info_buf);
-  for (int i = 0; i < s.module_count; ++i) {
+  int count = s.module_count.load(std::memory_order_acquire);
+  for (int i = 0; i < count; ++i) {
     if (s.modules[i].onAppSpecialized) {
       s.modules[i].onAppSpecialized(&args);
     }
@@ -89,17 +95,23 @@ int registerModule(const void* module) {
     return ZN_FAILED;
   }
   State& s = state();
-  if (s.module_count >= kMaxModules) {
-    LOGE("HYOS: too many modules registered (max %d)", kMaxModules);
-    return ZN_FAILED;
+  int index = 0;
+  {
+    std::lock_guard<std::mutex> lk(g_register_mutex);
+    index = s.module_count.load(std::memory_order_relaxed);
+    if (index >= kMaxModules) {
+      LOGE("HYOS: too many modules registered (max %d)", kMaxModules);
+      return ZN_FAILED;
+    }
+    s.modules[index] = *m;
+    s.module_count.store(index + 1, std::memory_order_release);
   }
-  s.modules[s.module_count++] = *m;
 
   if (!s.in_child) {
     pthread_atfork(atForkPrepare, nullptr, atForkChild);
   }
   installHooks();
-  LOGI("HYOS: module registered (%d)", s.module_count);
+  LOGI("HYOS: module registered (%d)", index + 1);
   return ZN_SUCCESS;
 }
 

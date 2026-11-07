@@ -24,6 +24,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <atomic>
+#include <mutex>
+
 #include "api/api.h"
 #include "hook/inline.h"
 #include "hook/plt.h"
@@ -35,7 +38,8 @@
 namespace znn::hyos {
 namespace {
 
-bool g_reinstall = false;
+std::atomic<bool> g_reinstall{false};
+std::mutex g_install_mutex;
 
 // spawner image, offset-0 mapping
 void findSpawnerImage() {
@@ -58,8 +62,10 @@ void findSpawnerImage() {
 int setcontextHook(uid_t uid, int is_system_server, const char* se_info,
                    const char* pkg_name) {
   State& s = state();
-  SetcontextFn original =
-      s.orig_setcontext ? s.orig_setcontext : s.fallback_setcontext;
+  SetcontextFn original = s.orig_setcontext.load(std::memory_order_acquire);
+  if (!original) {
+    original = s.fallback_setcontext.load(std::memory_order_acquire);
+  }
   int ret = original ? original(uid, is_system_server, se_info, pkg_name) : -1;
   if (ret == 0) {
     deliverAppSpecialized(pkg_name, se_info);
@@ -71,7 +77,8 @@ int setcontextHook(uid_t uid, int is_system_server, const char* se_info,
 
 int setnameHook(pthread_t thread, const char* name) {
   State& s = state();
-  SetnameFn original = s.orig_setname ? s.orig_setname : s.fallback_setname;
+  SetnameFn original = s.orig_setname.load(std::memory_order_acquire);
+  if (!original) original = s.fallback_setname.load(std::memory_order_acquire);
   int ret = original ? original(thread, name) : -1;
   if (ret == 0 && s.in_child && !s.fired.load(std::memory_order_relaxed) &&
       thread == pthread_self() && name && name[0] != '\0') {
@@ -89,12 +96,13 @@ int setnameHook(pthread_t thread, const char* name) {
 
 pid_t forkHook() {
   State& s = state();
-  ForkFn original = s.orig_fork ? s.orig_fork : s.fallback_fork;
+  ForkFn original = s.orig_fork.load(std::memory_order_acquire);
+  if (!original) original = s.fallback_fork.load(std::memory_order_acquire);
   pid_t res = original ? original() : -1;
   if (res == 0) {
     atForkChild();
-  } else if (res > 0 && g_reinstall) {
-    g_reinstall = false;
+  } else if (res > 0 && g_reinstall.load(std::memory_order_acquire)) {
+    g_reinstall.store(false, std::memory_order_release);
     if (!s.in_child) {
       installHooks();
     }
@@ -111,34 +119,40 @@ void atForkChild() {
   s.fired.store(false, std::memory_order_relaxed);
   s.captured_name[0] = '\0';
   s.name_state.store(kNameEmpty, std::memory_order_release);
-  g_reinstall = false;
+  g_reinstall.store(false, std::memory_order_release);
 }
 
 void atForkPrepare() {
   State& s = state();
-  if (!s.in_child && s.module_count > 0 &&
-      (!s.orig_setcontext || !s.orig_setname)) {
-    g_reinstall = true;
+  if (!s.in_child && s.module_count.load(std::memory_order_acquire) > 0 &&
+      (!s.orig_setcontext.load(std::memory_order_acquire) ||
+       !s.orig_setname.load(std::memory_order_acquire))) {
+    g_reinstall.store(true, std::memory_order_release);
   }
 }
 
 void resolveFallbacks() {
   State& s = state();
-  if (!s.fallback_fork) {
-    s.fallback_fork = reinterpret_cast<ForkFn>(dlsym(RTLD_DEFAULT, "fork"));
+  if (!s.fallback_fork.load(std::memory_order_acquire)) {
+    s.fallback_fork.store(reinterpret_cast<ForkFn>(dlsym(RTLD_DEFAULT, "fork")),
+                          std::memory_order_release);
   }
-  if (!s.fallback_setcontext) {
-    s.fallback_setcontext = reinterpret_cast<SetcontextFn>(
-        dlsym(RTLD_DEFAULT, "selinux_android_setcontext"));
+  if (!s.fallback_setcontext.load(std::memory_order_acquire)) {
+    s.fallback_setcontext.store(
+        reinterpret_cast<SetcontextFn>(
+            dlsym(RTLD_DEFAULT, "selinux_android_setcontext")),
+        std::memory_order_release);
   }
-  if (!s.fallback_setname) {
-    s.fallback_setname =
-        reinterpret_cast<SetnameFn>(dlsym(RTLD_DEFAULT, "pthread_setname_np"));
+  if (!s.fallback_setname.load(std::memory_order_acquire)) {
+    s.fallback_setname.store(
+        reinterpret_cast<SetnameFn>(dlsym(RTLD_DEFAULT, "pthread_setname_np")),
+        std::memory_order_release);
   }
 }
 
 void installHooks() {
   State& s = state();
+  std::lock_guard<std::mutex> lk(g_install_mutex);
   resolveFallbacks();
   findSpawnerImage();
 
@@ -146,7 +160,8 @@ void installHooks() {
     void* backup = nullptr;
     if (hook::pltHook(reinterpret_cast<void*>(s.spawner.base), "fork",
                       reinterpret_cast<void*>(forkHook), &backup)) {
-      s.orig_fork = reinterpret_cast<ForkFn>(backup);
+      s.orig_fork.store(reinterpret_cast<ForkFn>(backup),
+                        std::memory_order_release);
       s.plt_fork_tried = true;
       LOGI("HYOS: PLT hooked fork");
     } else {
@@ -154,35 +169,39 @@ void installHooks() {
     }
   }
   if (s.spawner.inode != 0 && !s.plt_ctx_tried) {
-    if (s.orig_setcontext) {
+    if (s.orig_setcontext.load(std::memory_order_acquire)) {
       s.plt_ctx_tried = true;
     } else {
       void* backup = nullptr;
       if (hook::pltHook(reinterpret_cast<void*>(s.spawner.base),
                         "selinux_android_setcontext",
                         reinterpret_cast<void*>(setcontextHook), &backup)) {
-        s.orig_setcontext = reinterpret_cast<SetcontextFn>(backup);
+        s.orig_setcontext.store(reinterpret_cast<SetcontextFn>(backup),
+                                std::memory_order_release);
         s.plt_ctx_tried = true;
         LOGI("HYOS: PLT hooked selinux_android_setcontext");
       }
     }
   }
 
-  if (!s.orig_setcontext) {
+  if (!s.orig_setcontext.load(std::memory_order_acquire)) {
     void* fn = dlsym(RTLD_DEFAULT, "selinux_android_setcontext");
     if (!fn) {
       void* h = dlopen("libselinux.so", RTLD_NOW);
       if (h) fn = dlsym(h, "selinux_android_setcontext");
     }
-    SetcontextFn fallback = s.fallback_setcontext;
-    s.fallback_setcontext = nullptr;
+    SetcontextFn fallback =
+        s.fallback_setcontext.load(std::memory_order_acquire);
+    s.fallback_setcontext.store(nullptr, std::memory_order_release);
+    void* backup = nullptr;
     if (fn && api::inlineHook(fn, reinterpret_cast<void*>(setcontextHook),
-                              reinterpret_cast<void**>(&s.orig_setcontext)) ==
-                  ZN_SUCCESS) {
-      if (s.orig_setcontext) {
+                              &backup) == ZN_SUCCESS) {
+      s.orig_setcontext.store(reinterpret_cast<SetcontextFn>(backup),
+                              std::memory_order_release);
+      if (backup) {
         LOGI("HYOS: inline hooked selinux_android_setcontext");
       } else if (api::inlineUnhook(fn) == ZN_SUCCESS) {
-        s.fallback_setcontext = fallback;
+        s.fallback_setcontext.store(fallback, std::memory_order_release);
         LOGW("HYOS: inline setcontext hook had no original and was removed");
       } else {
         LOGW(
@@ -190,25 +209,27 @@ void installHooks() {
             "removed; replacements fail closed");
       }
     } else {
-      s.fallback_setcontext = fallback;
+      s.fallback_setcontext.store(fallback, std::memory_order_release);
       if (fn) LOGW("HYOS: cannot inline hook selinux_android_setcontext");
     }
   }
-  if (!s.orig_setname) {
+  if (!s.orig_setname.load(std::memory_order_acquire)) {
     void* fn = dlsym(RTLD_DEFAULT, "pthread_setname_np");
     if (!fn) {
       void* h = dlopen("libc.so", RTLD_NOW);
       if (h) fn = dlsym(h, "pthread_setname_np");
     }
-    SetnameFn fallback = s.fallback_setname;
-    s.fallback_setname = nullptr;
+    SetnameFn fallback = s.fallback_setname.load(std::memory_order_acquire);
+    s.fallback_setname.store(nullptr, std::memory_order_release);
+    void* backup = nullptr;
     if (fn && api::inlineHook(fn, reinterpret_cast<void*>(setnameHook),
-                              reinterpret_cast<void**>(&s.orig_setname)) ==
-                  ZN_SUCCESS) {
-      if (s.orig_setname) {
+                              &backup) == ZN_SUCCESS) {
+      s.orig_setname.store(reinterpret_cast<SetnameFn>(backup),
+                           std::memory_order_release);
+      if (backup) {
         LOGI("HYOS: inline hooked pthread_setname_np");
       } else if (api::inlineUnhook(fn) == ZN_SUCCESS) {
-        s.fallback_setname = fallback;
+        s.fallback_setname.store(fallback, std::memory_order_release);
         LOGW("HYOS: inline setname hook had no original and was removed");
       } else {
         LOGW(
@@ -216,11 +237,11 @@ void installHooks() {
             "replacements fail closed");
       }
     } else {
-      s.fallback_setname = fallback;
+      s.fallback_setname.store(fallback, std::memory_order_release);
       if (fn) LOGW("HYOS: cannot inline hook pthread_setname_np");
     }
   }
-  if (!s.orig_setcontext && !s.warned) {
+  if (!s.orig_setcontext.load(std::memory_order_acquire) && !s.warned) {
     s.warned = true;
     LOGW(
         "HYOS: selinux_android_setcontext not available, onAppSpecialized will "
