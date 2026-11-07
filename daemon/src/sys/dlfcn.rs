@@ -22,6 +22,8 @@ use std::marker::PhantomData;
 use std::os::fd::RawFd;
 
 const ANDROID_DLEXT_USE_LIBRARY_FD: u64 = 0x10;
+const COMPANION_API_MIN: c_int = 3;
+const COMPANION_API_MAX: c_int = 4;
 
 #[repr(C)]
 struct AndroidDlextinfo {
@@ -79,6 +81,9 @@ impl Library {
             module,
             _library: PhantomData,
         };
+        if !(COMPANION_API_MIN..=COMPANION_API_MAX).contains(&companion.module.target_api_version) {
+            return None;
+        }
         if companion.module.on_companion_loaded.is_none()
             || companion.module.on_module_connected.is_none()
         {
@@ -98,7 +103,6 @@ impl Library {
 
 #[repr(C)]
 struct CompanionModule {
-    #[allow(dead_code)]
     target_api_version: c_int,
     on_companion_loaded: Option<unsafe extern "C" fn()>,
     on_module_connected: Option<unsafe extern "C" fn(c_int)>,
