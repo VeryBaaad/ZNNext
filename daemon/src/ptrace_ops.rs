@@ -86,7 +86,7 @@ pub fn setup_call(
     args: &[usize],
 ) -> bool {
     match regs.arch() {
-        Arch::Arm64 | Arch::Arm32 | Arch::Riscv64 => {
+        Arch::Arm64 | Arch::Riscv64 => {
             for (index, argument) in args.iter().enumerate() {
                 if !regs.set_argument(index, *argument) {
                     break;
@@ -94,6 +94,17 @@ pub fn setup_call(
             }
             regs.set_link(return_to);
             regs.set_pc(function);
+            true
+        }
+        Arch::Arm32 => {
+            for (index, argument) in args.iter().enumerate() {
+                if !regs.set_argument(index, *argument) {
+                    break;
+                }
+            }
+            regs.set_link(return_to);
+            regs.set_thumb(function & 1 != 0);
+            regs.set_pc(function & !1);
             true
         }
         Arch::X86_64 => {

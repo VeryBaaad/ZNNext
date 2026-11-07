@@ -318,7 +318,7 @@ impl Daemon {
 
         let pc = regs.pc();
         if tracee.arch == Arch::Arm32 {
-            tracee.thumb = (pc & 1) != 0;
+            tracee.thumb = regs.thumb();
             tracee.entry = pc & !1;
         } else {
             tracee.entry = pc;
@@ -337,7 +337,7 @@ impl Daemon {
     }
 
     fn trap_at_entry(&mut self, pid: Pid, tracee: &mut Tracee) -> Progress {
-        let regs = match read_registers(pid, tracee.arch) {
+        let mut regs = match read_registers(pid, tracee.arch) {
             Ok(regs) => regs,
             Err(error) => {
                 loge!("failed to get regs at entry for pid {pid}: {error}");
@@ -347,7 +347,8 @@ impl Daemon {
             }
         };
 
-        let mut pc = regs.pc();
+        let raw_pc = regs.pc();
+        let mut pc = raw_pc;
         let mut expected = tracee.entry;
         if trap_reports_next_instruction(tracee.arch) {
             expected = expected.wrapping_add(1);
@@ -355,17 +356,24 @@ impl Daemon {
             pc &= !1;
         }
         if pc != expected {
-            loge!("unexpected entry state for pid {pid} (pc={pc:#x}, expected={expected:#x})");
-            restore_entry(pid, tracee);
-            ptrace::detach(pid, None);
-            return Progress::Finished;
+            let udf_offset = tracee.arch == Arch::Arm32
+                && (raw_pc == tracee.entry
+                    || raw_pc == tracee.entry.wrapping_add(2)
+                    || raw_pc == tracee.entry.wrapping_add(4));
+            if !udf_offset {
+                loge!("unexpected entry state for pid {pid} (pc={pc:#x}, expected={expected:#x})");
+                restore_entry(pid, tracee);
+                ptrace::detach(pid, None);
+                return Progress::Finished;
+            }
+            regs.set_pc(tracee.entry);
         }
 
-        let mut regs = regs;
         if trap_reports_next_instruction(tracee.arch) {
             regs.set_pc(tracee.entry);
         }
         tracee.saved = regs;
+        tracee.thumb = tracee.arch == Arch::Arm32 && tracee.saved.thumb();
 
         if !self.start_file(pid, tracee, FilePurpose::Loader, regs) {
             loge!("entry trap in pid {pid}: cannot start the loader image; giving up");

@@ -18,6 +18,7 @@
  */
 
 const REGS_CAPACITY: usize = 272;
+const PSR_T_BIT: usize = 1 << 5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Arch {
@@ -36,6 +37,7 @@ struct Layout {
     sp: usize,
     retval: usize,
     link: Option<usize>,
+    cpsr: Option<usize>,
     arg_registers: &'static [usize],
     memfd_create: i64,
 }
@@ -47,6 +49,7 @@ const ARM64: Layout = Layout {
     sp: 31 * 8,
     retval: 0,
     link: Some(30 * 8),
+    cpsr: None,
     arg_registers: &[0, 8, 16, 24],
     memfd_create: 279,
 };
@@ -58,6 +61,7 @@ const ARM32: Layout = Layout {
     sp: 13 * 4,
     retval: 0,
     link: Some(14 * 4),
+    cpsr: Some(16 * 4),
     arg_registers: &[0, 4, 8, 12],
     memfd_create: 385,
 };
@@ -69,6 +73,7 @@ const X86_64: Layout = Layout {
     sp: 152,
     retval: 80,
     link: None,
+    cpsr: None,
     // rdi, rsi, rdx, rcx
     arg_registers: &[112, 104, 96, 88],
     memfd_create: 319,
@@ -81,6 +86,7 @@ const X86: Layout = Layout {
     sp: 60,
     retval: 24,
     link: None,
+    cpsr: None,
     arg_registers: &[],
     memfd_create: 356,
 };
@@ -92,6 +98,7 @@ const RISCV64: Layout = Layout {
     sp: 16,
     retval: 80,
     link: Some(8),
+    cpsr: None,
     // a0..a7
     arg_registers: &[80, 88, 96, 104, 112, 120, 128, 136],
     memfd_create: 279,
@@ -126,8 +133,8 @@ impl Arch {
             Arch::Arm64 => &[0x00, 0x00, 0x20, 0xD4],   // brk #0
             Arch::Riscv64 => &[0x73, 0x00, 0x10, 0x00], // ebreak
             Arch::X86_64 | Arch::X86 => &[0xCC],        // int3
-            Arch::Arm32 if thumb => &[0x00, 0xBE],      // bkpt #0 (Thumb)
-            Arch::Arm32 => &[0x70, 0x00, 0x20, 0xE1],   // bkpt #0 (ARM)
+            Arch::Arm32 if thumb => &[0x01, 0xDE],      // udf #1 (Thumb)
+            Arch::Arm32 => &[0xF0, 0x01, 0xF0, 0xE7],   // udf #0xF001F0 (ARM)
             Arch::Unknown => &[],
         }
     }
@@ -193,6 +200,26 @@ impl Regs {
         if let Some(offset) = self.layout().and_then(|layout| layout.link) {
             self.write(offset, value);
         }
+    }
+
+    pub fn thumb(&self) -> bool {
+        let Some(offset) = self.layout().and_then(|layout| layout.cpsr) else {
+            return false;
+        };
+        self.read(offset) & PSR_T_BIT != 0
+    }
+
+    pub fn set_thumb(&mut self, thumb: bool) {
+        let Some(offset) = self.layout().and_then(|layout| layout.cpsr) else {
+            return;
+        };
+        let mut cpsr = self.read(offset);
+        if thumb {
+            cpsr |= PSR_T_BIT;
+        } else {
+            cpsr &= !PSR_T_BIT;
+        }
+        self.write(offset, cpsr);
     }
 
     pub fn set_argument(&mut self, index: usize, value: usize) -> bool {

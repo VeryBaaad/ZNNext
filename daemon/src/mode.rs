@@ -65,6 +65,7 @@ struct StoppedTarget {
     entry: usize,
     thumb: bool,
     pc: usize,
+    pc_thumb: bool,
     resume_signal: Option<i32>,
 }
 
@@ -611,7 +612,7 @@ impl Daemon {
         } else {
             stopped.pc
         };
-        tracee.thumb = stopped.arch == Arch::Arm32 && stopped.pc & 1 != 0;
+        tracee.thumb = stopped.pc_thumb;
         let thumb = tracee.thumb;
         if !set_entry_breakpoint(pid, &mut tracee, thumb) {
             logw!("{exe} (pid {pid}): cannot arm the late breakpoint; skipping");
@@ -746,6 +747,7 @@ impl Daemon {
             entry,
             thumb,
             pc: regs.pc(),
+            pc_thumb: arch == Arch::Arm32 && regs.thumb(),
             resume_signal,
         })
     }
