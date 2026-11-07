@@ -155,6 +155,8 @@ void ElfImage::parseSymbols(const ElfW(Shdr) * str_sh, const char* strtab,
     if (s.st_name == 0) continue;
     if (s.st_name >= str_sh->sh_size) continue;
     const char* name = strtab + s.st_name;
+    const size_t name_bytes = str_sh->sh_size - s.st_name;
+    if (!memchr(name, '\0', name_bytes)) continue;
     if (!name[0]) continue;
 
     SymbolInfo info;
