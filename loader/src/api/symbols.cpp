@@ -24,51 +24,85 @@ namespace znn::api {
 
 ZnSymbolResolver* newSymbolResolver(const char* path, void* base) {
   if (!path) return nullptr;
-
-  auto* resolver = new ZnSymbolResolver();
-  resolver->image = new znn::ElfImage(path, reinterpret_cast<uintptr_t>(base));
-  if (!resolver->image->valid()) {
-    LOGW("newSymbolResolver %s: invalid", path);
-    delete resolver->image;
-    delete resolver;
+#if defined(__cpp_exceptions)
+  try {
+#endif
+    auto* resolver = new ZnSymbolResolver();
+    resolver->image =
+        new znn::ElfImage(path, reinterpret_cast<uintptr_t>(base));
+    if (!resolver->image->valid()) {
+      LOGW("newSymbolResolver %s: invalid", path);
+      delete resolver->image;
+      delete resolver;
+      return nullptr;
+    }
+    LOGI("newSymbolResolver %s -> %s base=%p", path,
+         resolver->image->path().c_str(),
+         reinterpret_cast<void*>(resolver->image->base()));
+    return resolver;
+#if defined(__cpp_exceptions)
+  } catch (...) {
+    LOGE("newSymbolResolver %s failed with an exception", path);
     return nullptr;
   }
-  LOGI("newSymbolResolver %s -> %s base=%p", path,
-       resolver->image->path().c_str(),
-       reinterpret_cast<void*>(resolver->image->base()));
-  return resolver;
+#endif
 }
 
 void freeSymbolResolver(ZnSymbolResolver* resolver) {
   if (!resolver) return;
-  delete resolver->image;
-  delete resolver;
+#if defined(__cpp_exceptions)
+  try {
+#endif
+    delete resolver->image;
+    delete resolver;
+#if defined(__cpp_exceptions)
+  } catch (...) {
+    LOGE("freeSymbolResolver failed with an exception");
+  }
+#endif
 }
 
 void* getBaseAddress(ZnSymbolResolver* resolver) {
   if (!resolver) return nullptr;
-  return reinterpret_cast<void*>(resolver->image->base());
+#if defined(__cpp_exceptions)
+  try {
+#endif
+    return reinterpret_cast<void*>(resolver->image->base());
+#if defined(__cpp_exceptions)
+  } catch (...) {
+    LOGE("getBaseAddress failed with an exception");
+    return nullptr;
+  }
+#endif
 }
 
 void* symbolLookup(ZnSymbolResolver* resolver, const char* name, bool prefix,
                    size_t* size) {
   if (!resolver || !name) return nullptr;
-
-  if (!prefix) {
-    const uintptr_t runtime = resolver->image->runtimeLookup(name, size);
-    if (runtime) {
-      LOGI("symbolLookup %s -> %p (runtime)", name,
-           reinterpret_cast<void*>(runtime));
-      return reinterpret_cast<void*>(runtime);
+#if defined(__cpp_exceptions)
+  try {
+#endif
+    if (!prefix) {
+      const uintptr_t runtime = resolver->image->runtimeLookup(name, size);
+      if (runtime) {
+        LOGI("symbolLookup %s -> %p (runtime)", name,
+             reinterpret_cast<void*>(runtime));
+        return reinterpret_cast<void*>(runtime);
+      }
     }
-  }
 
-  const znn::SymbolInfo* symbol = resolver->image->lookup(name, prefix);
-  if (!symbol) return nullptr;
-  if (size) *size = symbol->size;
-  LOGI("symbolLookup %s -> %p (elf)", name,
-       reinterpret_cast<void*>(symbol->addr));
-  return reinterpret_cast<void*>(symbol->addr);
+    const znn::SymbolInfo* symbol = resolver->image->lookup(name, prefix);
+    if (!symbol) return nullptr;
+    if (size) *size = symbol->size;
+    LOGI("symbolLookup %s -> %p (elf)", name,
+         reinterpret_cast<void*>(symbol->addr));
+    return reinterpret_cast<void*>(symbol->addr);
+#if defined(__cpp_exceptions)
+  } catch (...) {
+    LOGE("symbolLookup %s failed with an exception", name);
+    return nullptr;
+  }
+#endif
 }
 
 void forEachSymbols(ZnSymbolResolver* resolver,
@@ -76,9 +110,18 @@ void forEachSymbols(ZnSymbolResolver* resolver,
                                      void* data),
                     void* data) {
   if (!resolver || !callback) return;
-  resolver->image->forEach([&](const char* name, uintptr_t addr, size_t size) {
-    return callback(name, reinterpret_cast<void*>(addr), size, data);
-  });
+#if defined(__cpp_exceptions)
+  try {
+#endif
+    resolver->image->forEach(
+        [&](const char* name, uintptr_t addr, size_t size) {
+          return callback(name, reinterpret_cast<void*>(addr), size, data);
+        });
+#if defined(__cpp_exceptions)
+  } catch (...) {
+    LOGE("forEachSymbols failed with an exception");
+  }
+#endif
 }
 
 ZnSymbolResolver* newSymbolResolverUnavailable(const char* path, void*) {

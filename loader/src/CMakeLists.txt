@@ -136,5 +136,9 @@ target_link_options(zn_loader PRIVATE
     -Wl,-z,max-page-size=16384
     -Wl,-z,common-page-size=16384)
 target_compile_options(zn_loader PRIVATE -Wall -Wextra -fvisibility=hidden)
+if (NOT ANDROID_ABI STREQUAL "riscv64")
+    target_compile_options(zn_loader PRIVATE -fexceptions -funwind-tables)
+    target_compile_options(elfutil PRIVATE -fexceptions -funwind-tables)
+endif ()
 set_source_files_properties(hook/backend/profilo.cpp PROPERTIES
     COMPILE_OPTIONS "-fexceptions;-funwind-tables")

@@ -29,19 +29,27 @@
 
 extern "C" __attribute__((visibility("default"))) void znn_loader_init(
     const void* raw_plan) {
-  znn::module::Plan plan;
-  if (!znn::module::parsePlan(raw_plan, plan)) {
-    LOGE("loader: no valid boot plan, doing nothing in this process");
-    return;
+#if defined(__cpp_exceptions)
+  try {
+#endif
+    znn::module::Plan plan;
+    if (!znn::module::parsePlan(raw_plan, plan)) {
+      LOGE("loader: no valid boot plan, doing nothing in this process");
+      return;
+    }
+
+    LOGI("loader initialized in pid %d (%s)", getpid(),
+         znn::process::exePath().c_str());
+
+    znn::config::resolveHookEngines(plan.inline_engine, plan.plt_engine);
+    znn::config::resolveDebugDataBackend(plan.debugdata);
+
+    if (znn::process::exeName() == "hyos_spawner") znn::hyos::setActive(true);
+
+    znn::module::loadAll(plan);
+#if defined(__cpp_exceptions)
+  } catch (...) {
+    LOGE("loader: initialization failed with an exception");
   }
-
-  LOGI("loader initialized in pid %d (%s)", getpid(),
-       znn::process::exePath().c_str());
-
-  znn::config::resolveHookEngines(plan.inline_engine, plan.plt_engine);
-  znn::config::resolveDebugDataBackend(plan.debugdata);
-
-  if (znn::process::exeName() == "hyos_spawner") znn::hyos::setActive(true);
-
-  znn::module::loadAll(plan);
+#endif
 }

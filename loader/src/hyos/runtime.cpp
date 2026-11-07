@@ -78,11 +78,19 @@ void deliverAppSpecialized(const char* pkg_name, const char* se_info) {
   LOGI("HYOS app specialized: process=%s package=%s se_info=%s", process_name,
        package_name, se_info_buf);
   int count = s.module_count.load(std::memory_order_acquire);
-  for (int i = 0; i < count; ++i) {
-    if (s.modules[i].onAppSpecialized) {
-      s.modules[i].onAppSpecialized(&args);
+#if defined(__cpp_exceptions)
+  try {
+#endif
+    for (int i = 0; i < count; ++i) {
+      if (s.modules[i].onAppSpecialized) {
+        s.modules[i].onAppSpecialized(&args);
+      }
     }
+#if defined(__cpp_exceptions)
+  } catch (...) {
+    LOGE("HYOS: a module failed onAppSpecialized with an exception");
   }
+#endif
 }
 
 int registerModule(const void* module) {
@@ -95,24 +103,33 @@ int registerModule(const void* module) {
     return ZN_FAILED;
   }
   State& s = state();
-  int index = 0;
-  {
-    std::lock_guard<std::mutex> lk(g_register_mutex);
-    index = s.module_count.load(std::memory_order_relaxed);
-    if (index >= kMaxModules) {
-      LOGE("HYOS: too many modules registered (max %d)", kMaxModules);
-      return ZN_FAILED;
+#if defined(__cpp_exceptions)
+  try {
+#endif
+    int index = 0;
+    {
+      std::lock_guard<std::mutex> lk(g_register_mutex);
+      index = s.module_count.load(std::memory_order_relaxed);
+      if (index >= kMaxModules) {
+        LOGE("HYOS: too many modules registered (max %d)", kMaxModules);
+        return ZN_FAILED;
+      }
+      s.modules[index] = *m;
+      s.module_count.store(index + 1, std::memory_order_release);
     }
-    s.modules[index] = *m;
-    s.module_count.store(index + 1, std::memory_order_release);
-  }
 
-  if (!s.in_child) {
-    pthread_atfork(atForkPrepare, nullptr, atForkChild);
+    if (!s.in_child) {
+      pthread_atfork(atForkPrepare, nullptr, atForkChild);
+    }
+    installHooks();
+    LOGI("HYOS: module registered (%d)", index + 1);
+    return ZN_SUCCESS;
+#if defined(__cpp_exceptions)
+  } catch (...) {
+    LOGE("HYOS: module registration failed with an exception");
+    return ZN_FAILED;
   }
-  installHooks();
-  LOGI("HYOS: module registered (%d)", index + 1);
-  return ZN_SUCCESS;
+#endif
 }
 
 const ZygiskNextRuntime* runtime() { return &kRuntime; }

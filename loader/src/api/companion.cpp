@@ -46,41 +46,51 @@ void dropChannel(ModuleHandle* h) {
 int connectCompanion(void* handle) {
   auto* h = static_cast<ModuleHandle*>(handle);
   if (!h || !h->has_companion) return -1;
-
-  if (h->companion_channel >= 0 && !ipc::channelUsable(h->companion_channel)) {
-    LOGW("companion: the inherited channel is gone, reconnecting");
-    dropChannel(h);
-  }
-
-  if (h->companion_listen_fd >= 0 &&
-      !ipc::listenerUsable(h->companion_listen_fd)) {
-    close(h->companion_listen_fd);
-    h->companion_listen_fd = -1;
-  }
-
-  if (h->companion_channel < 0 && h->companion_listen_fd >= 0) {
-    h->companion_channel =
-        ipc::acceptChannel(h->companion_listen_fd, h->companion_nonce,
-                           ipc::kChannelAcceptTimeoutMs);
-    close(h->companion_listen_fd);
-    h->companion_listen_fd = -1;
-  }
-
-  if (h->companion_channel >= 0) {
-    int module_fd = -1;
-    int helper_fd = -1;
-    if (ipc::makePeerPair(&module_fd, &helper_fd) &&
-        ipc::sendFrame(h->companion_channel, ipc::kChannelConnect, helper_fd)) {
-      close(helper_fd);
-      return module_fd;
+#if defined(__cpp_exceptions)
+  try {
+#endif
+    if (h->companion_channel >= 0 &&
+        !ipc::channelUsable(h->companion_channel)) {
+      LOGW("companion: the inherited channel is gone, reconnecting");
+      dropChannel(h);
     }
-    if (module_fd >= 0) close(module_fd);
-    if (helper_fd >= 0) close(helper_fd);
-    LOGW("companion: the inherited channel is dead, reconnecting");
-    dropChannel(h);
-  }
 
-  return connectDirect(h);
+    if (h->companion_listen_fd >= 0 &&
+        !ipc::listenerUsable(h->companion_listen_fd)) {
+      close(h->companion_listen_fd);
+      h->companion_listen_fd = -1;
+    }
+
+    if (h->companion_channel < 0 && h->companion_listen_fd >= 0) {
+      h->companion_channel =
+          ipc::acceptChannel(h->companion_listen_fd, h->companion_nonce,
+                             ipc::kChannelAcceptTimeoutMs);
+      close(h->companion_listen_fd);
+      h->companion_listen_fd = -1;
+    }
+
+    if (h->companion_channel >= 0) {
+      int module_fd = -1;
+      int helper_fd = -1;
+      if (ipc::makePeerPair(&module_fd, &helper_fd) &&
+          ipc::sendFrame(h->companion_channel, ipc::kChannelConnect,
+                         helper_fd)) {
+        close(helper_fd);
+        return module_fd;
+      }
+      if (module_fd >= 0) close(module_fd);
+      if (helper_fd >= 0) close(helper_fd);
+      LOGW("companion: the inherited channel is dead, reconnecting");
+      dropChannel(h);
+    }
+
+    return connectDirect(h);
+#if defined(__cpp_exceptions)
+  } catch (...) {
+    LOGE("connectCompanion failed with an exception");
+    return -1;
+  }
+#endif
 }
 
 int connectCompanionUnavailable(void*) {
