@@ -79,7 +79,7 @@ bool baaadhookPltHook(const std::string& caller_path, const char* symbol,
            caller_path.c_str());
       return false;
     }
-    if (bh_plt_unhook(caller_path.c_str(), symbol, record.replacement) <= 0) {
+    if (bh_plt_unhook(caller_path.c_str(), symbol, record.replacement) < 0) {
       LOGE("pltHook %s: cannot restore slot in %s", symbol,
            caller_path.c_str());
       return false;
