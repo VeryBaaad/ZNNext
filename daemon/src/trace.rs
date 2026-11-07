@@ -42,6 +42,7 @@ use crate::targets;
 
 const INSTRUCTION_CAPACITY: usize = 8;
 const STACK_MASK: usize = !0xF;
+const STACK_SCRATCH: usize = 0x90;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
     Traced,
@@ -529,7 +530,10 @@ impl Daemon {
 
         let name = b"libzn_loader.so\0";
         let name_size = (name.len() + 7) & !7;
-        let stack = regs.sp().wrapping_sub(name_size + extinfo.len() + 0x10) & STACK_MASK;
+        let stack = regs
+            .sp()
+            .wrapping_sub(name_size + extinfo.len() + STACK_SCRATCH)
+            & STACK_MASK;
         let name_address = stack;
         let extinfo_address = stack + name_size;
         if !write_memory(pid, name_address, name) || !write_memory(pid, extinfo_address, &extinfo) {
@@ -607,7 +611,7 @@ impl Daemon {
 
         let mut regs = regs;
         let name = b"znn_loader_init\0";
-        let stack = regs.sp().wrapping_sub(name.len() + 0x10) & STACK_MASK;
+        let stack = regs.sp().wrapping_sub(name.len() + STACK_SCRATCH) & STACK_MASK;
         if !write_memory(pid, stack, name) {
             loge!("failed to write init symbol name for pid {pid}");
             self.undo(pid, tracee);
@@ -717,7 +721,7 @@ impl Daemon {
             self.abort(pid, tracee, "cannot read registers to write the boot plan");
             return Progress::Finished;
         };
-        let stack = regs.sp().wrapping_sub(bytes.len() + 0x10) & STACK_MASK;
+        let stack = regs.sp().wrapping_sub(bytes.len() + STACK_SCRATCH) & STACK_MASK;
         if !write_memory(pid, stack, &bytes) {
             self.abort(pid, tracee, "cannot write the boot plan into the target");
             return Progress::Finished;
@@ -844,7 +848,7 @@ const ANDROID_DLEXT_USE_LIBRARY_FD: u64 = 0x10;
 const RTLD_NOW: usize = 2;
 
 fn push_bytes(pid: Pid, regs: &mut Regs, bytes: &[u8]) -> Option<usize> {
-    let address = regs.sp().wrapping_sub(bytes.len() + 0x10) & STACK_MASK;
+    let address = regs.sp().wrapping_sub(bytes.len() + STACK_SCRATCH) & STACK_MASK;
     if !write_memory(pid, address, bytes) {
         return None;
     }
