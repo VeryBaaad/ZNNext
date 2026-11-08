@@ -33,6 +33,7 @@ ANDROID_COMPILE_SDK = 37
 ANDROID_COMPILE_SDK_MINOR = 2
 ANDROID_BUILD_TOOLS_VERSION = "37.0.0"
 ANDROID_NDK_VERSION = "30.0.16248370"
+LEGACY_NDK_VERSION = "16.1.4479499"
 
 LIBCXX_VERSION = ANDROID_NDK_VERSION
 LIBCXX_SHA256 = "8bb6839964cdd5b814255c2674a9bb4a7ba5a6b2e15284c307694a571e8d5f7c"
@@ -41,20 +42,36 @@ LIBCXX_URL = (
     f"{LIBCXX_VERSION}/libcxx-{LIBCXX_VERSION}.aar"
 )
 
-ANDROID_ABIS = ("arm64-v8a", "armeabi-v7a", "x86", "x86_64", "riscv64")
+ANDROID_ABIS = (
+    "arm64-v8a",
+    "armeabi-v7a",
+    "armeabi",
+    "x86",
+    "x86_64",
+    "riscv64",
+    "mips",
+    "mips64",
+)
+LEGACY_ANDROID_ABIS = ("armeabi", "mips", "mips64")
 ANDROID_TRIPLES = {
     "arm64-v8a": "aarch64-linux-android",
     "armeabi-v7a": "arm-linux-androideabi",
+    "armeabi": "armv5te-linux-androideabi",
     "x86": "i686-linux-android",
     "x86_64": "x86_64-linux-android",
     "riscv64": "riscv64-linux-android",
+    "mips": "mipsel-linux-android",
+    "mips64": "mips64el-linux-android",
 }
 RUST_TARGETS = {
     "arm64-v8a": "aarch64-linux-android",
     "armeabi-v7a": "armv7-linux-androideabi",
+    "armeabi": "arm-linux-androideabi",
     "x86": "i686-linux-android",
     "x86_64": "x86_64-linux-android",
     "riscv64": "riscv64-linux-android",
+    "mips": "mipsel-linux-android",
+    "mips64": "mips64el-linux-android",
 }
 VARIANTS = ("debug", "release")
 
@@ -123,11 +140,22 @@ def reported_version(variant):
     return f"{VER_NAME}-{version_code()}-{commit_hash()}-{variant}"
 
 
-def variant_cflags(variant):
-    return DEBUG_CFLAGS if variant == "debug" else RELEASE_CFLAGS
+def variant_cflags(variant, legacy=False):
+    flags = DEBUG_CFLAGS if variant == "debug" else RELEASE_CFLAGS
+    if legacy:
+        flags = [flag for flag in flags if flag != "-flto"]
+    return flags
 
 
-def variant_linker_flags(variant):
+def variant_linker_flags(variant, legacy=False):
+    if legacy:
+        optimization = "-Os" if variant == "debug" else "-Oz"
+        flags = (
+            f"{optimization} -Wl,--exclude-libs,ALL -Wl,--gc-sections"
+        )
+        if variant != "debug":
+            flags += " -Wl,--strip-all"
+        return flags
     return DEBUG_LINKER_FLAGS if variant == "debug" else RELEASE_LINKER_FLAGS
 
 
@@ -213,22 +241,31 @@ def ndk_revision(path):
     return None
 
 
-def ndk_usable(path):
+def ndk_usable(path, version=ANDROID_NDK_VERSION):
     binaries = path / "toolchains" / "llvm" / "prebuilt" / host_tag() / "bin"
     suffix = ".exe" if sys.platform == "win32" else ""
-    return (binaries / f"clang{suffix}").is_file() and (
-        binaries / f"ld.lld{suffix}"
-    ).is_file()
+    if not (binaries / f"clang{suffix}").is_file():
+        return False
+    if version == LEGACY_NDK_VERSION:
+        return True
+    return (binaries / f"ld.lld{suffix}").is_file()
 
 
 @lru_cache(maxsize=None)
-def ndk_dir(override=None):
+def ndk_dir(override=None, version=ANDROID_NDK_VERSION):
     if override:
         path = Path(override).expanduser()
         if not path.is_dir():
             raise BuildError(f"Android NDK directory not found: {path}")
-        if not ndk_usable(path):
-            raise BuildError(f"Android NDK is incomplete (clang/ld.lld missing): {path}")
+        if not ndk_usable(path, version):
+            raise BuildError(
+                f"Android NDK is incomplete (clang/ld.lld missing): {path}"
+            )
+        found = ndk_revision(path)
+        if found != version:
+            raise BuildError(
+                f"Android NDK {version} is required, found {found or 'unknown'} at {path}"
+            )
         return path.resolve()
 
     candidates = []
@@ -238,18 +275,18 @@ def ndk_dir(override=None):
             candidates.append(Path(value))
     configured = local_sdk()
     if configured is not None:
-        candidates.append(configured / "ndk" / ANDROID_NDK_VERSION)
+        candidates.append(configured / "ndk" / version)
     try:
-        candidates.append(android_sdk() / "ndk" / ANDROID_NDK_VERSION)
+        candidates.append(android_sdk() / "ndk" / version)
     except BuildError:
         pass
 
     existing = [path for path in candidates if path.is_dir()]
-    usable = [path for path in existing if ndk_usable(path)]
+    usable = [path for path in existing if ndk_usable(path, version)]
     if not usable:
         raise BuildError(
             "no usable Android NDK found; set ANDROID_NDK_HOME to "
-            f"NDK {ANDROID_NDK_VERSION} or install it under <sdk>/ndk/"
+            f"NDK {version} or install it under <sdk>/ndk/"
             + (
                 " (checked: "
                 + ", ".join(str(path) for path in existing)
@@ -259,10 +296,10 @@ def ndk_dir(override=None):
             )
         )
     for path in usable:
-        if ndk_revision(path) == ANDROID_NDK_VERSION:
+        if ndk_revision(path) == version:
             return path.resolve()
     raise BuildError(
-        f"Android NDK {ANDROID_NDK_VERSION} is required, found "
+        f"Android NDK {version} is required, found "
         + ", ".join(f"{path} ({ndk_revision(path) or 'unknown'})" for path in usable)
     )
 
@@ -419,12 +456,16 @@ def build_artifacts(variant, options, state):
         loader_cmd += ["--ccache", options.ccache]
     if options.ndk:
         loader_cmd += ["--ndk", options.ndk]
+    if options.ndk_legacy:
+        loader_cmd += ["--ndk-legacy", options.ndk_legacy]
     if options.libcxx_aar:
         loader_cmd += ["--libcxx-aar", options.libcxx_aar]
 
     daemon_cmd = script("daemon", variant, "--jobs", daemon_jobs)
     if options.ndk:
         daemon_cmd += ["--ndk", options.ndk]
+    if options.ndk_legacy:
+        daemon_cmd += ["--ndk-legacy", options.ndk_legacy]
 
     kpm_cmd = script("kpm", variant)
     if options.no_kpm:
@@ -523,6 +564,7 @@ def parse_arguments(argv):
     parser.add_argument("--ccache", default=None)
     parser.add_argument("--sevenzip", default=None)
     parser.add_argument("--ndk", default=None)
+    parser.add_argument("--ndk-legacy", default=None)
     parser.add_argument("--libcxx-aar", default=None)
     parser.add_argument("--no-kpm", action="store_true")
     parser.add_argument("--kpm-btf", action="store_true")
@@ -541,8 +583,10 @@ def main(argv=None):
     env = os.environ.copy()
     if needs_ndk:
         ndk = ndk_dir(options.ndk)
+        legacy_ndk = ndk_dir(options.ndk_legacy, LEGACY_NDK_VERSION)
         env["ANDROID_NDK_HOME"] = str(ndk)
         env["ANDROID_NDK_ROOT"] = str(ndk)
+        env["ANDROID_NDK_LEGACY_HOME"] = str(legacy_ndk)
         if not env.get("ANDROID_HOME") and not env.get("ANDROID_SDK_ROOT"):
             env["ANDROID_HOME"] = str(android_sdk())
 

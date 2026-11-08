@@ -14,6 +14,6 @@ authors:
     url: https://github.com/VeryBaaad
 compatibility:
   androidMinApi: 21
-  architectures: [arm64-v8a, armeabi-v7a, x86_64, x86, riscv64]
+  architectures: [arm64-v8a, armeabi-v7a, armeabi, x86_64, x86, riscv64, mips, mips64]
 release:
   assetPattern: "ZNNext-v*-release.zip"

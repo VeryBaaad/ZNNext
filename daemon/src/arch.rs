@@ -17,7 +17,7 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-const REGS_CAPACITY: usize = 272;
+const REGS_CAPACITY: usize = 384;
 const PSR_T_BIT: usize = 1 << 5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,6 +26,8 @@ pub enum Arch {
     Arm64,
     X86,
     X86_64,
+    Mips,
+    Mips64,
     Riscv64,
     Unknown,
 }
@@ -91,6 +93,32 @@ const X86: Layout = Layout {
     memfd_create: 356,
 };
 
+const MIPS: Layout = Layout {
+    size: 38 * 4,
+    word: 4,
+    pc: 37 * 4,
+    sp: 29 * 4,
+    retval: 2 * 4,
+    link: Some(31 * 4),
+    cpsr: None,
+    // a0..a3
+    arg_registers: &[4 * 4, 5 * 4, 6 * 4, 7 * 4],
+    memfd_create: 4000 + 354,
+};
+
+const MIPS64: Layout = Layout {
+    size: 38 * 8,
+    word: 8,
+    pc: 37 * 8,
+    sp: 29 * 8,
+    retval: 2 * 8,
+    link: Some(31 * 8),
+    cpsr: None,
+    // a0..a7
+    arg_registers: &[4 * 8, 5 * 8, 6 * 8, 7 * 8, 8 * 8, 9 * 8, 10 * 8, 11 * 8],
+    memfd_create: 5000 + 314,
+};
+
 const RISCV64: Layout = Layout {
     size: 32 * 8,
     word: 8,
@@ -111,13 +139,18 @@ impl Arch {
             Arch::Arm64 => Some(&ARM64),
             Arch::X86 => Some(&X86),
             Arch::X86_64 => Some(&X86_64),
+            Arch::Mips => Some(&MIPS),
+            Arch::Mips64 => Some(&MIPS64),
             Arch::Riscv64 => Some(&RISCV64),
             Arch::Unknown => None,
         }
     }
 
     pub fn is_64(self) -> bool {
-        matches!(self, Arch::Arm64 | Arch::X86_64 | Arch::Riscv64)
+        matches!(
+            self,
+            Arch::Arm64 | Arch::X86_64 | Arch::Mips64 | Arch::Riscv64
+        )
     }
 
     pub fn register_size(self) -> usize {
@@ -132,6 +165,7 @@ impl Arch {
         match self {
             Arch::Arm64 => &[0x00, 0x00, 0x20, 0xD4],   // brk #0
             Arch::Riscv64 => &[0x73, 0x00, 0x10, 0x00], // ebreak
+            Arch::Mips | Arch::Mips64 => &[0x0D, 0x00, 0x00, 0x00], // break
             Arch::X86_64 | Arch::X86 => &[0xCC],        // int3
             Arch::Arm32 if thumb => &[0x01, 0xDE],      // udf #1 (Thumb)
             Arch::Arm32 => &[0xF0, 0x01, 0xF0, 0xE7],   // udf #0xF001F0 (ARM)

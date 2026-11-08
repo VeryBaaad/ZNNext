@@ -4,6 +4,10 @@ use std::process::Command;
 
 fn main() {
     println!("cargo:rerun-if-env-changed=ZNN_VERSION");
+    println!("cargo:rerun-if-env-changed=ZNN_ANDROID_ABI");
+    if let Ok(abi) = std::env::var("ZNN_ANDROID_ABI") {
+        println!("cargo:rustc-env=ZNN_ANDROID_ABI={abi}");
+    }
     let version = std::env::var("ZNN_VERSION")
         .ok()
         .filter(|v| !v.trim().is_empty())

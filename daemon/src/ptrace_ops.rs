@@ -121,6 +121,21 @@ pub fn setup_call(
             regs.set_pc(function);
             true
         }
+        Arch::Mips | Arch::Mips64 => {
+            let stack = regs.sp().wrapping_sub(16) & !0xF;
+            if !write_memory(pid, stack, &[0u8; 16]) {
+                return false;
+            }
+            for (index, argument) in args.iter().enumerate() {
+                if !regs.set_argument(index, *argument) {
+                    break;
+                }
+            }
+            regs.set_sp(stack);
+            regs.set_link(return_to);
+            regs.set_pc(function);
+            true
+        }
         Arch::X86 => {
             let mut stack = regs.sp();
             for argument in args.iter().rev() {

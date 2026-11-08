@@ -169,18 +169,33 @@ def fmt_version(version):
     return ".".join(str(part) for part in version)
 
 
-def build_abi(abi, variant, jobs, ndk, prefab_root, ccache, verbose):
+def build_abi(abi, variant, jobs, ndk, legacy_ndk, prefab_root, ccache, verbose):
+    legacy = abi in znn.LEGACY_ANDROID_ABIS
+    build_ndk = legacy_ndk if legacy else ndk
     build_dir = ROOT / "loader" / "build" / "cxx" / variant / abi
     output_dir = znn.loader_output(variant) / abi
     cxx_dir = ROOT / "loader" / "build" / "prefab" / variant / abi
     output_dir.mkdir(parents=True, exist_ok=True)
-    write_cxx_config(prefab_root, abi, cxx_dir)
+    if not legacy:
+        write_cxx_config(prefab_root, abi, cxx_dir)
 
     cmake, cmake_version_value = cmake_executable()
     build_type, optimization = znn.variant_cmake_optimization(variant)
-    cflags = ["-std=c18", *znn.DEFAULT_CFLAGS, *znn.variant_cflags(variant)]
-    cxxflags = ["-std=c++20", *znn.DEFAULT_CFLAGS, *znn.variant_cflags(variant)]
-    linker_flags = znn.variant_linker_flags(variant)
+    base_flags = [
+        flag for flag in znn.DEFAULT_CFLAGS
+        if not (legacy and flag.startswith("-D__FILE__"))
+    ]
+    cflags = [
+        "-std=c11" if legacy else "-std=c18",
+        *base_flags,
+        *znn.variant_cflags(variant, legacy),
+    ]
+    cxxflags = [
+        "-std=c++1z" if legacy else "-std=c++20",
+        *base_flags,
+        *znn.variant_cflags(variant, legacy),
+    ]
+    linker_flags = znn.variant_linker_flags(variant, legacy)
 
     arguments = [
         "-S",
@@ -189,14 +204,13 @@ def build_abi(abi, variant, jobs, ndk, prefab_root, ccache, verbose):
         str(build_dir),
         "-G",
         "Ninja",
-        f"-DCMAKE_TOOLCHAIN_FILE={ndk / 'build/cmake/android.toolchain.cmake'}",
+        f"-DCMAKE_TOOLCHAIN_FILE={build_ndk / 'build/cmake/android.toolchain.cmake'}",
         f"-DANDROID_ABI={abi}",
         f"-DANDROID_PLATFORM=android-{znn.ANDROID_MIN_SDK}",
-        "-DANDROID_STL=none",
-        f"-DANDROID_NDK={ndk}",
+        f"-DANDROID_STL={'c++_static' if legacy else 'none'}",
+        f"-DANDROID_NDK={build_ndk}",
         f"-DCMAKE_BUILD_TYPE={build_type}",
-        "-DLSPLT_STANDALONE=ON",
-        f"-Dcxx_DIR={cxx_dir}",
+        f"-DLSPLT_STANDALONE={'OFF' if legacy else 'ON'}",
         f"-DCMAKE_C_FLAGS={' '.join(cflags)}",
         f"-DCMAKE_CXX_FLAGS={' '.join(cxxflags)}",
         f"-DCMAKE_C_FLAGS_{build_type.upper()}={optimization}",
@@ -207,6 +221,8 @@ def build_abi(abi, variant, jobs, ndk, prefab_root, ccache, verbose):
         f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={output_dir}",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
     ]
+    if not legacy:
+        arguments.append(f"-Dcxx_DIR={cxx_dir}")
     if cmake_version_value >= (4, 0, 0):
         arguments.append("-DCMAKE_POLICY_VERSION_MINIMUM=3.5")
     if ccache:
@@ -245,6 +261,7 @@ def parse_arguments(argv):
     parser.add_argument("--jobs", type=int, default=znn.cpu_count())
     parser.add_argument("--abi", action="append", choices=znn.ANDROID_ABIS)
     parser.add_argument("--ndk", default=None)
+    parser.add_argument("--ndk-legacy", default=None)
     parser.add_argument("--ccache", default=None)
     parser.add_argument("--libcxx-aar", default=None)
     parser.add_argument("--verbose", action="store_true")
@@ -256,13 +273,18 @@ def main(argv=None):
     jobs = max(1, options.jobs)
     abis = options.abi or list(znn.ANDROID_ABIS)
     ndk = znn.ndk_dir(options.ndk)
+    legacy_ndk = znn.ndk_dir(options.ndk_legacy, znn.LEGACY_NDK_VERSION)
     ccache = znn.ccache_path(options.ccache)
-    prefab_root = ensure_libcxx(znn.LIBCXX_VERSION, options.libcxx_aar, options.verbose)
+    prefab_root = None
+    if any(abi not in znn.LEGACY_ANDROID_ABIS for abi in abis):
+        prefab_root = ensure_libcxx(
+            znn.LIBCXX_VERSION, options.libcxx_aar, options.verbose
+        )
     per_abi = max(1, jobs // len(abis))
 
     print(
         f"loader: {options.variant}, {len(abis)} ABI(s), {per_abi} job(s) each, "
-        f"NDK {ndk.name}",
+        f"NDK {ndk.name} (legacy {legacy_ndk.name})",
         flush=True,
     )
     if ccache:
@@ -282,6 +304,7 @@ def main(argv=None):
                 options.variant,
                 per_abi,
                 ndk,
+                legacy_ndk,
                 prefab_root,
                 ccache,
                 options.verbose,

@@ -92,57 +92,61 @@ const char* pltEngineName(PltEngine e) {
 bool inlineEngineSupported(InlineEngine e) {
   switch (e) {
     case InlineEngine::kDobby:
-#ifndef __riscv
+#ifdef ZNN_HAS_DOBBY
       return true;
 #else
       return false;
 #endif
     case InlineEngine::kShadowHook:
-#if defined(__aarch64__) || defined(__arm__)
+#ifdef ZNN_HAS_SHADOWHOOK
       return true;
 #else
       return false;
 #endif
     case InlineEngine::kAnd64InlineHook:
-#if defined(__aarch64__)
+#ifdef ZNN_HAS_AND64INLINEHOOK
       return true;
 #else
       return false;
 #endif
     case InlineEngine::kFridaGum:
-#ifndef __riscv
+#ifdef ZNN_HAS_FRIDA_GUM
       return true;
 #else
       return false;
 #endif
     case InlineEngine::kRv64Hook:
-#ifdef __riscv
+#ifdef ZNN_HAS_RV64HOOK
       return true;
 #else
       return false;
 #endif
     case InlineEngine::kHookZz:
-#if defined(__aarch64__) || defined(__arm__) || defined(__x86_64__)
+#ifdef ZNN_HAS_HOOKZZ
       return true;
 #else
       return false;
 #endif
     case InlineEngine::kUrHook:
-#if defined(__aarch64__)
+#ifdef ZNN_HAS_URHOOK
       return true;
 #else
       return false;
 #endif
     case InlineEngine::kWhale:
-#ifndef __riscv
+#ifdef ZNN_HAS_WHALE
       return true;
 #else
       return false;
 #endif
     case InlineEngine::kBaaadHook:
+#ifdef ZNN_HAS_BAAADHOOK
       return true;
+#else
+      return false;
+#endif
     case InlineEngine::kYukiIhook:
-#if defined(__aarch64__)
+#ifdef ZNN_HAS_YUKIIHOOK
       return true;
 #else
       return false;
@@ -156,49 +160,61 @@ bool inlineEngineSupported(InlineEngine e) {
 bool pltEngineSupported(PltEngine e) {
   switch (e) {
     case PltEngine::kLsplt:
+#ifdef ZNN_HAS_LSPLT
       return true;
+#else
+      return false;
+#endif
     case PltEngine::kByteHook:
-#ifndef __riscv
+#ifdef ZNN_HAS_BYTEHOOK
       return true;
 #else
       return false;
 #endif
     case PltEngine::kXHook:
-#ifndef __riscv
+#ifdef ZNN_HAS_XHOOK
       return true;
 #else
       return false;
 #endif
     case PltEngine::kPlti:
+#ifdef ZNN_HAS_PLTI
       return true;
+#else
+      return false;
+#endif
     case PltEngine::kPltHook:
-#ifndef __riscv
+#ifdef ZNN_HAS_PLTHOOK
       return true;
 #else
       return false;
 #endif
     case PltEngine::kUrHook:
-#if defined(__aarch64__)
+#ifdef ZNN_HAS_URHOOK
       return true;
 #else
       return false;
 #endif
     case PltEngine::kBaaadHook:
+#ifdef ZNN_HAS_BAAADHOOK
       return true;
+#else
+      return false;
+#endif
     case PltEngine::kYukiPlt:
-#ifndef __riscv
+#ifdef ZNN_HAS_YUKIPLT
       return true;
 #else
       return false;
 #endif
     case PltEngine::kProfilo:
-#ifndef __riscv
+#ifdef ZNN_HAS_PROFILO
       return true;
 #else
       return false;
 #endif
     case PltEngine::kSrxHook:
-#if defined(__aarch64__) || defined(__x86_64__)
+#ifdef ZNN_HAS_SRXHOOK
       return true;
 #else
       return false;
@@ -210,14 +226,26 @@ bool pltEngineSupported(PltEngine e) {
 }
 
 InlineEngine defaultInlineEngine() {
-#ifdef __riscv
+#ifdef ZNN_HAS_RV64HOOK
   return InlineEngine::kRv64Hook;
-#else
+#elif defined(ZNN_HAS_DOBBY)
   return InlineEngine::kDobby;
+#elif defined(ZNN_HAS_FRIDA_GUM)
+  return InlineEngine::kFridaGum;
+#else
+  return InlineEngine::kDisable;
 #endif
 }
 
-PltEngine defaultPltEngine() { return PltEngine::kLsplt; }
+PltEngine defaultPltEngine() {
+#ifdef ZNN_HAS_LSPLT
+  return PltEngine::kLsplt;
+#elif defined(ZNN_HAS_XHOOK)
+  return PltEngine::kXHook;
+#else
+  return PltEngine::kDisable;
+#endif
+}
 
 bool parseInlineEngine(const char* name, InlineEngine* out) {
   if (!name) return false;
