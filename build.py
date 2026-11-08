@@ -18,7 +18,7 @@ WEBUI_DIR = ROOT / "webui"
 
 MODULE_ID = "zygisknextsu"
 MODULE_NAME = "ZNNext"
-VER_NAME = "v2.15.0"
+VER_NAME = "v2.16.0"
 UPDATE_URL = "https://raw.githubusercontent.com/VeryBaaad/ZNNext/refs/heads/update/update.json"
 KPM_ID = "znnext"
 KPM_VERSION = VER_NAME.removeprefix("v")
