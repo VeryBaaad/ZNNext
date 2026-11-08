@@ -48,8 +48,15 @@ pub struct SystemInfo {
     pub root: RootImpl,
 }
 
+const BUILD_ABI: &str = match option_env!("ZNN_ANDROID_ABI") {
+    Some(abi) => abi,
+    None => "",
+};
+
 pub const fn runtime_abi() -> &'static str {
-    if cfg!(target_arch = "aarch64") {
+    if !BUILD_ABI.is_empty() {
+        BUILD_ABI
+    } else if cfg!(target_arch = "aarch64") {
         "arm64-v8a"
     } else if cfg!(target_arch = "arm") {
         "armeabi-v7a"
@@ -57,6 +64,10 @@ pub const fn runtime_abi() -> &'static str {
         "x86_64"
     } else if cfg!(target_arch = "x86") {
         "x86"
+    } else if cfg!(target_arch = "mips") {
+        "mips"
+    } else if cfg!(target_arch = "mips64") {
+        "mips64"
     } else if cfg!(target_arch = "riscv64") {
         "riscv64"
     } else {
@@ -69,6 +80,8 @@ pub fn sibling_abi() -> Option<&'static str> {
         Some("armeabi-v7a")
     } else if cfg!(target_arch = "x86_64") {
         Some("x86")
+    } else if cfg!(target_arch = "mips64") {
+        Some("mips")
     } else {
         None
     }

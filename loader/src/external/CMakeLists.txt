@@ -10,9 +10,11 @@ if (ANDROID_ABI STREQUAL "riscv64")
 endif ()
 
 option(LSPLT_BUILD_SHARED "Build LSPlt as a shared library" OFF)
-add_subdirectory(lsplt/lsplt/src/main/jni)
+if (NOT ZNN_LEGACY)
+    add_subdirectory(lsplt/lsplt/src/main/jni)
+endif ()
 
-if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
+if (NOT ZNN_LEGACY AND (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a"))
     enable_language(ASM)
     set(SHADOWHOOK_SRC ${CMAKE_CURRENT_SOURCE_DIR}/shadowhook/src/shadowhook/src/main/cpp)
     if (ANDROID_ABI STREQUAL "arm64-v8a")
@@ -44,7 +46,7 @@ if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
     target_compile_options(shadowhook PRIVATE -w)
 endif ()
 
-if (NOT ANDROID_ABI STREQUAL "riscv64")
+if (NOT ZNN_LEGACY AND NOT ANDROID_ABI STREQUAL "riscv64")
     set(BYTEHOOK_SRC ${CMAKE_CURRENT_SOURCE_DIR}/bytehook/bytehook/src/main/cpp)
     file(GLOB BYTEHOOK_SOURCES ${BYTEHOOK_SRC}/*.c)
     add_library(bytehook STATIC ${BYTEHOOK_SOURCES})
@@ -66,6 +68,14 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
     endif ()
     target_compile_options(bytehook PRIVATE -w)
 
+    add_library(plthook STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/plthook/plthook_elf.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/plthook/plthook.h
+    )
+    target_compile_options(plthook PRIVATE -w)
+endif ()
+
+if (ANDROID_ABI STREQUAL "armeabi" OR (NOT ZNN_LEGACY AND NOT ANDROID_ABI STREQUAL "riscv64"))
     set(XHOOK_SRC ${CMAKE_CURRENT_SOURCE_DIR}/xhook/libxhook/jni)
     file(GLOB XHOOK_SOURCES ${XHOOK_SRC}/*.c)
     add_library(xhook STATIC ${XHOOK_SOURCES})
@@ -73,12 +83,7 @@ if (NOT ANDROID_ABI STREQUAL "riscv64")
         "PAGE_SIZE=sysconf(_SC_PAGESIZE)"
         "PAGE_MASK=(~(sysconf(_SC_PAGESIZE)-1))"
     )
-
-    add_library(plthook STATIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/plthook/plthook_elf.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/plthook/plthook.h
-    )
-    target_compile_options(plthook PRIVATE -w)
+    target_compile_options(xhook PRIVATE -w)
 endif ()
 
 if (ANDROID_ABI STREQUAL "arm64-v8a")
@@ -92,9 +97,11 @@ if (ANDROID_ABI STREQUAL "arm64-v8a")
     target_compile_options(and64inlinehook PRIVATE -w)
 endif()
 
-add_subdirectory(plti)
+if (NOT ZNN_LEGACY)
+    add_subdirectory(plti)
+    add_subdirectory(urhook)
+endif ()
 add_subdirectory(frida-gum)
-add_subdirectory(urhook)
 
 if (ANDROID_ABI STREQUAL "arm64-v8a")
     add_subdirectory(yukizygisk)
@@ -103,7 +110,7 @@ endif ()
 if (ANDROID_ABI STREQUAL "riscv64")
     add_subdirectory(rv64hook)
         target_compile_options(rv64hook-static PRIVATE -w)
-else ()
+elseif (NOT ZNN_LEGACY)
     option(DOBBY_GENERATE_SHARED "Build Dobby as a shared library" OFF)
     option(BUILD_EXAMPLE "Build Dobby example" OFF)
     option(BUILD_TEST "Build Dobby test" OFF)
@@ -119,9 +126,11 @@ else ()
     add_subdirectory(profilo)
 endif ()
 
-add_subdirectory(baaadhook)
+if (NOT ZNN_LEGACY)
+    add_subdirectory(baaadhook)
+endif ()
 
-if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "x86_64")
+if (NOT ZNN_LEGACY AND (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "x86_64"))
     add_subdirectory(srx_hook)
 endif ()
 

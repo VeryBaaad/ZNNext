@@ -24,9 +24,12 @@ SKIPPED_FILES = {*TEMPLATED_FILES, "mazoku"}
 MACHIKADO_LAYOUT = {
     "machikado.arm64": ("arm64-v8a", "armeabi-v7a", "arm64-v8a"),
     "machikado.x64": ("x86_64", "x86", "x86_64"),
-    "machikado.arm": ("armeabi-v7a", "armeabi-v7a", "arm64-v8a"),
+    "machikado.arm": ("armeabi-v7a", "armeabi-v7a", "armeabi-v7a"),
+    "machikado.armeabi": ("armeabi", "armeabi", "armeabi"),
     "machikado.x86": ("x86", "x86", "x86_64"),
     "machikado.riscv64": ("riscv64", "riscv64", "riscv64"),
+    "machikado.mips": ("mips", "mips", "mips"),
+    "machikado.mips64": ("mips64", "mips", "mips64"),
 }
 
 
@@ -186,7 +189,7 @@ def copy_kpm(stage, variant, no_kpm):
 
 
 def sign_stage(stage):
-    outputs = {"machikado.arm64", "machikado.x64", "machikado.arm", "machikado.x86", "machikado.riscv64"}
+    outputs = set(MACHIKADO_LAYOUT)
     if not PRIVATE_KEY.is_file():
         print("no private_key found, this build will not be signed", flush=True)
         for name in outputs:

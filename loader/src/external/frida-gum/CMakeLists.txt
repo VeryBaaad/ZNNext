@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 
-if (ANDROID_ABI STREQUAL "riscv64")
+if (ANDROID_ABI STREQUAL "riscv64" OR ANDROID_ABI STREQUAL "mips" OR ANDROID_ABI STREQUAL "mips64")
     return()
 endif ()
 
@@ -8,11 +8,17 @@ set(FRIDA_GUM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(FRIDA_GUM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/frida-gum-${ANDROID_ABI}")
 set(FRIDA_GUM_DEPS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.build/frida-gum-deps"
     CACHE PATH "Shared Frida dependency cache")
+if (ANDROID_ABI STREQUAL "armeabi")
+    set(FRIDA_GUM_DEPS_DIR "${FRIDA_GUM_DEPS_DIR}/legacy-armeabi")
+endif ()
 
 if (ANDROID_ABI STREQUAL "arm64-v8a")
     set(FRIDA_GUM_HOST "android-arm64")
-elseif (ANDROID_ABI STREQUAL "armeabi-v7a")
+elseif (ANDROID_ABI STREQUAL "armeabi-v7a" OR ANDROID_ABI STREQUAL "armeabi")
     set(FRIDA_GUM_HOST "android-arm")
+    if (ANDROID_ABI STREQUAL "armeabi")
+        set(FRIDA_GUM_CFLAGS "-march=armv5te -marm -mfloat-abi=soft -DNVALGRIND -DHAVE_MADVISE=1")
+    endif ()
 elseif (ANDROID_ABI STREQUAL "x86")
     set(FRIDA_GUM_HOST "android-x86")
 elseif (ANDROID_ABI STREQUAL "x86_64")
@@ -54,6 +60,11 @@ else ()
     find_program(FRIDA_GUM_NINJA NAMES ninja REQUIRED)
 endif ()
 
+set(FRIDA_GUM_CFLAGS_ARG)
+if (FRIDA_GUM_CFLAGS)
+    set(FRIDA_GUM_CFLAGS_ARG "--cflags=${FRIDA_GUM_CFLAGS}")
+endif ()
+
 if (NOT CMAKE_STRIP)
     find_program(FRIDA_GUM_STRIP NAMES llvm-strip strip REQUIRED)
 else ()
@@ -82,6 +93,7 @@ add_custom_command(
         --host "${FRIDA_GUM_HOST}"
         --build-machine "${FRIDA_GUM_BUILD_MACHINE}"
         --ndk "${CMAKE_ANDROID_NDK}"
+        ${FRIDA_GUM_CFLAGS_ARG}
         --ninja "${FRIDA_GUM_NINJA}"
         --strip "${FRIDA_GUM_STRIP}"
     DEPENDS

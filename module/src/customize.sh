@@ -65,11 +65,30 @@ else
 fi
 
 # check architecture
-if [ "$ARCH" != "arm" ] && [ "$ARCH" != "arm64" ] && [ "$ARCH" != "x86" ] && [ "$ARCH" != "x64" ] && [ "$ARCH" != "riscv64" ]; then
+if [ "$ARCH" != "arm" ] && [ "$ARCH" != "arm64" ] && [ "$ARCH" != "x86" ] && [ "$ARCH" != "x64" ] && [ "$ARCH" != "riscv64" ] && [ "$ARCH" != "mips" ] && [ "$ARCH" != "mips64" ]; then
   abort "! Unsupported platform: $ARCH"
 else
   ui_print "- Device platform: $ARCH"
 fi
+
+ABI_LIST=$(getprop ro.product.cpu.abilist 2>/dev/null)
+[ -n "$ABI_LIST" ] || ABI_LIST=$(getprop ro.product.cpu.abi 2>/dev/null)
+ARM32_ABI=armeabi
+case ",$ABI_LIST," in
+  *,armeabi-v7a,*) ARM32_ABI=armeabi-v7a ;;
+esac
+MIPS32_ABI=mips
+case ",$ABI_LIST," in
+  *,mips,*) MIPS32_ABI=mips ;;
+esac
+case "$ARCH" in
+  arm)
+    if [ "$ARM32_ABI" = "armeabi-v7a" ]; then MACHIKADO=machikado.arm; else MACHIKADO=machikado.armeabi; fi
+    ;;
+  mips) MACHIKADO=machikado.mips ;;
+  mips64) MACHIKADO=machikado.mips64 ;;
+  *) MACHIKADO=machikado.$ARCH ;;
+esac
 
 ui_print "- Extracting verify.sh"
 unzip -o "$ZIPFILE" 'verify.sh' -d "$TMPDIR" >&2
@@ -101,8 +120,8 @@ extract "$ZIPFILE" 'late-load.sh' "$MODPATH"
 mv "$TMPDIR/sepolicy.rule" "$MODPATH"
 extract "$ZIPFILE" 'emulated-soft-reboot.sh' "$MODPATH"
 extract "$ZIPFILE" 'uninstall.sh' "$MODPATH"
-extract "$ZIPFILE" "machikado.$ARCH" "$MODPATH"
-mv "$MODPATH/machikado.$ARCH" "$MODPATH/machikado"
+extract "$ZIPFILE" "$MACHIKADO" "$MODPATH"
+mv "$MODPATH/$MACHIKADO" "$MODPATH/machikado"
 extract "$ZIPFILE" 'mazoku' "$MODPATH"
 
 mkdir "$MODPATH/bin"
@@ -121,19 +140,32 @@ if [ "$ARCH" = "x86" ] || [ "$ARCH" = "x64" ]; then
   fi
 elif [ "$ARCH" = "arm" ] || [ "$ARCH" = "arm64" ]; then
   ui_print "- Extracting arm libraries"
-  extract "$ZIPFILE" 'lib/armeabi-v7a/libzn_loader.so' "$MODPATH/lib" true
-  extract "$ZIPFILE" 'lib/arm64-v8a/libzn_loader.so' "$MODPATH/lib64" true
   if [ "$IS64BIT" = "true" ]; then
+    extract "$ZIPFILE" 'lib/armeabi-v7a/libzn_loader.so' "$MODPATH/lib" true
+    extract "$ZIPFILE" 'lib/arm64-v8a/libzn_loader.so' "$MODPATH/lib64" true
     ui_print "- Extracting arm64 libraries"
     extract "$ZIPFILE" 'bin/arm64-v8a/znnd' "$MODPATH/bin" true
   else
-    extract "$ZIPFILE" 'bin/armeabi-v7a/znnd' "$MODPATH/bin" true
+    extract "$ZIPFILE" "lib/$ARM32_ABI/libzn_loader.so" "$MODPATH/lib" true
+    extract "$ZIPFILE" "lib/$ARM32_ABI/libzn_loader.so" "$MODPATH/lib64" true
+    extract "$ZIPFILE" "bin/$ARM32_ABI/znnd" "$MODPATH/bin" true
   fi
 elif [ "$ARCH" = "riscv64" ]; then
   ui_print "- Extracting RISC-V libraries"
   extract "$ZIPFILE" 'lib/riscv64/libzn_loader.so' "$MODPATH/lib" true
   extract "$ZIPFILE" 'lib/riscv64/libzn_loader.so' "$MODPATH/lib64" true
   extract "$ZIPFILE" 'bin/riscv64/znnd' "$MODPATH/bin" true
+elif [ "$ARCH" = "mips" ] || [ "$ARCH" = "mips64" ]; then
+  ui_print "- Extracting MIPS libraries"
+  if [ "$IS64BIT" = "true" ]; then
+    extract "$ZIPFILE" 'lib/mips64/libzn_loader.so' "$MODPATH/lib64" true
+    extract "$ZIPFILE" "lib/$MIPS32_ABI/libzn_loader.so" "$MODPATH/lib" true
+    extract "$ZIPFILE" 'bin/mips64/znnd' "$MODPATH/bin" true
+  else
+    extract "$ZIPFILE" 'lib/mips/libzn_loader.so' "$MODPATH/lib" true
+    extract "$ZIPFILE" 'lib/mips/libzn_loader.so' "$MODPATH/lib64" true
+    extract "$ZIPFILE" 'bin/mips/znnd' "$MODPATH/bin" true
+  fi
 fi
 
 if [ "$APATCH" ] && [ "$ARCH" = "arm64" ]; then

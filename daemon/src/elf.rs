@@ -22,8 +22,8 @@ use std::os::unix::fs::FileExt;
 use std::path::Path;
 
 use object::elf::{
-    EM_386, EM_AARCH64, EM_ARM, EM_RISCV, EM_X86_64, ET_DYN, FileHeader32, FileHeader64, FileType,
-    Machine,
+    EM_386, EM_AARCH64, EM_ARM, EM_MIPS, EM_RISCV, EM_X86_64, ET_DYN, FileHeader32, FileHeader64,
+    FileType, Machine,
 };
 use object::read::elf::FileHeader as ElfFileHeader;
 use object::{Endianness, FileKind, Object, ObjectKind, ObjectSegment, ObjectSymbol};
@@ -89,6 +89,7 @@ pub fn arch_of(header: &ElfHeader) -> Arch {
         match header.machine {
             EM_AARCH64 => Arch::Arm64,
             EM_X86_64 => Arch::X86_64,
+            EM_MIPS => Arch::Mips64,
             EM_RISCV => Arch::Riscv64,
             _ => Arch::Unknown,
         }
@@ -96,6 +97,7 @@ pub fn arch_of(header: &ElfHeader) -> Arch {
         match header.machine {
             EM_ARM => Arch::Arm32,
             EM_386 => Arch::X86,
+            EM_MIPS => Arch::Mips,
             _ => Arch::Unknown,
         }
     }
