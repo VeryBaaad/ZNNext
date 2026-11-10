@@ -112,7 +112,6 @@ This project is made possible by the following open-source contributions:
 - [PLTI](https://github.com/PerformanC/PLTI)
 - [PLTHook](https://github.com/metacall/plthook)
 - [UrHook](https://github.com/SMlc666/urhook)
-- [UrHook](https://github.com/SMlc666/urhook)
 - [BaaadHook](https://github.com/VeryBaaad/BaaadHook)
 - [YukiPLT](https://github.com/Rouyashiki/YukiPLT)
 - [Profilo](https://github.com/facebookarchive/profilo)
