@@ -80,13 +80,54 @@ Create a Pull Request.
 
 ## Credits 
 
+This project is made possible by the following open-source contributions:
+
 - [Magisk](https://github.com/topjohnwu/Magisk/): makes all these possible
-- [ZygiskNext](https://github.com/LSPosed/ZygiskNext): OG implementation
-- [Dobby](https://github.com/LSPosed/Dobby), [rv64hook](https://github.com/eirv/riscv64-inline-hook), [ShadowHook](https://github.com/bytedance/android-inline-hook), [And64InlineHook](https://github.com/Rprop/And64InlineHook), [frida-gum](https://github.com/frida/frida-gum), [HookZz](https://github.com/jmpews/HookZz/tree/2b48240203c95eb4164eded8f2b31f4bc846528a), [UrHook](https://github.com/SMlc666/urhook), [Whale](https://github.com/asLody/whale), [BaaadHook](https://github.com/VeryBaaad/BaaadHook) and [YukiZygisk](https://github.com/Rouyashiki/YukiZygisk): used for inline hooking
-- [LSPlt](https://github.com/LSPosed/LSPlt), [ByteHook](https://github.com/bytedance/bhook), [xHook](https://github.com/iqiyi/xHook), [PLTI](https://github.com/PerformanC/PLTI), [PLTHook](https://github.com/metacall/plthook), [UrHook](https://github.com/SMlc666/urhook), [BaaadHook](https://github.com/VeryBaaad/BaaadHook), [YukiPLT](https://github.com/Rouyashiki/YukiPLT), [Profilo](https://github.com/facebookarchive/profilo) and [srx_hook](https://github.com/Kindness-Kismet/srx_hook): used for plt hooking
-- [libcxx](https://github.com/LSPosed/prefab-libcxx): libc++/libc++abi statically linked into the loader
-- [LZMA SDK](https://www.7-zip.org/sdk.html), [xz-embedded](https://github.com/tukaani-project/xz-embedded) and [libarchive](https://github.com/libarchive/libarchive): `.gnu_debugdata` decompressors
-- [KernelPatch](https://github.com/bmax121/KernelPatch): for KernelPatch Module
+- [ZygiskNext](https://github.com/LSPosed/ZygiskNext): zygisk next api
+- [KernelPatch](https://github.com/bmax121/KernelPatch): for kernel patch module
+- [libcxx](https://github.com/LSPosed/prefab-libcxx): libc++ statically linker.
+
+<details>
+<summary>used for inline hooking</summary>
+
+- [Dobby](https://github.com/LSPosed/Dobby)
+- [rv64hook](https://github.com/eirv/riscv64-inline-hook)
+- [ShadowHook](https://github.com/bytedance/android-inline-hook)
+- [And64InlineHook](https://github.com/Rprop/And64InlineHook)
+- [frida-gum](https://github.com/frida/frida-gum)
+- [HookZz](https://github.com/jmpews/HookZz/tree/2b48240203c95eb4164eded8f2b31f4bc846528a)
+- [UrHook](https://github.com/SMlc666/urhook)
+- [Whale](https://github.com/asLody/whale)
+- [BaaadHook](https://github.com/VeryBaaad/BaaadHook)
+- [YukiZygisk](https://github.com/Rouyashiki/YukiZygisk)
+
+</details>
+
+<details>
+<summary>used for plt hooking</summary>
+
+- [LSPlt](https://github.com/LSPosed/LSPlt)
+- [ByteHook](https://github.com/bytedance/bhook)
+- [xHook](https://github.com/iqiyi/xHook)
+- [PLTI](https://github.com/PerformanC/PLTI)
+- [PLTHook](https://github.com/metacall/plthook)
+- [UrHook](https://github.com/SMlc666/urhook)
+- [UrHook](https://github.com/SMlc666/urhook)
+- [BaaadHook](https://github.com/VeryBaaad/BaaadHook)
+- [YukiPLT](https://github.com/Rouyashiki/YukiPLT)
+- [Profilo](https://github.com/facebookarchive/profilo)
+- [srx_hook](https://github.com/Kindness-Kismet/srx_hook)
+
+</details>
+
+<details>
+<summary>decompressors</summary>
+
+- [LZMA SDK](https://www.7-zip.org/sdk.html)
+- [xz-embedded](https://github.com/tukaani-project/xz-embedded)
+- [libarchive](https://github.com/libarchive/libarchive)
+
+</details>
 
 ## License
 
