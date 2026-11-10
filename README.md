@@ -1,6 +1,22 @@
+<div align="center">
+
 # ZNNext
 
-A from-scratch, standalone implementation of the **Zygisk Next module**.
+**A from-scratch, standalone implementation of the Zygisk Next module.**
+
+[![Build][build-badge]][build-url]
+[![Version][version-badge]][version-url]
+[![GitHub Downloads][download-badge]][download-url]
+
+[build-badge]: https://img.shields.io/github/actions/workflow/status/VeryBaaad/ZNNext/ci.yml?branch=master&event=push&logo=github
+[build-url]: https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster+event%3Apush
+[version-badge]: https://img.shields.io/github/v/release/VeryBaaad/ZNNext?logo=github
+[version-url]: https://github.com/VeryBaaad/ZNNext/releases/latest
+[download-badge]: https://img.shields.io/github/downloads/VeryBaaad/ZNNext/total?logo=github
+[download-url]: https://github.com/VeryBaaad/ZNNext/releases/
+
+
+</div>
 
 > [!IMPORTANT]
 > ZNNext is not a **Zygisk** implementation
