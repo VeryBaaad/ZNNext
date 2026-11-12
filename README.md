@@ -1,78 +1,151 @@
+<div align="center">
+
 # ZNNext
 
-A from-scratch, standalone implementation of the **Zygisk Next module**.
+**A from-scratch, standalone implementation of the Zygisk Next API.**
+
+[![Build][build-badge]][build-url]
+[![Version][version-badge]][version-url]
+[![GitHub Downloads][download-badge]][download-url]
+[![License][license-badge]][license-url]
+
+[build-badge]: https://img.shields.io/github/actions/workflow/status/VeryBaaad/ZNNext/ci.yml?branch=master&event=push
+[build-url]: https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster+event%3Apush
+[version-badge]: https://img.shields.io/github/v/release/VeryBaaad/ZNNext
+[version-url]: https://github.com/VeryBaaad/ZNNext/releases/latest
+[download-badge]: https://img.shields.io/github/downloads/VeryBaaad/ZNNext/total
+[download-url]: https://github.com/VeryBaaad/ZNNext/releases/
+[license-badge]: https://img.shields.io/github/license/VeryBaaad/ZNNext
+[license-url]: LICENSE
+
+</div>
 
 > [!IMPORTANT]
 > ZNNext is not a **Zygisk** implementation
 > 
 > ZNNext 不是一个 **Zygisk** 实现
 
-## Introduction
+---
 
-A Magisk module that attempts to implement the ZygiskNext API.
+### Introduction
 
-> A Zygisk Next module is a valid Magisk module. Starting with version v1.2.0—preview1 after the project went closed-source—ZygiskNext introduced support for "ZygiskNext modules." These provide more convenient interfaces for inline and PLT hooking and even support advanced injection into the HyperOS Runtime. Consequently, I created this open-source Magisk module to load those ZygiskNext modules.
+ZNNext is an open-source Magisk module designed to provide the Zygisk Next API, striving to both implement and surpass the original Zygisk Next.
 
-## Supported Versions
+This module enables code injection into any process forked from `init`.
 
-- Android 5.0 or newer
-- Linux 3.17 or newer
-- armv8, armv7, armv5, mips, mips64, riscv64, x86, x64
+> [!NOTE]
+> The Zygisk Next API was introduced in the closed-source v1.2.0-preview1 release of Zygisk Next; at that time, no existing open-source project was capable of loading these "ZN modules."
+> 
+> Thus, I created this project—built specifically for the open-source community.
 
-> Kernel event tracking is optional and uses whatever the kernel provides: tracefs
-> `sched_process_exec` events first, then the proc connector and eBPF. A `/proc`
-> polling mode needs no kernel support at all, so any supported kernel works
-> without kernel events.
+---
 
-## Install
+### Compatibility
+
+ZNNext supports Android 5 and above.
+
+> [!TIP]
+> Some features may not function on certain Linux kernels, this does not affect daily use.
+
+---
+
+### Install
 
 1. Install Magisk 26402+ or KernelSU 11425+ or APatch 10700+
-2. [Download](#download) and install ZNNext in manager
+2. [Download](#download) and install ZNNext in your root solution manager
 3. Reboot
-4. Have fun :)
+4. Open the module's WebUI, begin your journey of custom configuration :)
 
-## Download
+---
 
-- For stable releases, please go to [Github Releases page](https://github.com/VeryBaaad/ZNNext/releases)
-- For canary build, please check [Github Actions](https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster)
+### Download
 
-Note: debug builds are only available in Github Actions.
+| Channel | Source |
+| --- | --- |
+| Stable | [GitHub Releases](https://github.com/VeryBaaad/ZNNext/releases) |
+| CI | [GitHub Actions](https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster) |
 
-## Get Help
+NOTE: The debug version is provided only in GitHub Actions.
+
+---
+
+### Get Help and Contributing
 
 **Only bug reports from **THE LATEST DEBUG BUILD** will be accepted.**
 
+**Please ensure that you are a **NATIVE SPEAKER** of the language in question for translation.**
+
 - GitHub issues: [Issues](https://github.com/VeryBaaad/ZNNext/issues/)
+- Pull Requests: [Pull Requests](https://github.com/VeryBaaad/ZNNext/pulls/)
 
-## For Developers
+---
 
-Read the [ZygiskNextModuleSample](https://github.com/5ec1cff/ZygiskNextModuleSample)
+### Community Discussion
 
-### HyperOS Runtime
+- GitHub discussions: [Discussions](https://github.com/VeryBaaad/ZNNext/discussions)
 
-Look this: [hyos_runtime.md](https://github.com/LSPosed/ZygiskNext/blob/main/docs/hyos_runtime.md)
+---
 
-## Community Discussion
+### Developer Resources
 
-- Telegram: [@EdLSPesodITed](https://t.me/EdLSPesodITed)
+- [ZygiskNextModuleSample](https://github.com/5ec1cff/ZygiskNextModuleSample): module sample
+- [hyos_runtime.md](https://github.com/Dr-TSNG/ZygiskNext/blob/main/docs/hyos_runtime.md): for HyperOS Runtime
 
-Notice: These community groups don't accept any bug report, please use [Get help](#get-help) to report.
+---
 
-## Translation Contributing
+### Credits 
 
-Create a Pull Request.
-
-## Credits 
+This project is made possible by the following open-source contributions:
 
 - [Magisk](https://github.com/topjohnwu/Magisk/): makes all these possible
-- [ZygiskNext](https://github.com/LSPosed/ZygiskNext): OG implementation
-- [Dobby](https://github.com/LSPosed/Dobby), [rv64hook](https://github.com/eirv/riscv64-inline-hook), [ShadowHook](https://github.com/bytedance/android-inline-hook), [And64InlineHook](https://github.com/Rprop/And64InlineHook), [frida-gum](https://github.com/frida/frida-gum), [HookZz](https://github.com/jmpews/HookZz/tree/2b48240203c95eb4164eded8f2b31f4bc846528a), [UrHook](https://github.com/SMlc666/urhook), [Whale](https://github.com/asLody/whale), [BaaadHook](https://github.com/VeryBaaad/BaaadHook) and [YukiZygisk](https://github.com/Rouyashiki/YukiZygisk): used for inline hooking
-- [LSPlt](https://github.com/LSPosed/LSPlt), [ByteHook](https://github.com/bytedance/bhook), [xHook](https://github.com/iqiyi/xHook), [PLTI](https://github.com/PerformanC/PLTI), [PLTHook](https://github.com/metacall/plthook), [UrHook](https://github.com/SMlc666/urhook), [BaaadHook](https://github.com/VeryBaaad/BaaadHook), [YukiPLT](https://github.com/Rouyashiki/YukiPLT), [Profilo](https://github.com/facebookarchive/profilo) and [srx_hook](https://github.com/Kindness-Kismet/srx_hook): used for plt hooking
-- [libcxx](https://github.com/LSPosed/prefab-libcxx): libc++/libc++abi statically linked into the loader
-- [LZMA SDK](https://www.7-zip.org/sdk.html), [xz-embedded](https://github.com/tukaani-project/xz-embedded) and [libarchive](https://github.com/libarchive/libarchive): `.gnu_debugdata` decompressors
-- [KernelPatch](https://github.com/bmax121/KernelPatch): for KernelPatch Module
+- [ZygiskNext](https://github.com/Dr-TSNG/ZygiskNext): original API reference
+- [KernelPatch](https://github.com/bmax121/KernelPatch): for kernel patch module
+- [libcxx](https://github.com/LSPosed/prefab-libcxx): libc++ statically linker
 
-## License
+<details>
+<summary>used for inline hooking</summary>
+
+- [Dobby](https://github.com/LSPosed/Dobby): a lightweight, multi-platform, multi-architecture hook framework
+- [rv64hook](https://github.com/eirv/riscv64-inline-hook): lightweight inline hook library for RISC-V 64
+- [ShadowHook](https://github.com/bytedance/android-inline-hook): a general-purpose Android inline hook library, supporting Thumb, ARM32, and ARM64
+- [And64InlineHook](https://github.com/Rprop/And64InlineHook): lightweight ARMv8-A(ARM64, AArch64, Little-Endian) Inline Hook Library for Android C/C++
+- [frida-gum](https://github.com/frida/frida-gum): cross-platform instrumentation and introspection library written in C
+- [HookZz](https://github.com/jmpews/HookZz/tree/2b48240203c95eb4164eded8f2b31f4bc846528a): a hook framework for arm/arm64/ios/android
+- [UrHook](https://github.com/SMlc666/urhook): a versatile hooking library for Android/Linux ARM64
+- [Whale](https://github.com/asLody/whale): hook Framework for Android/IOS/Linux/MacOS
+- [BaaadHook](https://github.com/VeryBaaad/BaaadHook): inline/plt hook
+- [YukiZygisk](https://github.com/Rouyashiki/YukiZygisk): a new kernel-level Zygisk implementation designed to explore better, cleaner, and more flexible ways of injecting
+
+</details>
+
+<details>
+<summary>used for plt hooking</summary>
+
+- [LSPlt](https://github.com/LSPosed/LSPlt): simple PLT hook for Android
+- [ByteHook](https://github.com/bytedance/bhook): a universal Android PLT hook library, supporting armeabi-v7a, arm64-v8a, x86, and x86_64
+- [xHook](https://github.com/iqiyi/xHook): a PLT hook library for Android native ELF
+- [PLTI](https://github.com/PerformanC/PLTI): PerformanC's modern PLT hooking library
+- [PLTHook](https://github.com/metacall/plthook): hook function calls by replacing PLT (Procedure Linkage Table) entries
+- [UrHook](https://github.com/SMlc666/urhook): a versatile hooking library for Android/Linux ARM64
+- [BaaadHook](https://github.com/VeryBaaad/BaaadHook): inline/plt hook
+- [YukiPLT](https://github.com/Rouyashiki/YukiPLT): a standalone Android PLT/GOT hooking library
+- [Profilo](https://github.com/facebookarchive/profilo): a library for performance traces from production
+- [srx_hook](https://github.com/Kindness-Kismet/srx_hook): rust PLT Hook library
+
+</details>
+
+<details>
+<summary>decompressors</summary>
+
+- [LZMA SDK](https://www.7-zip.org/sdk.html): 7-Zip
+- [xz-embedded](https://github.com/tukaani-project/xz-embedded): XZ Embedded
+- [libarchive](https://github.com/libarchive/libarchive): multi-format archive and compression library
+
+</details>
+
+---
+
+### License
 
 ZNNext is licensed under the **GNU General Public License v3 (GPL-3)** (http://www.gnu.org/copyleft/gpl.html).
 

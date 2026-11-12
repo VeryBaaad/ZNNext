@@ -2,7 +2,7 @@
 schemaVersion: 1
 id: zygisknextsu
 name: ZNNext
-summary: A from-scratch, standalone implementation of the Zygisk Next module
+summary: A from-scratch, standalone implementation of the Zygisk Next API
 description: README.md
 license: GPL-3.0-only
 homepage: https://baaad.xyz/
