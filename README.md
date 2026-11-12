@@ -2,7 +2,7 @@
 
 # ZNNext
 
-**A from-scratch, standalone implementation of the Zygisk Next module.**
+**A from-scratch, standalone implementation of the Zygisk Next API.**
 
 [![Build][build-badge]][build-url]
 [![Version][version-badge]][version-url]
@@ -52,7 +52,7 @@ ZNNext supports Android 5 and above.
 ### Install
 
 1. Install Magisk 26402+ or KernelSU 11425+ or APatch 10700+
-2. [Download](#download) and install ZNNext in your root manager
+2. [Download](#download) and install ZNNext in your root solution manager
 3. Reboot
 4. Open the module's WebUI, begin your journey of custom configuration :)
 
@@ -88,7 +88,7 @@ NOTE: The debug version is provided only in GitHub Actions.
 
 ### Developer Resources
 
-- [ZygiskNextModuleSample](https://github.com/5ec1cff/ZygiskNextModuleSample): module simple
+- [ZygiskNextModuleSample](https://github.com/5ec1cff/ZygiskNextModuleSample): module sample
 - [hyos_runtime.md](https://github.com/Dr-TSNG/ZygiskNext/blob/main/docs/hyos_runtime.md): for HyperOS Runtime
 
 ---
@@ -98,7 +98,7 @@ NOTE: The debug version is provided only in GitHub Actions.
 This project is made possible by the following open-source contributions:
 
 - [Magisk](https://github.com/topjohnwu/Magisk/): makes all these possible
-- [ZygiskNext](https://github.com/Dr-TSNG/ZygiskNext): zygisk next api
+- [ZygiskNext](https://github.com/Dr-TSNG/ZygiskNext): original API reference
 - [KernelPatch](https://github.com/bmax121/KernelPatch): for kernel patch module
 - [libcxx](https://github.com/LSPosed/prefab-libcxx): libc++ statically linker
 
