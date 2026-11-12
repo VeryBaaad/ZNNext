@@ -35,6 +35,8 @@ This module enables code injection into any process forked from `init`.
 
 > [!NOTE]
 > The Zygisk Next API was introduced in the closed-source v1.2.0-preview1 release of Zygisk Next; at that time, no existing open-source project was capable of loading these "ZN modules."
+> 
+> Thus, I created this project—built specifically for the open-source community.
 
 ---
 
@@ -86,8 +88,8 @@ NOTE: The debug version is provided only in GitHub Actions.
 
 ### Developer Resources
 
-- [ZygiskNextModuleSample](https://github.com/5ec1cff/ZygiskNextModuleSample)
-- [hyos_runtime.md](https://github.com/LSPosed/ZygiskNext/blob/main/docs/hyos_runtime.md)
+- [ZygiskNextModuleSample](https://github.com/5ec1cff/ZygiskNextModuleSample): module simple
+- [hyos_runtime.md](https://github.com/Dr-TSNG/ZygiskNext/blob/main/docs/hyos_runtime.md): for HyperOS Runtime
 
 ---
 
@@ -96,7 +98,7 @@ NOTE: The debug version is provided only in GitHub Actions.
 This project is made possible by the following open-source contributions:
 
 - [Magisk](https://github.com/topjohnwu/Magisk/): makes all these possible
-- [ZygiskNext](https://github.com/LSPosed/ZygiskNext): zygisk next api
+- [ZygiskNext](https://github.com/Dr-TSNG/ZygiskNext): zygisk next api
 - [KernelPatch](https://github.com/bmax121/KernelPatch): for kernel patch module
 - [libcxx](https://github.com/LSPosed/prefab-libcxx): libc++ statically linker
 
