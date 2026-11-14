@@ -77,12 +77,16 @@ NOTE: The debug version is provided only in GitHub Actions.
 
 - GitHub issues: [Issues](https://github.com/VeryBaaad/ZNNext/issues/)
 - Pull Requests: [Pull Requests](https://github.com/VeryBaaad/ZNNext/pulls/)
+- GitHub discussions: [Discussions](https://github.com/VeryBaaad/ZNNext/discussions)
 
 ---
 
-### Community Discussion
+### Version Naming
 
-- GitHub discussions: [Discussions](https://github.com/VeryBaaad/ZNNext/discussions)
+v[Major].[Minor].[Patch][.Revision]
+
+- Major / Minor / Patch: same as semver.
+- Revision: when making a backward compatible-change that affects only internal behavior, without altering external behavior. (not MUST)
 
 ---
 
