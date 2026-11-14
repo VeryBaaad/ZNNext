@@ -43,7 +43,7 @@ add_custom_command(
         "ANDROID_NDK_HOME=${ANDROID_NDK}"
         "ANDROID_NDK_ROOT=${ANDROID_NDK}"
         "CARGO_TARGET_DIR=${SRX_HOOK_FFI_TARGET_DIR}"
-        cargo ndk -t "${ANDROID_ABI}" -P "${CMAKE_ANDROID_API}" build --locked
+        cargo ndk -t "${ANDROID_ABI}" -P "${CMAKE_ANDROID_API}" build
             ${SRX_HOOK_FFI_CARGO_FLAGS}
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     DEPENDS ${SRX_HOOK_FFI_SOURCES}
