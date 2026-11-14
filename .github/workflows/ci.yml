@@ -61,7 +61,7 @@ jobs:
           restore-keys: ${{ runner.os }}
           save: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       - name: Install cargo-ndk
-        run: cargo install cargo-ndk --locked
+        run: cargo install cargo-ndk
       - name: Build
         run: python3 build.py zipRelease zipDebug
       - name: Prepare artifact
