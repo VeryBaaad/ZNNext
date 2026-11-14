@@ -42,44 +42,70 @@ def sanitize_component(value):
     return re.sub(r"[^A-Z0-9]+", "_", value.upper()).strip("_")
 
 
-def license_suffix(file_name):
-    upper = file_name.upper()
-    for prefix in ("LICENSE-", "LICENSE.", "COPYING-", "COPYING."):
-        if upper.startswith(prefix):
-            return sanitize_component(upper[len(prefix):])
-    return ""
+LICENSE_FILE_PATTERN = re.compile(r"^(LICENSE|COPYING)([.-].*)?$")
+MAIN_LICENSE_NAMES = ("LICENSE", "COPYING")
+
+
+def license_rank(path):
+    try:
+        rank = MAIN_LICENSE_NAMES.index(path.name)
+    except ValueError:
+        rank = len(MAIN_LICENSE_NAMES)
+    return rank, path.name.lower()
+
+
+def merge_license_files(sources, destination):
+    merged = bytearray()
+    for source in sources:
+        if merged:
+            merged.extend(b"\n" if merged.endswith(b"\n") else b"\n\n")
+        merged.extend(source.read_bytes())
+    destination.write_bytes(bytes(merged))
+
+
+def component_licenses(component):
+    return sorted(
+        (
+            candidate
+            for candidate in component.iterdir()
+            if candidate.is_file() and LICENSE_FILE_PATTERN.match(candidate.name)
+        ),
+        key=license_rank,
+    )
 
 
 def prepare_licenses(stage):
     output = stage / "licenses"
     output.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(ROOT / "LICENSE", output / "LICENSE-ZNNext")
+    project_licenses = [ROOT / "LICENSE", ROOT / "LICENSE-DCLPL"]
+    for path in project_licenses:
+        if not path.is_file():
+            raise znn.BuildError(f"{path.relative_to(ROOT)} is missing")
+    merge_license_files(project_licenses, output / "LICENSE-ZNNext")
+
     external = ROOT / "loader" / "src" / "external"
-    licenses = []
+    components = []
     if external.is_dir():
-        for component in external.iterdir():
+        for component in sorted(external.iterdir(), key=lambda path: path.name.lower()):
             if not component.is_dir():
                 continue
-            for candidate in component.iterdir():
-                if candidate.is_file() and re.match(
-                    r"^(LICENSE|COPYING)([.-].*)?$", candidate.name
-                ):
-                    licenses.append(candidate)
-    licenses.sort(key=lambda path: path.as_posix())
+            licenses = component_licenses(component)
+            if licenses:
+                components.append(
+                    (sanitize_component(component.name) or "EXTERNAL", licenses)
+                )
 
     used = {"LICENSE-ZNNext"}
     count = 1
-    for license_file in licenses:
-        component = sanitize_component(license_file.parent.name) or "EXTERNAL"
-        suffix = license_suffix(license_file.name)
-        base = f"LICENSE-{component}" + (f"-{suffix}" if suffix else "")
+    for component, licenses in components:
+        base = f"LICENSE-{component}"
         target = base
         duplicate = 2
         while target in used:
             target = f"{base}-{duplicate}"
             duplicate += 1
         used.add(target)
-        shutil.copyfile(license_file, output / target)
+        merge_license_files(licenses, output / target)
         count += 1
     print(f"licenses: packaged {count} files into licenses/", flush=True)
 

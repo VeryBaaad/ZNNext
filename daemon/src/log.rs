@@ -1,4 +1,6 @@
 /*
+ * SPDX-License-Identifier: GPL-3.0-or-later AND LicenseRef-DCLPL-2.0
+ *
  * This file is part of ZNNext.
  *
  * ZNNext is free software: you can redistribute it and/or modify

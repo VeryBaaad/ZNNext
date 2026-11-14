@@ -3,7 +3,7 @@ name = "daemon"
 version = "2.16.0"
 edition = "2024"
 description = "A from-scratch, standalone implementation of the Zygisk Next module."
-license = "GPL-3.0-or-later"
+license = "GPL-3.0-or-later AND LicenseRef-DCLPL-2.0"
 
 [dependencies]
 clap = { version = "4.6.7", default-features = false, features = [

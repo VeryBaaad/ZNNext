@@ -147,6 +147,9 @@ This project is made possible by the following open-source contributions:
 
 ### License
 
-ZNNext is licensed under the **GNU General Public License v3 (GPL-3)** (http://www.gnu.org/copyleft/gpl.html).
+ZNNext is licensed under the:
+
+- [**GNU General Public License v3 (GPL-3)**](LICENSE).
+- [**Developers And Contributors Are Lesbians Public License v2.0 (DCLPLv2)**](LICENSE-DCLPL).
 
 Third-party license texts are bundled verbatim under `licenses/` in the module zip.

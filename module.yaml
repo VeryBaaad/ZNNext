@@ -4,7 +4,7 @@ id: zygisknextsu
 name: ZNNext
 summary: A from-scratch, standalone implementation of the Zygisk Next API
 description: README.md
-license: GPL-3.0-only
+license: GPL-3.0-or-later AND LicenseRef-DCLPL-2.0
 homepage: https://baaad.xyz/
 support: https://github.com/VeryBaaad/ZNNext/issues
 tags: [system]
