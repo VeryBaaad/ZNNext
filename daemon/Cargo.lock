@@ -32,7 +32,7 @@ dependencies = [
  "hashbrown",
  "libc",
  "log",
- "object",
+ "object 0.40.0",
  "once_cell",
  "scopeguard",
  "thiserror",
@@ -46,7 +46,7 @@ checksum = "66254e485eda05c8ab20b83fb55ea4bde22a8436981f435e35cffa5e6aa6196d"
 dependencies = [
  "bytes",
  "log",
- "object",
+ "object 0.40.0",
  "thiserror",
 ]
 
@@ -183,7 +183,7 @@ dependencies = [
  "machikado-rs",
  "netlink-sys",
  "nix",
- "object",
+ "object 0.41.0",
  "serde",
  "serde_json",
  "xattr",
@@ -373,6 +373,15 @@ dependencies = [
  "crc32fast",
  "hashbrown",
  "indexmap",
+ "memchr",
+]
+
+[[package]]
+name = "object"
+version = "0.41.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11dbdb66876026054e4ffc8d757d862bdf5df5aebd5c0b95a41f17832a94f7d2"
+dependencies = [
  "memchr",
 ]
 
