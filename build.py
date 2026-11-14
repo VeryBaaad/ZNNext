@@ -140,6 +140,17 @@ def reported_version(variant):
     return f"{VER_NAME}-{version_code()}-{commit_hash()}-{variant}"
 
 
+def cargo_version():
+    parts = KPM_VERSION.split(".")
+    if len(parts) not in (3, 4) or not all(part.isdigit() for part in parts):
+        raise BuildError(
+            f"{VER_NAME} does not follow v[major].[minor].[patch][.revision]"
+        )
+    if len(parts) == 4:
+        return ".".join(parts[:3]) + f"+{parts[3]}"
+    return KPM_VERSION
+
+
 def variant_cflags(variant, legacy=False):
     flags = DEBUG_CFLAGS if variant == "debug" else RELEASE_CFLAGS
     if legacy:

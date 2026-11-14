@@ -20,7 +20,7 @@ def sync_cargo_version():
     contents = manifest.read_text(encoding="utf-8")
     updated = re.sub(
         r'(?m)^version\s*=\s*"[^"]*"',
-        f'version = "{znn.KPM_VERSION}"',
+        f'version = "{znn.cargo_version()}"',
         contents,
         count=1,
     )
