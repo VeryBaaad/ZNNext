@@ -41,6 +41,8 @@ const char* inlineEngineName(InlineEngine e) {
       return "dobby";
     case InlineEngine::kShadowHook:
       return "shadowhook";
+    case InlineEngine::kSandHook:
+      return "sandhook";
     case InlineEngine::kAnd64InlineHook:
       return "and64inlinehook";
     case InlineEngine::kFridaGum:
@@ -101,6 +103,12 @@ bool inlineEngineSupported(InlineEngine e) {
 #endif
     case InlineEngine::kShadowHook:
 #ifdef ZNN_HAS_SHADOWHOOK
+      return true;
+#else
+      return false;
+#endif
+    case InlineEngine::kSandHook:
+#ifdef ZNN_HAS_SANDHOOK
       return true;
 #else
       return false;
@@ -256,6 +264,8 @@ bool parseInlineEngine(const char* name, InlineEngine* out) {
     e = InlineEngine::kDobby;
   } else if (strcmp(name, "shadowhook") == 0) {
     e = InlineEngine::kShadowHook;
+  } else if (strcmp(name, "sandhook") == 0) {
+    e = InlineEngine::kSandHook;
   } else if (strcmp(name, "and64inlinehook") == 0) {
     e = InlineEngine::kAnd64InlineHook;
   } else if (strcmp(name, "frida-gum") == 0) {
@@ -332,6 +342,9 @@ void ensureInlineEngineReady() {
   switch (g_inline_engine) {
     case InlineEngine::kShadowHook:
       ready = backend::shadowhookInit();
+      break;
+    case InlineEngine::kSandHook:
+      ready = backend::sandhookInit();
       break;
     case InlineEngine::kAnd64InlineHook:
       ready = backend::and64inlinehookInit();

@@ -94,6 +94,7 @@ fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
             "whale",
             "baaadhook",
             "yukiihook",
+            "sandhook",
             "disable",
         ],
         "armeabi-v7a" => vec![
@@ -103,6 +104,7 @@ fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
             "hookzz",
             "whale",
             "baaadhook",
+            "sandhook",
             "disable",
         ],
         "x86_64" => vec![
@@ -115,7 +117,7 @@ fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
         ],
         "x86" => vec!["dobby", "frida-gum", "whale", "baaadhook", "disable"],
         "riscv64" => vec!["rv64hook", "baaadhook", "disable"],
-        "armeabi" => vec!["frida-gum", "disable"],
+        "armeabi" => vec!["frida-gum", "sandhook", "disable"],
         "mips" | "mips64" => vec!["disable"],
         _ => vec!["dobby", "frida-gum", "whale", "baaadhook", "disable"],
     }

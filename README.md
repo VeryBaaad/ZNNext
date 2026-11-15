@@ -119,6 +119,7 @@ This project is made possible by the following open-source contributions:
 - [Whale](https://github.com/asLody/whale): hook Framework for Android/IOS/Linux/MacOS
 - [BaaadHook](https://github.com/VeryBaaad/BaaadHook): inline/plt hook
 - [YukiZygisk](https://github.com/Rouyashiki/YukiZygisk): a new kernel-level Zygisk implementation designed to explore better, cleaner, and more flexible ways of injecting
+- [SandHook](https://github.com/asLody/SandHook): android ART Hook/Native Inline Hook/Single Instruction Hook - support 4.4 - 11.0 32/64 bit - Xposed API Compat
 
 </details>
 

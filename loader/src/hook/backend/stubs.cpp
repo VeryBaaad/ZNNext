@@ -82,6 +82,12 @@ bool yukiihookHook(void*, void*, void**) { return false; }
 bool yukiihookUnhook(void*) { return false; }
 #endif
 
+#ifndef ZNN_HAS_SANDHOOK
+bool sandhookInit() { return false; }
+bool sandhookHook(void*, void*, void**) { return false; }
+bool sandhookUnhook(void*) { return false; }
+#endif
+
 #ifndef ZNN_HAS_LSPLT
 bool lspltHook(dev_t, ino_t, const char*, void*, void**) { return false; }
 #endif
