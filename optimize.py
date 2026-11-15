@@ -332,13 +332,14 @@ def rust_target_environment(
     }
 
 
-def rust_profile_environment(settings, variant):
+def rust_profile_environment(settings, variant, codegen_units=None):
     profile = "dev" if variant == "debug" else "release"
     prefix = f"CARGO_PROFILE_{profile.upper()}_"
+    units = settings.rust_codegen_units if codegen_units is None else codegen_units
     return {
         f"{prefix}OPT_LEVEL": settings.rust_opt,
         f"{prefix}LTO": settings.rust_lto,
-        f"{prefix}CODEGEN_UNITS": str(settings.rust_codegen_units),
+        f"{prefix}CODEGEN_UNITS": str(units),
         f"{prefix}PANIC": settings.rust_panic,
         f"{prefix}STRIP": "symbols" if strip_mode(settings, variant) != "none" else "none",
         f"{prefix}DEBUG": (
@@ -346,6 +347,19 @@ def rust_profile_environment(settings, variant):
             else "line-tables-only"
         ),
     }
+
+UNSAFE_SINGLE_UNIT_OPT_LEVELS = ("2", "3", "s")
+UNSAFE_SINGLE_UNIT_CODEGEN_UNITS = 16
+
+
+def rust_codegen_units_for(settings, abi):
+    if (
+        abi == "mips64"
+        and settings.rust_codegen_units == 1
+        and settings.rust_opt in UNSAFE_SINGLE_UNIT_OPT_LEVELS
+    ):
+        return UNSAFE_SINGLE_UNIT_CODEGEN_UNITS
+    return settings.rust_codegen_units
 
 
 def rust_build_std_arguments(settings):

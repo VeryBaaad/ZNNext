@@ -47,7 +47,16 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, target_dir):
     environment = os.environ.copy()
     environment.pop("RUSTFLAGS", None)
     if not unoptimized:
-        environment.update(znn.optimize.rust_profile_environment(settings, variant))
+        codegen_units = znn.optimize.rust_codegen_units_for(settings, abi)
+        if codegen_units != settings.rust_codegen_units:
+            print(
+                f"daemon {abi}: codegen-units={codegen_units} "
+                "(single-unit LLVM MIPS64 crash workaround)",
+                flush=True,
+            )
+        environment.update(
+            znn.optimize.rust_profile_environment(settings, variant, codegen_units)
+        )
         environment.update(
             znn.optimize.rust_target_environment(
                 settings,
