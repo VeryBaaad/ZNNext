@@ -43,9 +43,13 @@ This module enables code injection into any process forked from `init`.
 ### Compatibility
 
 ZNNext supports Android 5 and above.
+Supported ABIs: arm64-v8a, armeabi-v7a, armeabi, x86_64, x86, riscv64, mips64, mips
 
 > [!TIP]
 > Some features may not function on certain Linux kernels, this does not affect daily use.
+>
+> For armeabi, x86, riscv64, mips64, and mips, you need to compile them yourself: build.py zip<Release|Debug> --abis <armeabi,x86,riscv64,mips64,mips>
+
 
 ---
 
