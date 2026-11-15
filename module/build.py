@@ -181,8 +181,14 @@ def copy_webroot(stage):
         shutil.copy2(path, destination)
 
 
+def selected_abis():
+    configured = os.environ.get("ZNN_ABIS", "")
+    chosen = [abi for abi in configured.split(",") if abi in znn.ANDROID_ABIS]
+    return chosen or list(znn.ANDROID_ABIS)
+
+
 def copy_artifacts(stage, variant):
-    for abi in znn.ANDROID_ABIS:
+    for abi in selected_abis():
         loader = znn.loader_output(variant) / abi / "libzn_loader.so"
         if loader.is_file():
             destination = stage / "lib" / abi / "libzn_loader.so"
@@ -237,6 +243,8 @@ def sign_stage(stage):
             ("lib64/libzn_loader.so", f"lib/{abi64}/libzn_loader.so"),
         ]
         for target, source in entries:
+            if not (stage / source).is_file():
+                continue
             lines.append(f"{output}\t{target}\t{source}")
         webroot = stage / "webroot"
         if webroot.is_dir():
@@ -288,7 +296,19 @@ def write_checksums(stage):
     print(f"checksums: wrote {len(files)} sha256 files", flush=True)
 
 
+def xz_options(settings):
+    if settings.profile == znn.optimize.PROFILE_NONE:
+        return ["-mx=9", "-mm=XZ"]
+    return [f"-mx={settings.xz_level}", "-mm=XZ"]
+
+
 def build_zip(stage, variant, sevenzip_path):
+    settings = znn.optimize.from_environment()
+    threshold = (
+        znn.XZ_MIN_ENTRY_SIZE
+        if settings.profile == znn.optimize.PROFILE_NONE
+        else settings.xz_threshold
+    )
     archive = znn.zip_path(variant)
     archive.parent.mkdir(parents=True, exist_ok=True)
     if archive.exists():
@@ -300,24 +320,24 @@ def build_zip(stage, variant, sevenzip_path):
     deflated = [
         name
         for name in files
-        if (stage / name).stat().st_size < znn.XZ_MIN_ENTRY_SIZE
+        if (stage / name).stat().st_size < threshold
     ]
     xz = [
         name
         for name in files
-        if (stage / name).stat().st_size >= znn.XZ_MIN_ENTRY_SIZE
+        if (stage / name).stat().st_size >= threshold
     ]
 
     for method, members in (("Deflate", deflated), ("XZ", xz)):
         if not members:
             continue
+        options = xz_options(settings) if method == "XZ" else ["-mm=Deflate", "-mx=9"]
         znn.run(
             [
                 sevenzip_path,
                 "a",
                 "-tzip",
-                "-mx=9",
-                f"-mm={method}",
+                *options,
                 "-bso0",
                 "-bsp0",
                 str(archive),

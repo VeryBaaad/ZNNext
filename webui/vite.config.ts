@@ -23,8 +23,21 @@ const ksuPreviewMock = (): Plugin => ({
   },
 });
 
+const dropIconFont = env('ZNN_WEBUI_DROP_ICON_FONT', '0') === '1';
+const minify = env('ZNN_WEBUI_MINIFY', '1') !== '0';
+
 export default defineConfig(() => ({
   base: './',
+  resolve: {
+    alias: dropIconFont
+      ? {
+          '@material-symbols/font-400/outlined.css': resolve(
+            import.meta.dirname,
+            'src/styles/no-icon-font.css',
+          ),
+        }
+      : undefined,
+  },
   plugins: [
     vue({
       template: {
@@ -40,6 +53,8 @@ export default defineConfig(() => ({
     __ZNN_MODULE_NAME__: JSON.stringify(env('ZNN_MODULE_NAME', 'ZNNext')),
     __ZNN_VER_NAME__: JSON.stringify(env('ZNN_VER_NAME', 'v0.0.0')),
     __ZNN_COMMIT_HASH__: JSON.stringify(env('ZNN_COMMIT_HASH', 'unknown')),
+    __VUE_PROD_DEVTOOLS__: 'false',
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
   },
   server: {
     open: true,
@@ -49,5 +64,6 @@ export default defineConfig(() => ({
     emptyOutDir: true,
     target: 'es2020',
     sourcemap: false,
+    minify,
   },
 }));

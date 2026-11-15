@@ -35,13 +35,28 @@ def riscv64_linker(ndk):
 
 
 def build_abi(abi, variant, jobs, ndk, legacy_ndk, target_dir):
+    settings = znn.optimize.from_environment()
     target = znn.RUST_TARGETS[abi]
     profile = "debug" if variant == "debug" else "release"
     target_dir.mkdir(parents=True, exist_ok=True)
     legacy_abi = abi in znn.LEGACY_ANDROID_ABIS
     build_ndk = legacy_ndk if legacy_abi else ndk
+    unoptimized = settings.profile == znn.optimize.PROFILE_NONE
+    build_std = znn.optimize.rust_build_std_arguments(settings)
 
     environment = os.environ.copy()
+    environment.pop("RUSTFLAGS", None)
+    if not unoptimized:
+        environment.update(znn.optimize.rust_profile_environment(settings, variant))
+        environment.update(
+            znn.optimize.rust_target_environment(
+                settings,
+                variant,
+                target,
+                legacy_abi,
+                allow_immediate_abort=bool(build_std) and abi != "armeabi",
+            )
+        )
     environment["ZNN_VERSION"] = znn.reported_version(variant)
     environment["KPM_VERSION"] = znn.KPM_VERSION
     environment["ZNN_ANDROID_ABI"] = abi
@@ -59,8 +74,7 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, target_dir):
             "cargo",
             "+nightly",
             "build",
-            "-Z",
-            "build-std=std,panic_abort",
+            *(build_std or ["-Z", "build-std=std,panic_abort"]),
             "--target",
             target,
         ]
@@ -68,7 +82,8 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, target_dir):
         workdir = DAEMON_DIR / "build" / "legacy" / abi
         linker = legacy.legacy_linker(build_ndk, abi, workdir)
         environment[f"CARGO_TARGET_{target.upper().replace('-', '_')}_LINKER"] = str(linker)
-        environment["RUSTFLAGS"] = "-Zunstable-options -C linker-flavor=gnu-cc"
+        if unoptimized:
+            environment["RUSTFLAGS"] = "-Zunstable-options -C linker-flavor=gnu-cc"
         if abi == "armeabi":
             command = ["cargo", "+nightly", "build", "--target", target]
         else:
@@ -79,20 +94,21 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, target_dir):
                 "+nightly",
                 "build",
                 "-Zjson-target-spec",
-                "-Z",
-                "build-std=std,panic_abort",
+                *(build_std or ["-Z", "build-std=std,panic_abort"]),
                 "--target",
                 target,
             ]
     else:
         command = [
             "cargo",
+            *(("+nightly",) if build_std else ()),
             "ndk",
             "-t",
             abi,
             "-P",
             str(znn.ANDROID_MIN_SDK),
             "build",
+            *build_std,
         ]
     if variant == "release":
         command.append("--release")

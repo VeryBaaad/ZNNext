@@ -63,7 +63,7 @@ jobs:
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
       - name: Build
-        run: python3 build.py zipRelease zipDebug
+        run: python3 build.py zipRelease zipDebug --opt perf
       - name: Prepare artifact
         if: success()
         id: prepareArtifact

@@ -180,7 +180,19 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, prefab_root, ccache, verbose)
         write_cxx_config(prefab_root, abi, cxx_dir)
 
     cmake, cmake_version_value = cmake_executable()
-    build_type, optimization = znn.variant_cmake_optimization(variant)
+    settings = znn.optimize.from_environment()
+    if settings.profile == znn.optimize.PROFILE_NONE:
+        build_type, optimization = znn.variant_cmake_optimization(variant)
+        optimization_flags = znn.variant_cflags(variant, legacy)
+        linker_flags = znn.variant_linker_flags(variant, legacy)
+    else:
+        build_type, optimization = znn.optimize.cmake_optimization(
+            settings, variant, legacy
+        )
+        optimization_flags = znn.optimize.loader_compile_flags(
+            settings, variant, legacy
+        )
+        linker_flags = znn.optimize.loader_linker_flags(settings, variant, legacy)
     base_flags = [
         flag for flag in znn.DEFAULT_CFLAGS
         if not (legacy and flag.startswith("-D__FILE__"))
@@ -188,14 +200,13 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, prefab_root, ccache, verbose)
     cflags = [
         "-std=c11" if legacy else "-std=c18",
         *base_flags,
-        *znn.variant_cflags(variant, legacy),
+        *optimization_flags,
     ]
     cxxflags = [
         "-std=c++1z" if legacy else "-std=c++20",
         *base_flags,
-        *znn.variant_cflags(variant, legacy),
+        *optimization_flags,
     ]
-    linker_flags = znn.variant_linker_flags(variant, legacy)
 
     arguments = [
         "-S",

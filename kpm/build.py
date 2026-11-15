@@ -12,7 +12,6 @@ KPM_DIR = ROOT / "kpm"
 MANIFEST = KPM_DIR / "version.properties"
 
 COMPILER_FLAGS = [
-    "-O2",
     "-ffreestanding",
     "-nostdlib",
     "-fno-stack-protector",
@@ -73,6 +72,10 @@ def toolchain(ndk):
 
 
 def compile_kpm(ndk, output_dir, btf):
+    settings = znn.optimize.from_environment()
+    level = (
+        "2" if settings.profile == znn.optimize.PROFILE_NONE else settings.codegen_level
+    )
     clang, linker = toolchain(ndk)
     output_dir.mkdir(parents=True, exist_ok=True)
     source = KPM_DIR / "src" / "znn.c"
@@ -91,9 +94,16 @@ def compile_kpm(ndk, output_dir, btf):
 
     command = [
         clang,
+        f"-O{level or 'z'}",
         *COMPILER_FLAGS,
         f'-DZNN_KPM_VERSION="{version}"',
     ]
+    if settings.merge_constants:
+        command.append("-fmerge-all-constants")
+    if not settings.ident:
+        command.append("-fno-ident")
+    if settings.section_gc:
+        command.extend(["-ffunction-sections", "-fdata-sections"])
     if btf:
         command.append("-DZNN_WITH_BTF=1")
     for entry in INCLUDE_DIRECTORIES:

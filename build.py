@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import dataclasses
 import os
 import re
 import shutil
@@ -9,6 +10,8 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from pathlib import Path
+
+import optimize
 
 ROOT = Path(__file__).resolve().parent
 LOADER_DIR = ROOT / "loader"
@@ -564,14 +567,30 @@ def run_parallel(tasks):
         raise BuildError(f"{name} failed: {error}")
 
 
+def selected_abis(options):
+    if not options.abis:
+        return list(ANDROID_ABIS)
+    selected = [abi.strip() for abi in options.abis.split(",") if abi.strip()]
+    unknown = [abi for abi in selected if abi not in ANDROID_ABIS]
+    if unknown:
+        raise BuildError(
+            f"unknown ABI(s): {', '.join(unknown)}; "
+            f"choose from {', '.join(ANDROID_ABIS)}"
+        )
+    return [abi for abi in ANDROID_ABIS if abi in selected]
+
+
 def build_artifacts(variant, options, state):
     verify_versions(not options.no_kpm)
     env = state["env"]
     jobs = options.jobs
     loader_jobs = max(1, jobs * 55 // 100)
     daemon_jobs = max(1, jobs - loader_jobs)
+    abis = selected_abis(options)
 
     loader_cmd = script("loader", variant, "--jobs", loader_jobs)
+    for abi in abis:
+        loader_cmd += ["--abi", abi]
     if options.ccache is not None:
         loader_cmd += ["--ccache", options.ccache]
     if options.ndk:
@@ -582,6 +601,8 @@ def build_artifacts(variant, options, state):
         loader_cmd += ["--libcxx-aar", options.libcxx_aar]
 
     daemon_cmd = script("daemon", variant, "--jobs", daemon_jobs)
+    for abi in abis:
+        daemon_cmd += ["--abi", abi]
     if options.ndk:
         daemon_cmd += ["--ndk", options.ndk]
     if options.ndk_legacy:
@@ -693,6 +714,148 @@ def parse_tasks(names):
     return parsed
 
 
+OPTIMIZATION_OVERRIDES = (
+    "codegen_level",
+    "lto",
+    "icf",
+    "strip",
+    "unwind",
+    "eh_frame_hdr",
+    "rosegment",
+    "hash_style",
+    "build_id",
+    "merge_constants",
+    "ident",
+    "section_gc",
+    "lto_codegen",
+    "linker_opt",
+    "rust_opt",
+    "rust_lto",
+    "rust_codegen_units",
+    "rust_panic",
+    "rust_panic_immediate_abort",
+    "rust_location_detail",
+    "rust_build_std",
+    "rust_debuginfo",
+    "debug_symbols",
+    "xz_level",
+    "xz_threshold",
+    "webui_minify",
+    "webui_drop_icon_font",
+    "extra_cflags",
+    "extra_ldflags",
+    "extra_rustflags",
+)
+
+
+def add_optimization_arguments(parser):
+    group = parser.add_argument_group(
+        "optimization",
+        "size/perf profiles plus fine-grained overrides; "
+        "every override wins over the profile default",
+    )
+    group.add_argument(
+        "--opt",
+        choices=optimize.PROFILES,
+        default=optimize.DEFAULT_PROFILE,
+        help=(
+            "size: smallest output, performance second (default); "
+            "perf: fastest output, size second; "
+            "max: smaller than size, drops crash lookup tables; "
+            "none: pre-optimization behavior"
+        ),
+    )
+    group.add_argument("--opt-level", dest="codegen_level", choices=["z", "s", "1", "2", "3"])
+    group.add_argument("--lto", choices=["off", "thin", "full"])
+    group.add_argument("--icf", choices=["none", "safe", "all"])
+    group.add_argument("--strip", choices=["none", "debug", "all"])
+    group.add_argument("--unwind", choices=["full", "compact"])
+    group.add_argument("--eh-frame-hdr", dest="eh_frame_hdr", action="store_true", default=None)
+    group.add_argument("--no-eh-frame-hdr", dest="eh_frame_hdr", action="store_false", default=None)
+    group.add_argument("--rosegment", dest="rosegment", action="store_true", default=None)
+    group.add_argument("--no-rosegment", dest="rosegment", action="store_false", default=None)
+    group.add_argument("--hash-style", choices=["gnu", "both"])
+    group.add_argument("--build-id", dest="build_id", action="store_true", default=None)
+    group.add_argument("--no-build-id", dest="build_id", action="store_false", default=None)
+    group.add_argument("--merge-constants", dest="merge_constants", action="store_true", default=None)
+    group.add_argument(
+        "--no-merge-constants", dest="merge_constants", action="store_false", default=None
+    )
+    group.add_argument("--ident", dest="ident", action="store_true", default=None)
+    group.add_argument("--no-ident", dest="ident", action="store_false", default=None)
+    group.add_argument("--gc-sections", dest="section_gc", action="store_true", default=None)
+    group.add_argument("--no-gc-sections", dest="section_gc", action="store_false", default=None)
+    group.add_argument("--lto-codegen", type=int, choices=range(0, 4))
+    group.add_argument("--linker-opt", type=int, choices=range(0, 3))
+    group.add_argument("--rust-opt", choices=["z", "s", "1", "2", "3"])
+    group.add_argument("--rust-lto", choices=["off", "thin", "fat"])
+    group.add_argument("--rust-codegen-units", type=int)
+    group.add_argument("--rust-panic", choices=["abort", "unwind"])
+    group.add_argument(
+        "--rust-panic-immediate-abort",
+        dest="rust_panic_immediate_abort",
+        action="store_true",
+        default=None,
+    )
+    group.add_argument(
+        "--no-rust-panic-immediate-abort",
+        dest="rust_panic_immediate_abort",
+        action="store_false",
+        default=None,
+    )
+    group.add_argument("--rust-location-detail", choices=["none", "full"])
+    group.add_argument("--rust-build-std", dest="rust_build_std", action="store_true", default=None)
+    group.add_argument(
+        "--no-rust-build-std", dest="rust_build_std", action="store_false", default=None
+    )
+    group.add_argument("--rust-debuginfo", choices=["none", "line-tables"])
+    group.add_argument("--debug-symbols", action="store_true", default=None)
+    group.add_argument("--xz-level", type=int, choices=range(0, 10))
+    group.add_argument("--xz-threshold", type=int)
+    group.add_argument("--webui-minify", dest="webui_minify", action="store_true", default=None)
+    group.add_argument(
+        "--no-webui-minify", dest="webui_minify", action="store_false", default=None
+    )
+    group.add_argument(
+        "--drop-icon-font", dest="webui_drop_icon_font", action="store_true", default=None
+    )
+    group.add_argument(
+        "--keep-icon-font", dest="webui_drop_icon_font", action="store_false", default=None
+    )
+    group.add_argument(
+        "--cflag",
+        dest="extra_cflags",
+        action="append",
+        default=None,
+        help="extra compiler flag for the loader; repeatable",
+    )
+    group.add_argument(
+        "--ldflag",
+        dest="extra_ldflags",
+        action="append",
+        default=None,
+        help="extra linker flag for the loader; repeatable",
+    )
+    group.add_argument(
+        "--rust-flag",
+        dest="extra_rustflags",
+        action="append",
+        default=None,
+        help="extra rustc flag for the daemon; repeatable",
+    )
+    group.add_argument("--no-debug-symbols", dest="debug_symbols", action="store_false", default=None)
+
+
+def optimization_settings(options):
+    settings = optimize.profile_settings(options.opt)
+    changes = {}
+    for name in OPTIMIZATION_OVERRIDES:
+        value = getattr(options, name)
+        if value is not None:
+            changes[name] = tuple(value) if isinstance(value, list) else value
+    return dataclasses.replace(settings, **changes)
+
+
 def parse_arguments(argv):
     parser = argparse.ArgumentParser(
         prog="build.py",
@@ -713,7 +876,41 @@ def parse_arguments(argv):
     parser.add_argument("--kpm-btf", action="store_true")
     parser.add_argument("--skip-webui", action="store_true")
     parser.add_argument("--no-build", action="store_true")
+    parser.add_argument(
+        "--abis",
+        default=None,
+        help=(
+            "comma-separated ABIs to build and package "
+            f"(default: all of {', '.join(ANDROID_ABIS)})"
+        ),
+    )
+    add_optimization_arguments(parser)
     return parser.parse_args(argv)
+
+
+def report_sizes(variants, abis):
+    lines = []
+    for variant in variants:
+        archive = zip_path(variant)
+        if not archive.is_file():
+            continue
+        lines.append(
+            f"{archive.name}: {archive.stat().st_size} bytes"
+        )
+        for abi in abis:
+            loader = loader_output(variant) / abi / "libzn_loader.so"
+            daemon = daemon_output(variant) / abi / "znnd"
+            parts = []
+            if loader.is_file():
+                parts.append(f"loader {loader.stat().st_size}")
+            if daemon.is_file():
+                parts.append(f"daemon {daemon.stat().st_size}")
+            if parts:
+                lines.append(f"  {abi}: {', '.join(parts)}")
+    if lines:
+        print("size report:", flush=True)
+        for line in lines:
+            print(f"  {line}", flush=True)
 
 
 def main(argv=None):
@@ -721,11 +918,17 @@ def main(argv=None):
     if options.jobs < 1:
         raise BuildError("--jobs must be at least 1")
 
+    settings = optimization_settings(options)
+    abis = selected_abis(options)
+    if len(abis) != len(ANDROID_ABIS):
+        print(f"abis: {', '.join(abis)}", flush=True)
     parsed = parse_tasks(options.tasks)
     needs_ndk = any(
         kind not in ("clean", "webui", "sync-version") for _, kind, _, _ in parsed
     )
     env = os.environ.copy()
+    env[optimize.ENVIRONMENT_KEY] = settings.to_environment()
+    env["ZNN_ABIS"] = ",".join(abis)
     if needs_ndk:
         ndk = ndk_dir(options.ndk)
         legacy_ndk = ndk_dir(options.ndk_legacy, LEGACY_NDK_VERSION)
@@ -734,6 +937,8 @@ def main(argv=None):
         env["ANDROID_NDK_LEGACY_HOME"] = str(legacy_ndk)
         if not env.get("ANDROID_HOME") and not env.get("ANDROID_SDK_ROOT"):
             env["ANDROID_HOME"] = str(android_sdk())
+    if any(kind not in ("clean", "sync-version") for _, kind, _, _ in parsed):
+        print(f"optimization: {optimize.describe(settings)}", flush=True)
 
     state = {"webui": False, "built": set(), "packaged": set(), "env": env}
     for _, kind, variant, value in parsed:
@@ -780,6 +985,10 @@ def main(argv=None):
             adb_command(kind, variant, options, state)
             continue
 
+    report_sizes(
+        [variant for variant in VARIANTS if variant in state["packaged"]],
+        abis,
+    )
     return 0
 
 
