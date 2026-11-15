@@ -31,18 +31,6 @@ INCLUDE_DIRECTORIES = [
 ]
 
 
-def sync_version():
-    contents = MANIFEST.read_text(encoding="utf-8")
-    updated = re.sub(
-        r"(?m)^version\s*=.*$",
-        f"version={znn.KPM_VERSION}",
-        contents,
-        count=1,
-    )
-    if updated != contents:
-        MANIFEST.write_text(updated, encoding="utf-8")
-
-
 def manifest_version():
     for line in MANIFEST.read_text(encoding="utf-8").splitlines():
         match = re.match(r"^\s*version\s*=\s*(.*)$", line)
@@ -144,7 +132,6 @@ def main(argv=None):
     if options.no_kpm:
         print(f"kpm ({options.variant}): disabled", flush=True)
         return 0
-    sync_version()
     ndk = znn.ndk_dir(options.ndk)
     compile_kpm(ndk, znn.kpm_output(options.variant), options.btf)
     return 0

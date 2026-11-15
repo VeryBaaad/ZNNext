@@ -1,0 +1,73 @@
+name: Sync version
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. v0.0.0.0)"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: sync-version
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v7
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.PUSH_GH_PAT }}
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Normalize version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          version=$(python3 - "$INPUT_VERSION" <<'PY'
+          import sys
+
+          import build
+
+          try:
+              print(build.normalize_version(sys.argv[1]))
+          except build.BuildError as error:
+              raise SystemExit(f"error: {error}")
+          PY
+          )
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "Release version: $version"
+      - name: Ensure tag is new
+        run: |
+          set -euo pipefail
+          existing=$(git ls-remote --tags origin "refs/tags/$VERSION") || {
+            echo "error: failed to query remote tags" >&2
+            exit 1
+          }
+          if [ -n "$existing" ]; then
+            echo "error: tag $VERSION already exists" >&2
+            exit 1
+          fi
+      - name: Sync version files
+        run: ./build.py syncVersion "$VERSION"
+      - name: Commit and tag
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "version files already at $VERSION"
+          else
+            git commit -m "chore(version): bump to $VERSION"
+          fi
+          git tag -a "$VERSION" -m "$VERSION"
+      - name: Push commit and tag
+        run: git push --atomic origin "HEAD:refs/heads/master" "refs/tags/$VERSION"

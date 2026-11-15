@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import os
-import re
 import shutil
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -13,19 +12,6 @@ import build as znn
 import legacy
 
 DAEMON_DIR = ROOT / "daemon"
-
-
-def sync_cargo_version():
-    manifest = DAEMON_DIR / "Cargo.toml"
-    contents = manifest.read_text(encoding="utf-8")
-    updated = re.sub(
-        r'(?m)^version\s*=\s*"[^"]*"',
-        f'version = "{znn.cargo_version()}"',
-        contents,
-        count=1,
-    )
-    if updated != contents:
-        manifest.write_text(updated, encoding="utf-8")
 
 
 def riscv64_linker(ndk):
@@ -147,7 +133,6 @@ def main(argv=None):
 
     if any(abi in ("mips", "mips64") for abi in abis):
         legacy.patch_std_source()
-    sync_cargo_version()
     print(
         f"daemon: {options.variant}, {len(abis)} ABI(s), {per_abi} job(s), "
         f"{'parallel' if parallel else 'shared target'}, "

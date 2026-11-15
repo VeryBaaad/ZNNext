@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,12 @@ DAEMON_DIR = ROOT / "daemon"
 KPM_DIR = ROOT / "kpm"
 MODULE_DIR = ROOT / "module"
 WEBUI_DIR = ROOT / "webui"
+
+BUILD_SCRIPT = ROOT / "build.py"
+KPM_MANIFEST = KPM_DIR / "version.properties"
+DAEMON_MANIFEST = DAEMON_DIR / "Cargo.toml"
+DAEMON_LOCK = DAEMON_DIR / "Cargo.lock"
+VERSION_PATTERN = re.compile(r"^[vV]?(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?$")
 
 MODULE_ID = "zygisknextsu"
 MODULE_NAME = "ZNNext"
@@ -140,15 +147,116 @@ def reported_version(variant):
     return f"{VER_NAME}-{version_code()}-{commit_hash()}-{variant}"
 
 
-def cargo_version():
-    parts = KPM_VERSION.split(".")
+def normalize_version(value):
+    match = VERSION_PATTERN.fullmatch(value.strip())
+    if match is None:
+        raise BuildError(
+            f"invalid version: {value} "
+            "(expected v[major].[minor].[patch][.revision], e.g. v0.0.0.0)"
+        )
+    major, minor, patch, revision = match.groups()
+    version = f"v{major}.{minor}.{patch}"
+    return version if revision is None else f"{version}.{revision}"
+
+
+def cargo_version(version_name=None):
+    name = VER_NAME if version_name is None else version_name
+    parts = name.removeprefix("v").split(".")
     if len(parts) not in (3, 4) or not all(part.isdigit() for part in parts):
         raise BuildError(
-            f"{VER_NAME} does not follow v[major].[minor].[patch][.revision]"
+            f"{name} does not follow v[major].[minor].[patch][.revision]"
         )
     if len(parts) == 4:
         return ".".join(parts[:3]) + f"+{parts[3]}"
-    return KPM_VERSION
+    return ".".join(parts)
+
+
+def render_version_field(path, pattern, replacement):
+    contents = path.read_text(encoding="utf-8")
+    updated, count = re.subn(pattern, lambda _: replacement, contents, count=1)
+    if count != 1:
+        raise BuildError(
+            f"could not find the version field in {path.relative_to(ROOT)}"
+        )
+    return contents, updated
+
+
+def sync_version(value):
+    global VER_NAME, KPM_VERSION
+    version = normalize_version(value)
+    kpm = version.removeprefix("v")
+    cargo = cargo_version(version)
+
+    updates = [
+        (BUILD_SCRIPT, r'(?m)^VER_NAME\s*=\s*"[^"]*"\s*$', f'VER_NAME = "{version}"'),
+        (KPM_MANIFEST, r"(?m)^\s*version\s*=.*$", f"version={kpm}"),
+        (DAEMON_MANIFEST, r'(?m)^version\s*=\s*"[^"]*"\s*$', f'version = "{cargo}"'),
+    ]
+    if DAEMON_LOCK.is_file():
+        updates.append(
+            (
+                DAEMON_LOCK,
+                r'(?m)^\[\[package\]\]\nname = "daemon"\nversion = "[^"]*"',
+                f'[[package]]\nname = "daemon"\nversion = "{cargo}"',
+            )
+        )
+
+    rendered = []
+    for path, pattern, replacement in updates:
+        contents, updated = render_version_field(path, pattern, replacement)
+        rendered.append((path, contents, updated))
+
+    for path, contents, updated in rendered:
+        if updated != contents:
+            path.write_text(updated, encoding="utf-8")
+            print(f"synced {path.relative_to(ROOT)}", flush=True)
+
+    VER_NAME = version
+    KPM_VERSION = kpm
+    print(f"version: {version} (kpm {kpm}, cargo {cargo})", flush=True)
+
+
+def kpm_manifest_version():
+    for line in KPM_MANIFEST.read_text(encoding="utf-8").splitlines():
+        match = re.match(r"^\s*version\s*=\s*(.*)$", line)
+        if match:
+            return match.group(1).strip()
+    return ""
+
+
+def daemon_manifest_version():
+    match = re.search(
+        r'(?m)^version\s*=\s*"([^"]*)"',
+        DAEMON_MANIFEST.read_text(encoding="utf-8"),
+    )
+    return match.group(1) if match else ""
+
+
+def daemon_lock_version():
+    if not DAEMON_LOCK.is_file():
+        return None
+    match = re.search(
+        r'(?m)^\[\[package\]\]\nname = "daemon"\nversion = "([^"]*)"',
+        DAEMON_LOCK.read_text(encoding="utf-8"),
+    )
+    return match.group(1) if match else ""
+
+
+def verify_versions(check_kpm):
+    expected = cargo_version()
+    problems = []
+    if check_kpm and kpm_manifest_version() != KPM_VERSION:
+        problems.append("kpm/version.properties")
+    if daemon_manifest_version() != expected:
+        problems.append("daemon/Cargo.toml")
+    lock_version = daemon_lock_version()
+    if lock_version is not None and lock_version != expected:
+        problems.append("daemon/Cargo.lock")
+    if problems:
+        raise BuildError(
+            f"version files are out of sync with {VER_NAME}: "
+            f"{', '.join(problems)}; run ./build.py syncVersion {VER_NAME}"
+        )
 
 
 def variant_cflags(variant, legacy=False):
@@ -457,6 +565,7 @@ def run_parallel(tasks):
 
 
 def build_artifacts(variant, options, state):
+    verify_versions(not options.no_kpm)
     env = state["env"]
     jobs = options.jobs
     loader_jobs = max(1, jobs * 55 // 100)
@@ -552,6 +661,7 @@ TASK_MAP = {
     "delete": ("clean", None),
     "webui": ("webui", None),
     "buildwebui": ("webui", None),
+    "syncversion": ("sync-version", None),
 }
 
 
@@ -560,9 +670,27 @@ def parse_task(name):
     if key not in TASK_MAP:
         raise BuildError(
             f"unknown task: {name} (try zipRelease, zipDebug, assembleRelease, "
-            "clean, pushRelease, installKsuRelease, installMagiskRelease)"
+            "clean, syncVersion, pushRelease, installKsuRelease, installMagiskRelease)"
         )
     return TASK_MAP[key]
+
+
+def parse_tasks(names):
+    parsed = []
+    pending = list(names)
+    while pending:
+        name = pending.pop(0)
+        kind, variant = parse_task(name)
+        value = None
+        if kind == "sync-version":
+            if not pending:
+                raise BuildError(
+                    "syncVersion requires a version, "
+                    "e.g. ./build.py syncVersion v0.0.0.0"
+                )
+            value = pending.pop(0)
+        parsed.append((name, kind, variant, value))
+    return parsed
 
 
 def parse_arguments(argv):
@@ -570,7 +698,11 @@ def parse_arguments(argv):
         prog="build.py",
         description="Build ZNNext without Gradle.",
     )
-    parser.add_argument("tasks", nargs="+", help="Gradle-compatible task names")
+    parser.add_argument(
+        "tasks",
+        nargs="+",
+        help="Gradle-compatible task names; syncVersion takes a version argument",
+    )
     parser.add_argument("--jobs", type=int, default=cpu_count())
     parser.add_argument("--ccache", default=None)
     parser.add_argument("--sevenzip", default=None)
@@ -589,8 +721,10 @@ def main(argv=None):
     if options.jobs < 1:
         raise BuildError("--jobs must be at least 1")
 
-    parsed = [(name, *parse_task(name)) for name in options.tasks]
-    needs_ndk = any(kind not in ("clean", "webui") for _, kind, _ in parsed)
+    parsed = parse_tasks(options.tasks)
+    needs_ndk = any(
+        kind not in ("clean", "webui", "sync-version") for _, kind, _, _ in parsed
+    )
     env = os.environ.copy()
     if needs_ndk:
         ndk = ndk_dir(options.ndk)
@@ -602,9 +736,12 @@ def main(argv=None):
             env["ANDROID_HOME"] = str(android_sdk())
 
     state = {"webui": False, "built": set(), "packaged": set(), "env": env}
-    for _, kind, variant in parsed:
+    for _, kind, variant, value in parsed:
         if kind == "clean":
             clean()
+            continue
+        if kind == "sync-version":
+            sync_version(value)
             continue
         if kind == "webui":
             run(script("webui"), env=env)
