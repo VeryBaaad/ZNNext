@@ -1,6 +1,6 @@
 {
-    "version": "v2.18.0",
-    "versionCode": 406,
-    "zipUrl": "https://github.com/VeryBaaad/ZNNext/releases/download/v2.18.0/ZNNext-v2.18.0-406-a5d3ce6-release.zip",
+    "version": "v2.18.0.1",
+    "versionCode": 409,
+    "zipUrl": "https://github.com/VeryBaaad/ZNNext/releases/download/v2.18.0.1/ZNNext-v2.18.0.1-409-14c2bdd-release.zip",
     "changelog": "https://raw.githubusercontent.com/VeryBaaad/ZNNext/refs/heads/update/changelog.md"
 }
