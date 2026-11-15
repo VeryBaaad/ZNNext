@@ -46,6 +46,86 @@ if (NOT ZNN_LEGACY AND (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL
     target_compile_options(shadowhook PRIVATE -w)
 endif ()
 
+if (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a" OR ANDROID_ABI STREQUAL "armeabi")
+    enable_language(ASM)
+    set(SANDHOOK_SRC ${CMAKE_CURRENT_SOURCE_DIR}/sandhook/nativehook/src/main/cpp)
+    set(SANDHOOK_SOURCES
+        ${SANDHOOK_SRC}/sandhook_native.cpp
+        ${SANDHOOK_SRC}/decoder/decoder.cpp
+        ${SANDHOOK_SRC}/relocate/code_relocate.cpp
+        ${SANDHOOK_SRC}/elf/elf.cpp
+        ${SANDHOOK_SRC}/assembler/assembler.cpp
+        ${SANDHOOK_SRC}/buffer/code_buffer.cpp
+        ${SANDHOOK_SRC}/utils/platform.cpp
+        ${SANDHOOK_SRC}/hook/hook.cpp
+    )
+    if (ANDROID_ABI STREQUAL "arm64-v8a")
+        set(SANDHOOK_ARCH "arm64")
+        list(APPEND SANDHOOK_SOURCES
+            ${SANDHOOK_SRC}/archs/arm/arm64/assembler/assembler_arm64.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm64/inst/inst_arm64.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm64/register/register_arm64.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm64/register/register_list_arm64.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm64/decoder/decoder_arm64.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm64/relocate/code_relocate_arm64.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm64/hook/hook_arm64.cpp
+        )
+    else ()
+        set(SANDHOOK_ARCH "arm32")
+        list(APPEND SANDHOOK_SOURCES
+            ${SANDHOOK_SRC}/archs/arm/arm32/inst/inst_arm32.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm32/inst/inst_t32.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm32/inst/inst_t16.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm32/register/register_arm32.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm32/register/register_list_arm32.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm32/assembler/assembler_arm32.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm32/decoder/decoder_arm32.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm32/hook/hook_arm32.cpp
+            ${SANDHOOK_SRC}/archs/arm/arm32/hook/breakpoint_shellcode.S
+            ${SANDHOOK_SRC}/archs/arm/arm32/relocate/code_relocate_arm32.cpp
+        )
+    endif ()
+    add_library(sandhook STATIC ${SANDHOOK_SOURCES})
+    set_target_properties(sandhook PROPERTIES
+        CXX_STANDARD 14
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS ON
+        POSITION_INDEPENDENT_CODE ON
+    )
+    target_compile_definitions(sandhook PRIVATE
+        "PAGE_SIZE=sysconf(_SC_PAGESIZE)")
+    target_compile_options(sandhook PRIVATE
+        -w
+        "$<$<COMPILE_LANGUAGE:CXX>:-fexceptions>"
+        "$<$<COMPILE_LANGUAGE:CXX>:-funwind-tables>"
+        "$<$<COMPILE_LANGUAGE:CXX>:-fasynchronous-unwind-tables>"
+        "$<$<COMPILE_LANGUAGE:CXX>:-include>"
+        "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/sandhook_compat.h>")
+    target_include_directories(sandhook
+        PUBLIC ${SANDHOOK_SRC}
+        PRIVATE
+            ${SANDHOOK_SRC}/asm
+            ${SANDHOOK_SRC}/decoder
+            ${SANDHOOK_SRC}/elf
+            ${SANDHOOK_SRC}/utils
+            ${SANDHOOK_SRC}/includes
+            ${SANDHOOK_SRC}/buffer
+            ${SANDHOOK_SRC}/archs/arm
+            ${SANDHOOK_SRC}/archs/arm/${SANDHOOK_ARCH}/inst
+            ${SANDHOOK_SRC}/archs/arm/${SANDHOOK_ARCH}/register
+            ${SANDHOOK_SRC}/archs/arm/${SANDHOOK_ARCH}/assembler
+            ${SANDHOOK_SRC}/archs/arm/${SANDHOOK_ARCH}/decoder
+            ${SANDHOOK_SRC}/archs/arm/${SANDHOOK_ARCH}/relocate
+            ${SANDHOOK_SRC}/archs/arm/${SANDHOOK_ARCH}/hook
+    )
+    if (TARGET cxx::cxx)
+        get_target_property(SANDHOOK_CXX_INCLUDES cxx::cxx INTERFACE_INCLUDE_DIRECTORIES)
+        if (SANDHOOK_CXX_INCLUDES)
+            target_include_directories(sandhook SYSTEM PRIVATE ${SANDHOOK_CXX_INCLUDES})
+        endif ()
+    endif ()
+endif ()
+
 if (NOT ZNN_LEGACY AND NOT ANDROID_ABI STREQUAL "riscv64")
     set(BYTEHOOK_SRC ${CMAKE_CURRENT_SOURCE_DIR}/bytehook/bytehook/src/main/cpp)
     file(GLOB BYTEHOOK_SOURCES ${BYTEHOOK_SRC}/*.c)

@@ -31,6 +31,7 @@ export const ENGINE_LABELS: Record<string, string> = {
   hookzz: "HookZz",
   whale: "Whale",
   yukiihook: "yuki::ihook",
+  sandhook: "SandHook",
   lsplt: "LSPlt",
   bytehook: "ByteHook",
   xhook: "xHook",

@@ -61,6 +61,10 @@ bool baaadhookUnhook(void* target);
 bool yukiihookHook(void* target, void* replacement, void** original);
 bool yukiihookUnhook(void* target);
 
+bool sandhookInit();
+bool sandhookHook(void* target, void* replacement, void** original);
+bool sandhookUnhook(void* target);
+
 bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
                void** original);
 
