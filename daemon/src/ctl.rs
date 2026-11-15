@@ -56,10 +56,9 @@ const STOP_ATTEMPTS: u32 = 80;
 /// How long `--ctl start` waits for the daemon it forked to be observable.
 const START_ATTEMPTS: u32 = 20;
 
-const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn> <value>|apply-zn [wait]|start|restart|rescan|exit>";
+const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
 
-const CONFIG_SET_USAGE: &str =
-    "usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn> <value>";
+const CONFIG_SET_USAGE: &str = "usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>";
 
 pub fn command() -> ClapCommand {
     ClapCommand::new("znnd")
@@ -79,7 +78,7 @@ pub fn command() -> ClapCommand {
                 .conflicts_with(MODULE_DIR_ARGUMENT)
                 .help(
                     "Control command: status, system, modules, config, \
-                       config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn> \
+                       config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> \
                        <value>, apply-zn [wait], start, restart, rescan or exit.",
                 ),
         )
@@ -189,17 +188,8 @@ fn start_daemon(restart: bool) -> i32 {
                 mode: "unknown",
             });
         }
-        let _ = process::kill(pid, signal::SIGTERM);
-        for _ in 0..STOP_ATTEMPTS {
-            if !procfs::is_daemon_alive(pid) {
-                break;
-            }
-            thread::sleep(STOP_INTERVAL);
-        }
-        if procfs::is_daemon_alive(pid) {
-            eprintln!(
-                "daemon ({pid}) is still running; it may be holding an armed breakpoint, so it is not killed"
-            );
+        if let Err(error) = stop_daemon(pid) {
+            eprintln!("{error}");
             return 1;
         }
     }
@@ -235,6 +225,19 @@ fn start_daemon(restart: bool) -> i32 {
             1
         }
     }
+}
+
+fn stop_daemon(pid: Pid) -> Result<(), String> {
+    let _ = process::kill(pid, signal::SIGTERM);
+    for _ in 0..STOP_ATTEMPTS {
+        if !procfs::is_daemon_alive(pid) {
+            return Ok(());
+        }
+        thread::sleep(STOP_INTERVAL);
+    }
+    Err(format!(
+        "daemon ({pid}) is still running; it may be holding an armed breakpoint, so it is not killed"
+    ))
 }
 
 pub fn module_dir_of_self() -> PathBuf {

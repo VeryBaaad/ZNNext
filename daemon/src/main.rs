@@ -47,6 +47,7 @@ mod sys;
 mod system;
 mod targets;
 mod trace;
+mod update;
 mod zn;
 
 fn main() {

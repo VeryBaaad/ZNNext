@@ -43,6 +43,9 @@ pub const DEBUGDATA_LIBARCHIVE: &str = "libarchive";
 pub const DISABLE_ZN_TRUE: &str = "true";
 pub const DISABLE_ZN_FALSE: &str = "false";
 
+pub const HOT_UPDATE_TRUE: &str = "true";
+pub const HOT_UPDATE_FALSE: &str = "false";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HookConfig {
     pub inline_hook: String,
@@ -52,6 +55,7 @@ pub struct HookConfig {
     pub mode: String,
     pub debugdata: String,
     pub disable_zn: String,
+    pub hot_update: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -74,6 +78,8 @@ pub struct HookConfigReport {
     debugdata: HookOption,
     #[serde(rename = "disableZn")]
     disable_zn: HookOption,
+    #[serde(rename = "hotUpdate")]
+    hot_update: HookOption,
 }
 
 fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
@@ -189,6 +195,10 @@ pub fn disable_zn_options() -> Vec<&'static str> {
     vec![DISABLE_ZN_TRUE, DISABLE_ZN_FALSE]
 }
 
+pub fn hot_update_options() -> Vec<&'static str> {
+    vec![HOT_UPDATE_TRUE, HOT_UPDATE_FALSE]
+}
+
 pub fn option_in(options: &[&str], value: &str) -> bool {
     options.contains(&value)
 }
@@ -203,6 +213,7 @@ impl HookConfig {
             "mode" => Some(tracking_mode_options()),
             "debugdata" => Some(debugdata_options()),
             "disable-zn" => Some(disable_zn_options()),
+            "hot-update" => Some(hot_update_options()),
             _ => None,
         }
     }
@@ -216,6 +227,7 @@ impl HookConfig {
             "mode" => self.mode = value.to_owned(),
             "debugdata" => self.debugdata = value.to_owned(),
             "disable-zn" => self.disable_zn = value.to_owned(),
+            "hot-update" => self.hot_update = value.to_owned(),
             _ => {}
         }
     }
@@ -269,6 +281,10 @@ impl HookConfig {
                 value: self.disable_zn.clone(),
                 options: disable_zn_options(),
             },
+            hot_update: HookOption {
+                value: self.hot_update.clone(),
+                options: hot_update_options(),
+            },
         }
     }
 }
@@ -291,6 +307,7 @@ pub fn effective() -> HookConfig {
     let mode_options = tracking_mode_options();
     let debugdata_choices = debugdata_options();
     let disable_zn_choices = disable_zn_options();
+    let hot_update_choices = hot_update_options();
     let mut config = HookConfig {
         inline_hook: inline_options
             .first()
@@ -307,6 +324,7 @@ pub fn effective() -> HookConfig {
             .unwrap_or_default()
             .to_owned(),
         disable_zn: DISABLE_ZN_TRUE.to_owned(),
+        hot_update: HOT_UPDATE_FALSE.to_owned(),
     };
 
     let Some(stored) = read_file() else {
@@ -337,6 +355,9 @@ pub fn effective() -> HookConfig {
     if option_in(&disable_zn_choices, &stored.disable_zn) {
         config.disable_zn = stored.disable_zn;
     }
+    if option_in(&hot_update_choices, &stored.hot_update) {
+        config.hot_update = stored.hot_update;
+    }
     config
 }
 
@@ -351,8 +372,8 @@ pub fn write(config: &HookConfig) -> bool {
         contents.push_str(&format!("plt_hook32={value}\n"));
     }
     contents.push_str(&format!(
-        "mode={}\ndebugdata={}\ndisable_zn={}\n",
-        config.mode, config.debugdata, config.disable_zn
+        "mode={}\ndebugdata={}\ndisable_zn={}\nhot_update={}\n",
+        config.mode, config.debugdata, config.disable_zn, config.hot_update
     ));
     crate::fileio::replace_file(paths::CONFIG_FILE.as_ref(), contents.as_bytes()).is_ok()
 }
@@ -365,6 +386,7 @@ struct StoredConfig {
     mode: String,
     debugdata: String,
     disable_zn: String,
+    hot_update: String,
 }
 
 fn read_file() -> Option<StoredConfig> {
@@ -377,6 +399,7 @@ fn read_file() -> Option<StoredConfig> {
         mode: String::new(),
         debugdata: String::new(),
         disable_zn: String::new(),
+        hot_update: String::new(),
     };
 
     for line in contents.lines() {
@@ -398,8 +421,36 @@ fn read_file() -> Option<StoredConfig> {
             "mode" => stored.mode = value.to_owned(),
             "debugdata" => stored.debugdata = value.to_owned(),
             "disable_zn" => stored.disable_zn = value.to_owned(),
+            "hot_update" => stored.hot_update = value.to_owned(),
             _ => {}
         }
     }
     Some(stored)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hot_update_switch_is_reported_and_settable() {
+        let mut config = HookConfig {
+            inline_hook: "dobby".to_owned(),
+            inline_hook32: None,
+            plt_hook: "lsplt".to_owned(),
+            plt_hook32: None,
+            mode: MODE_AUTO.to_owned(),
+            debugdata: DEBUGDATA_LZMA.to_owned(),
+            disable_zn: DISABLE_ZN_TRUE.to_owned(),
+            hot_update: HOT_UPDATE_FALSE.to_owned(),
+        };
+
+        assert_eq!(
+            HookConfig::options("hot-update"),
+            Some(hot_update_options())
+        );
+        config.set("hot-update", HOT_UPDATE_TRUE);
+        assert_eq!(config.hot_update, HOT_UPDATE_TRUE);
+        assert_eq!(config.report().hot_update.value, HOT_UPDATE_TRUE);
+    }
 }

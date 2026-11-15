@@ -75,6 +75,7 @@ const EMPTY_CONFIG: HookConfig = {
   mode: { value: "", options: [] },
   disableZn: { value: "", options: [] },
   debugdata: { value: "", options: [] },
+  hotUpdate: { value: "", options: [] },
 };
 </script>
 
