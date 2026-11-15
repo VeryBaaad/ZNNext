@@ -48,6 +48,7 @@ export interface HookRow {
   kind: HookKind;
   field: keyof HookConfig;
   labelKey: string;
+  toggle?: boolean;
 }
 
 export const HOOK_ROWS: HookRow[] = [
@@ -57,7 +58,18 @@ export const HOOK_ROWS: HookRow[] = [
   { kind: "plt32", field: "pltHook32", labelKey: "config.pltHook32" },
   { kind: "mode", field: "mode", labelKey: "config.mode" },
   { kind: "debugdata", field: "debugdata", labelKey: "config.debugdata" },
-  { kind: "disable-zn", field: "disableZn", labelKey: "config.disableZn" },
+  {
+    kind: "hot-update",
+    field: "hotUpdate",
+    labelKey: "config.hotUpdate",
+    toggle: true,
+  },
+  {
+    kind: "disable-zn",
+    field: "disableZn",
+    labelKey: "config.disableZn",
+    toggle: true,
+  },
 ];
 
 export const UI_ROW_LABEL_KEY = "config.uiStyle";
@@ -72,7 +84,7 @@ export function configRows<T>(
   for (const row of HOOK_ROWS) {
     const entry = config[row.field];
     if (!entry) continue;
-    (row.kind === "disable-zn" ? lower : upper).push(map(row, entry));
+    (row.toggle ? lower : upper).push(map(row, entry));
   }
   upper.push(uiRow);
   upper.push(...lower);
@@ -83,6 +95,7 @@ export function hookOptionLabel(kind: HookKind, id: string): string {
   if (kind === "mode") return t(`config.mode.${id}`);
   if (kind === "debugdata") return t(`config.debugdata.${id}`);
   if (kind === "disable-zn") return t(`config.disableZn.${id}`);
+  if (kind === "hot-update") return t(`config.hotUpdate.${id}`);
   return ENGINE_LABELS[id] ?? id;
 }
 

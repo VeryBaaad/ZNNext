@@ -61,6 +61,7 @@
     mode: 'mode',
     debugdata: 'debugdata',
     'disable-zn': 'disableZn',
+    'hot-update': 'hotUpdate',
   };
 
   var config = {
@@ -71,6 +72,7 @@
     mode: { value: 'proc', options: ['auto', 'kernel', 'ptrace', 'proc', 'late'] },
     debugdata: { value: 'lzma', options: ['lzma', 'xz', 'libarchive'] },
     disableZn: { value: 'true', options: ['true', 'false'] },
+    hotUpdate: { value: 'false', options: ['true', 'false'] },
   };
 
   var modules = [
@@ -134,7 +136,7 @@
         var entry = key ? state.config[key] : null;
         if (!entry) {
           throw new Error(
-            'usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn> <value>',
+            'usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>',
           );
         }
         if (entry.options.indexOf(value) < 0) {

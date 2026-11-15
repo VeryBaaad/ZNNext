@@ -45,6 +45,7 @@ interface ConfigRow {
   label: string;
   value: string;
   options: ConfigOption[];
+  toggle?: boolean;
 }
 
 const props = defineProps<{ config: HookConfig }>();
@@ -64,6 +65,7 @@ const rows = computed<ConfigRow[]>(() => {
       id,
       label: hookOptionLabel(row.kind, id),
     })),
+    toggle: row.toggle,
   });
   const uiRow: ConfigRow = {
     kind: "ui",
@@ -125,7 +127,7 @@ function onSwitch(row: ConfigRow, event: Event): void {
       <div v-for="row in rows" :key="row.kind" class="config-row">
         <span class="config-label">{{ row.label }}</span>
         <m3e-switch
-          v-if="row.kind === 'disable-zn'"
+          v-if="row.toggle"
           class="config-switch"
           :checked="row.value === 'true'"
           :disabled="busy"

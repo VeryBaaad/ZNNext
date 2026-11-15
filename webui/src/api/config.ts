@@ -34,10 +34,18 @@ export interface HookConfig {
   mode: HookEngineEntry;
   debugdata: HookEngineEntry;
   disableZn: HookEngineEntry;
+  hotUpdate: HookEngineEntry;
 }
 
 export type HookKind =
-  "inline" | "inline32" | "plt" | "plt32" | "mode" | "debugdata" | "disable-zn";
+  | "inline"
+  | "inline32"
+  | "plt"
+  | "plt32"
+  | "mode"
+  | "debugdata"
+  | "disable-zn"
+  | "hot-update";
 
 function isHookEngineEntry(value: unknown): value is HookEngineEntry {
   if (typeof value !== "object" || value === null) return false;
@@ -57,10 +65,16 @@ interface LegacyHookConfig {
   mode: HookEngineEntry;
   debugdata: HookEngineEntry;
   disableZn?: HookEngineEntry;
+  hotUpdate?: HookEngineEntry;
 }
 
 const DEFAULT_DISABLE_ZN: HookEngineEntry = {
   value: "true",
+  options: ["true", "false"],
+};
+
+const DEFAULT_HOT_UPDATE: HookEngineEntry = {
+  value: "false",
   options: ["true", "false"],
 };
 
@@ -75,7 +89,8 @@ function isHookConfig(value: unknown): value is LegacyHookConfig {
     (config.pltHook32 === undefined || isHookEngineEntry(config.pltHook32)) &&
     isHookEngineEntry(config.mode) &&
     isHookEngineEntry(config.debugdata) &&
-    (config.disableZn === undefined || isHookEngineEntry(config.disableZn))
+    (config.disableZn === undefined || isHookEngineEntry(config.disableZn)) &&
+    (config.hotUpdate === undefined || isHookEngineEntry(config.hotUpdate))
   );
 }
 
@@ -89,6 +104,7 @@ function parseHookConfig(raw: unknown): HookConfig {
     mode: raw.mode,
     debugdata: raw.debugdata,
     disableZn: raw.disableZn ?? DEFAULT_DISABLE_ZN,
+    hotUpdate: raw.hotUpdate ?? DEFAULT_HOT_UPDATE,
   };
 }
 

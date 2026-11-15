@@ -46,6 +46,7 @@ interface ConfigRow {
   value: string;
   ids: string[];
   labels: string[];
+  toggle?: boolean;
 }
 
 const props = defineProps<{ config: HookConfig }>();
@@ -61,6 +62,7 @@ const rows = computed<ConfigRow[]>(() => {
     value: entry.value,
     ids: [...entry.options],
     labels: entry.options.map((id) => hookOptionLabel(row.kind, id)),
+    toggle: row.toggle,
   });
   const uiRow: ConfigRow = {
     kind: "ui",
@@ -106,7 +108,7 @@ async function select(row: ConfigRow, position: number): Promise<void> {
   <MiuixCard class="miuix-config-card">
     <template v-for="row in rows" :key="row.kind">
       <MiuixSwitchPreference
-        v-if="row.kind === 'disable-zn'"
+        v-if="row.toggle"
         class="miuix-config-row"
         :title="row.label"
         :model-value="row.value === 'true'"

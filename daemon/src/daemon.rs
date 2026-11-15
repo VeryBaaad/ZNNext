@@ -45,6 +45,8 @@ pub const VERSION: &str = env!("ZNN_VERSION");
 
 const SHUTDOWN_RELEASE_BUDGET_MS: u64 = 800;
 const PROC_IDLE_SLEEP_MS: u64 = 25;
+const HOT_UPDATE_START_PROBES: u32 = 20;
+const HOT_UPDATE_RETRY_MS: u64 = 15_000;
 
 static RESCAN: AtomicBool = AtomicBool::new(false);
 static SHUTDOWN: AtomicBool = AtomicBool::new(false);
@@ -81,6 +83,8 @@ pub struct Daemon {
     pub kernel: Option<crate::kernel::KernelTracker>,
     pub mode: Tracking,
     pub requested_mode: String,
+    pub hot_update: bool,
+    pub hot_update_checked: Option<(String, u64)>,
     pub tracees: HashMap<Pid, Tracee>,
     pub done: HashSet<Pid>,
     pub ignored: HashSet<Pid>,
@@ -104,7 +108,9 @@ impl Daemon {
         // stalls during startup must not do so silently.
         logi!("ZNNext {VERSION} starting");
 
-        let requested_mode = config::effective().mode;
+        let settings = config::effective();
+        let requested_mode = settings.mode.clone();
+        let hot_update = settings.hot_update == config::HOT_UPDATE_TRUE;
 
         let mut daemon = Self {
             targets: Vec::new(),
@@ -118,6 +124,8 @@ impl Daemon {
             kernel: None,
             mode: Tracking::Ptrace,
             requested_mode: requested_mode.clone(),
+            hot_update,
+            hot_update_checked: None,
             tracees: HashMap::new(),
             done: HashSet::new(),
             ignored: HashSet::new(),
@@ -137,6 +145,7 @@ impl Daemon {
 
         daemon.system = system::collect();
         daemon.check_loaders();
+        crate::update::log_status();
         signal::set_handler(signal::SIGHUP, on_sighup);
         //`--ctl exit` and `--ctl restart` end us with SIGTERM, and a tracee that
         //is parked on an entry breakpoint must not be left holding it
@@ -185,10 +194,12 @@ impl Daemon {
             }
 
             if RESCAN.swap(false, Ordering::SeqCst) {
+                self.reload_settings();
                 self.collect_targets();
                 self.apply_requested_mode();
                 self.last_rescan_ms = Some(procfs::now_ms());
                 self.state.dirty = true;
+                self.maybe_hot_update();
                 logi!("rescanned znn targets ({})", self.targets.len());
             }
 
@@ -248,6 +259,7 @@ impl Daemon {
                     self.prune_deferred();
                 }
                 self.recheck.retain(|pid, _| procfs::is_alive(*pid));
+                self.maybe_hot_update();
             }
             if self.state.dirty
                 && (now - self.last_state_write_ms >= 2000 || self.last_state_write_ms == 0)
@@ -268,6 +280,75 @@ impl Daemon {
         }
 
         process::exit_now(0)
+    }
+
+    fn reload_settings(&mut self) {
+        self.hot_update = config::effective().hot_update == config::HOT_UPDATE_TRUE;
+    }
+
+    fn maybe_hot_update(&mut self) {
+        if !self.hot_update {
+            return;
+        }
+        let Some(pending) = crate::update::pending() else {
+            return;
+        };
+        if crate::update::running_from(&pending.dir) {
+            return;
+        }
+        let now = procfs::now_ms();
+        let fingerprint = crate::update::fingerprint(&pending.dir);
+        if let Some((checked, retry_at)) = &self.hot_update_checked
+            && *checked == fingerprint
+            && now < *retry_at
+        {
+            return;
+        }
+
+        if let Err(error) = crate::machikado::verify_module(&pending.dir) {
+            let first_attempt = self
+                .hot_update_checked
+                .as_ref()
+                .is_none_or(|(checked, _)| *checked != fingerprint);
+            if first_attempt {
+                logw!("hot update: refusing {}: {error}", pending.dir.display());
+            }
+            // when module is being install
+            self.hot_update_checked = Some((fingerprint, now + HOT_UPDATE_RETRY_MS));
+            return;
+        }
+
+        self.hot_update_checked = Some((fingerprint, u64::MAX));
+
+        let executable = crate::update::executable(&pending);
+        let pid = match process::spawn_detached(&executable, &pending.dir) {
+            Ok(pid) => pid,
+            Err(error) => {
+                logw!("hot update: cannot start {}: {error}", executable.display());
+                self.hot_update_checked = None;
+                return;
+            }
+        };
+
+        let mut alive = false;
+        for _ in 0..HOT_UPDATE_START_PROBES {
+            if !procfs::is_daemon_alive(pid) {
+                break;
+            }
+            alive = true;
+            thread::sleep(Duration::from_millis(25));
+        }
+        if alive && procfs::is_daemon_alive(pid) {
+            logi!(
+                "hot update: staged version \"{}\" verified; started daemon ({pid}) from {}",
+                pending.version,
+                pending.dir.display()
+            );
+            SHUTDOWN.store(true, Ordering::SeqCst);
+        } else {
+            logw!("hot update: the staged daemon ({pid}) exited during startup; staying up");
+            self.hot_update_checked = None;
+        }
     }
 
     fn check_loaders(&mut self) {

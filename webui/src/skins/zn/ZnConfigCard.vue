@@ -43,6 +43,7 @@ interface ConfigRow {
   label: string;
   value: string;
   options: string[];
+  toggle?: boolean;
 }
 
 const props = defineProps<{ config: HookConfig; error?: boolean }>();
@@ -58,6 +59,7 @@ const rows = computed<ConfigRow[]>(() => {
     label: t(row.labelKey),
     value: entry.value,
     options: [...entry.options],
+    toggle: row.toggle,
   });
   const uiRow: ConfigRow = {
     kind: "ui",
@@ -99,7 +101,7 @@ async function select(row: ConfigRow, value: string): Promise<void> {
       <div v-for="row in rows" :key="row.kind" class="zn-row">
         <span class="zn-field-label">{{ row.label }}</span>
         <ZnSwitch
-          v-if="row.kind === 'disable-zn'"
+          v-if="row.toggle"
           :model-value="row.value === 'true'"
           :disabled="busy"
           :label="row.label"
