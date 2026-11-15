@@ -8,6 +8,7 @@
 [![Version][version-badge]][version-url]
 [![GitHub Downloads][download-badge]][download-url]
 [![License][license-badge]][license-url]
+[![License-DCLPL][license-dclpl-badge]][license-dclpl-url]
 
 [build-badge]: https://img.shields.io/github/actions/workflow/status/VeryBaaad/ZNNext/ci.yml?branch=master&event=push
 [build-url]: https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster+event%3Apush
@@ -17,6 +18,8 @@
 [download-url]: https://github.com/VeryBaaad/ZNNext/releases/
 [license-badge]: https://img.shields.io/github/license/VeryBaaad/ZNNext
 [license-url]: LICENSE
+[license-dclpl-badge]: https://img.shields.io/badge/license-DCLPL--2.0-orange
+[license-dclpl-url]: LICENSE-DCLPL
 
 </div>
 
