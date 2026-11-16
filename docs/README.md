@@ -17,9 +17,11 @@
 [download-badge]: https://img.shields.io/github/downloads/VeryBaaad/ZNNext/total
 [download-url]: https://github.com/VeryBaaad/ZNNext/releases/
 [license-badge]: https://img.shields.io/github/license/VeryBaaad/ZNNext
-[license-url]: LICENSE
+[license-url]: ../LICENSE
 [license-dclpl-badge]: https://img.shields.io/badge/license-DCLPL--2.0-orange
-[license-dclpl-url]: LICENSE-DCLPL
+[license-dclpl-url]: ../LICENSE-DCLPL
+
+[中文（简体）](README_zh-CN.md) [文言（華夏）](README_lzh.md)
 
 </div>
 
@@ -37,7 +39,7 @@ ZNNext is an open-source Magisk module designed to provide the Zygisk Next API, 
 This module enables code injection into any process forked from `init`.
 
 > [!NOTE]
-> The Zygisk Next API was introduced in the closed-source v1.2.0-preview1 release of Zygisk Next; at that time, no existing open-source project was capable of loading these "ZN modules."
+> The Zygisk Next API was introduced in the closed-source v1.2.0-preview1 release of Zygisk Next; at that time, no existing open-source project was capable of loading these "ZN modules".
 > 
 > Thus, I created this project—built specifically for the open-source community.
 
@@ -120,32 +122,32 @@ This project is made possible by the following open-source contributions:
 <summary>used for inline hooking</summary>
 
 - [Dobby](https://github.com/LSPosed/Dobby): a lightweight, multi-platform, multi-architecture hook framework
-- [rv64hook](https://github.com/eirv/riscv64-inline-hook): lightweight inline hook library for RISC-V 64
-- [ShadowHook](https://github.com/bytedance/android-inline-hook): a general-purpose Android inline hook library, supporting Thumb, ARM32, and ARM64
-- [And64InlineHook](https://github.com/Rprop/And64InlineHook): lightweight ARMv8-A(ARM64, AArch64, Little-Endian) Inline Hook Library for Android C/C++
-- [frida-gum](https://github.com/frida/frida-gum): cross-platform instrumentation and introspection library written in C
+- [rv64hook](https://github.com/eirv/riscv64-inline-hook): Lightweight inline hook library for RISC-V 64 / 适用于 RISC-V 64 的轻量级 Inline Hook 库
+- [ShadowHook](https://github.com/bytedance/android-inline-hook): 通用的Android inline hook库，支持thumb，arm32，arm64
+- [And64InlineHook](https://github.com/Rprop/And64InlineHook): Lightweight ARMv8-A(ARM64, AArch64, Little-Endian) Inline Hook Library for Android C/C++
+- [frida-gum](https://github.com/frida/frida-gum): Cross-platform instrumentation and introspection library written in C
 - [HookZz](https://github.com/jmpews/HookZz/tree/2b48240203c95eb4164eded8f2b31f4bc846528a): a hook framework for arm/arm64/ios/android
-- [UrHook](https://github.com/SMlc666/urhook): a versatile hooking library for Android/Linux ARM64
-- [Whale](https://github.com/asLody/whale): hook Framework for Android/IOS/Linux/MacOS
+- [UrHook](https://github.com/SMlc666/urhook): 一个安卓/Linux Arm64的多功能hook库
+- [Whale](https://github.com/asLody/whale): Hook Framework for Android/IOS/Linux/MacOS
 - [BaaadHook](https://github.com/VeryBaaad/BaaadHook): inline/plt hook
-- [YukiZygisk](https://github.com/Rouyashiki/YukiZygisk): a new kernel-level Zygisk implementation designed to explore better, cleaner, and more flexible ways of injecting
-- [SandHook](https://github.com/asLody/SandHook): android ART Hook/Native Inline Hook/Single Instruction Hook - support 4.4 - 11.0 32/64 bit - Xposed API Compat
+- [YukiZygisk](https://github.com/Rouyashiki/YukiZygisk): A new kernel-level Zygisk implementation designed to explore better, cleaner, and more flexible ways of injecting.
+- [SandHook](https://github.com/asLody/SandHook): Android ART Hook/Native Inline Hook/Single Instruction Hook - support 4.4 - 11.0 32/64 bit - Xposed API Compat
 
 </details>
 
 <details>
 <summary>used for plt hooking</summary>
 
-- [LSPlt](https://github.com/LSPosed/LSPlt): simple PLT hook for Android
-- [ByteHook](https://github.com/bytedance/bhook): a universal Android PLT hook library, supporting armeabi-v7a, arm64-v8a, x86, and x86_64
-- [xHook](https://github.com/iqiyi/xHook): a PLT hook library for Android native ELF
+- [LSPlt](https://github.com/LSPosed/LSPlt): Simple PLT hook for Android
+- [ByteHook](https://github.com/bytedance/bhook): 通用的Android PLT hook库，支持armeabi-v7a，arm64-v8a，x86，x86_64
+- [xHook](https://github.com/iqiyi/xHook): A PLT hook library for Android native ELF
 - [PLTI](https://github.com/PerformanC/PLTI): PerformanC's modern PLT hooking library
-- [PLTHook](https://github.com/metacall/plthook): hook function calls by replacing PLT (Procedure Linkage Table) entries
-- [UrHook](https://github.com/SMlc666/urhook): a versatile hooking library for Android/Linux ARM64
+- [PLTHook](https://github.com/metacall/plthook): Hook function calls by replacing PLT (Procedure Linkage Table) entries.
+- [UrHook](https://github.com/SMlc666/urhook): 一个安卓/Linux Arm64的多功能hook库
 - [BaaadHook](https://github.com/VeryBaaad/BaaadHook): inline/plt hook
-- [YukiPLT](https://github.com/Rouyashiki/YukiPLT): a standalone Android PLT/GOT hooking library
-- [Profilo](https://github.com/facebookarchive/profilo): a library for performance traces from production
-- [srx_hook](https://github.com/Kindness-Kismet/srx_hook): rust PLT Hook library
+- [YukiPLT](https://github.com/Rouyashiki/YukiPLT): A standalone Android PLT/GOT hooking library
+- [Profilo](https://github.com/facebookarchive/profilo): A library for performance traces from production.
+- [srx_hook](https://github.com/Kindness-Kismet/srx_hook): Rust PLT Hook 库
 
 </details>
 
@@ -154,7 +156,7 @@ This project is made possible by the following open-source contributions:
 
 - [LZMA SDK](https://www.7-zip.org/sdk.html): 7-Zip
 - [xz-embedded](https://github.com/tukaani-project/xz-embedded): XZ Embedded
-- [libarchive](https://github.com/libarchive/libarchive): multi-format archive and compression library
+- [libarchive](https://github.com/libarchive/libarchive): Multi-format archive and compression library
 
 </details>
 
@@ -164,7 +166,7 @@ This project is made possible by the following open-source contributions:
 
 ZNNext is licensed under the:
 
-- [**GNU General Public License v3 (GPL-3)**](LICENSE).
-- [**Developers And Contributors Are Lesbians Public License v2.0 (DCLPLv2)**](LICENSE-DCLPL).
+- [**GNU General Public License v3 (GPL-3)**](../LICENSE).
+- [**Developers And Contributors Are Lesbians Public License v2.0 (DCLPLv2)**](../LICENSE-DCLPL).
 
 Third-party license texts are bundled verbatim under `licenses/` in the module zip.

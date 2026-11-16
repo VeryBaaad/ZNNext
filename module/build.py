@@ -163,10 +163,6 @@ def copy_mazoku(stage):
     shutil.copy2(SOURCE_DIR / "mazoku", stage / "mazoku")
 
 
-def copy_readme(stage):
-    shutil.copy2(ROOT / "README.md", stage / "README.md")
-
-
 def copy_webroot(stage):
     webroot = MODULE_DIR / "webroot"
     if not webroot.is_dir():
@@ -366,7 +362,6 @@ def package(variant, no_kpm, sevenzip=None):
     copy_mazoku(stage)
     expand_module_prop(stage, variant)
     expand_scripts(stage, variant)
-    copy_readme(stage)
     copy_webroot(stage)
     prepare_licenses(stage)
     copy_artifacts(stage, variant)
