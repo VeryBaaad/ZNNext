@@ -45,7 +45,7 @@ ZNNext 者，開源之 Magisk 模塊也，所以行 Zygisk Next API，既期躬�
 
 ---
 
-### 相容性
+### 容
 
 ZNNext 施於 Android 5 以上。
 
@@ -64,9 +64,9 @@ ZNNext 施於 Android 5 以上。
 ### 安置
 
 1. 安置 Magisk 26402+，或 KernelSU 11425+，或 APatch 10700+
-2. [下載](#下載)並於所根管理器（判官）中安置 ZNNext
+2. [下](#下)並於所根管理器（判官）中安置 ZNNext
 3. 復啟
-4. 啟模塊之 WebUI，始爾自定規制之遊 :)
+4. 啟模之網界，始爾自定規制之遊 :)
 
 ---
 
@@ -75,7 +75,7 @@ ZNNext 施於 Android 5 以上。
 | 徑 | 源 |
 | --- | --- |
 | 穩版 | [GitHub Releases](https://github.com/VeryBaaad/ZNNext/releases) |
-| CI | [GitHub Actions](https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster) |
+| 連纂 | [GitHub Actions](https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster) |
 
 註：調版唯見於 GitHub Actions。
 
@@ -93,16 +93,16 @@ ZNNext 施於 Android 5 以上。
 
 ---
 
-### 版本命名
+### 紀版之法
 
 v[Major].[Minor].[Patch][.Revision]
 
 - Major / Minor / Patch：與語義化版本同。
-- Revision：為向後兼容之變，僅易內部行為，不改外部表現者。（非必）
+- Revision：蓋循舊制而修內裡，其外象無易也。（非必）
 
 ---
 
-### 開發資源
+### 營造典籍
 
 - [ZygiskNextModuleSample](https://github.com/5ec1cff/ZygiskNextModuleSample)：模示
 - [hyos_runtime.md](https://github.com/Dr-TSNG/ZygiskNext/blob/main/docs/hyos_runtime.md)：HyperOS Runtime 之用
@@ -114,9 +114,9 @@ v[Major].[Minor].[Patch][.Revision]
 此項目之成，實賴諸開源項目之力：
 
 - [Magisk](https://github.com/topjohnwu/Magisk/)：使諸事皆成
-- [ZygiskNext](https://github.com/Dr-TSNG/ZygiskNext)：原樞機之參照
-- [KernelPatch](https://github.com/bmax121/KernelPatch)：補核模塊所賴
-- [libcxx](https://github.com/LSPosed/prefab-libcxx)：libc++ 靜態鏈接器
+- [ZygiskNext](https://github.com/Dr-TSNG/ZygiskNext)：原樞機之所參
+- [KernelPatch](https://github.com/bmax121/KernelPatch)：補核模所賴
+- [libcxx](https://github.com/LSPosed/prefab-libcxx)：libc++ 鏈靜之接
 
 <details>
 <summary>中道截擊之用</summary>
