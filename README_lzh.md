@@ -17,9 +17,9 @@
 [download-badge]: https://img.shields.io/github/downloads/VeryBaaad/ZNNext/total
 [download-url]: https://github.com/VeryBaaad/ZNNext/releases/
 [license-badge]: https://img.shields.io/github/license/VeryBaaad/ZNNext
-[license-url]: ../LICENSE
+[license-url]: LICENSE
 [license-dclpl-badge]: https://img.shields.io/badge/license-DCLPL--2.0-orange
-[license-dclpl-url]: ../LICENSE-DCLPL
+[license-dclpl-url]: LICENSE-DCLPL
 
 [English](README.md) [中文（简体）](README_zh-CN.md)
 
@@ -166,7 +166,7 @@ v[Major].[Minor].[Patch][.Revision]
 
 ZNNext 所採之許可如左：
 
-- [**GNU 眾所通用之許第三版（GPL-3）**](../LICENSE).
-- [**創制者與襄贊皆為女同者公共許第二版（DCLPLv2）**](../LICENSE-DCLPL).
+- [**GNU 眾所通用之許第三版（GPL-3）**](LICENSE).
+- [**創制者與襄贊皆為女同者公共許第二版（DCLPLv2）**](LICENSE-DCLPL).
 
 第三方許可之文，已原附於模包之 `licenses/` 下。

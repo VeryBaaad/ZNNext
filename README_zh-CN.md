@@ -17,11 +17,11 @@
 [download-badge]: https://img.shields.io/github/downloads/VeryBaaad/ZNNext/total
 [download-url]: https://github.com/VeryBaaad/ZNNext/releases/
 [license-badge]: https://img.shields.io/github/license/VeryBaaad/ZNNext
-[license-url]: ../LICENSE
+[license-url]: LICENSE
 [license-dclpl-badge]: https://img.shields.io/badge/license-DCLPL--2.0-orange
-[license-dclpl-url]: ../LICENSE-DCLPL
+[license-dclpl-url]: LICENSE-DCLPL
 
-[中文（简体）](README_zh-CN.md) [文言（華夏）](README_lzh.md)
+[English](README.md) [文言（華夏）](README_lzh.md)
 
 </div>
 
@@ -32,60 +32,60 @@
 
 ---
 
-### Introduction
+### 介绍
 
-ZNNext is an open-source Magisk module designed to provide the Zygisk Next API, striving to both implement and surpass the original Zygisk Next.
+ZNNext 是一个开源的 Magisk 模块用于实现 Zygisk Next API，旨在提供好用，超越原作的实现。
 
-This module enables code injection into any process forked from `init`.
+该模块可以向由 `init` fork 出的进程注入代码。
 
 > [!NOTE]
-> The Zygisk Next API was introduced in the closed-source v1.2.0-preview1 release of Zygisk Next; at that time, no existing open-source project was capable of loading these "ZN modules".
+> Zygisk Next API在 Zygisk Next 闭源后的 v1.2.0-preview1 版本被内置，在那时，没有任何一个开源的项目来加载这些 “ZN 模块”。
 > 
-> Thus, I created this project—built specifically for the open-source community.
+> 因此，我创建了这个为开源而生的项目。
 
 ---
 
-### Compatibility
+### 兼容性
 
-ZNNext supports Android 5 and above.
+ZNNext 支持 Android 5 及以上
 
-Supported ABIs: arm64-v8a, armeabi-v7a, armeabi, x86_64, x86, riscv64, mips64, mips
+支持的处理器架构：arm64-v8a，armeabi-v7a，armeabi，x86_64，x86，riscv64，mips64，mips
 
 > [!TIP]
-> Some features may not function on certain Linux kernels, this does not affect daily use.
+> 一些功能在某些不支持的 Linux 内核上不可用，但不影响日常使用。
 >
-> For armeabi, x86, riscv64, mips64, and mips, you need to compile them yourself:
+> 对于armeabi，x86，riscv64，mips64和mips，你需要自行编译:
 > ```
 > build.py zip<Release|Debug> --abis <armeabi,x86,riscv64,mips64,mips>
 > ```
 
 ---
 
-### Install
+### 安装
 
-1. Install Magisk 26402+ or KernelSU 11425+ or APatch 10700+
-2. [Download](#download) and install ZNNext in your root solution manager
-3. Reboot
-4. Open the module's WebUI, begin your journey of custom configuration :)
+1. 安装 Magisk 26402+ 或者 KernelSU 11425+ 或者 APatch 10700+
+2. [下载](#下载)并在你的 root 管理器中安装 ZNNext
+3. 重启
+4. 打开模块的WebUI，开启你的配置之旅 :)
 
 ---
 
-### Download
+### 下载
 
 | Channel | Source |
 | --- | --- |
-| Stable | [GitHub Releases](https://github.com/VeryBaaad/ZNNext/releases) |
+| 稳定版 | [GitHub Releases](https://github.com/VeryBaaad/ZNNext/releases) |
 | CI | [GitHub Actions](https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster) |
 
-NOTE: The debug version is provided only in GitHub Actions.
+NOTE: 调试版本仅在 GitHub Actions 中提供。
 
 ---
 
-### Get Help and Contributing
+### 帮助或贡献
 
-**Only bug reports from **THE LATEST DEBUG BUILD** will be accepted.**
+** 我们只接受 **最新的调试版本构建****
 
-**Please ensure that you are a **NATIVE SPEAKER** of the language in question for translation.**
+** 在贡献之前，请先确认你为贡献语言的 **母语者****
 
 - GitHub issues: [Issues](https://github.com/VeryBaaad/ZNNext/issues/)
 - Pull Requests: [Pull Requests](https://github.com/VeryBaaad/ZNNext/pulls/)
@@ -93,33 +93,33 @@ NOTE: The debug version is provided only in GitHub Actions.
 
 ---
 
-### Version Naming
+### 版本命名
 
 v[Major].[Minor].[Patch][.Revision]
 
-- Major / Minor / Patch: same as semver.
-- Revision: when making a backward compatible-change that affects only internal behavior, without altering external behavior. (not MUST)
+- Major / Minor / Patch: 和语义化版本保持一致。
+- Revision: 进行了影响内部行为，而不影响外部行为的向下兼容变更（非必需）
 
 ---
 
-### Developer Resources
+### 开发资源
 
-- [ZygiskNextModuleSample](https://github.com/5ec1cff/ZygiskNextModuleSample): module sample
-- [hyos_runtime.md](https://github.com/Dr-TSNG/ZygiskNext/blob/main/docs/hyos_runtime.md): for HyperOS Runtime
+- [ZygiskNextModuleSample](https://github.com/5ec1cff/ZygiskNextModuleSample): 模块示例
+- [hyos_runtime.md](https://github.com/Dr-TSNG/ZygiskNext/blob/main/docs/hyos_runtime.md): HyperOS Runtime示例
 
 ---
 
-### Credits 
+### 鸣谢
 
-This project is made possible by the following open-source contributions:
+项目的制成离不开这些开源项目的付出：
 
-- [Magisk](https://github.com/topjohnwu/Magisk/): makes all these possible
-- [ZygiskNext](https://github.com/Dr-TSNG/ZygiskNext): original API reference
-- [KernelPatch](https://github.com/bmax121/KernelPatch): for kernel patch module
-- [libcxx](https://github.com/LSPosed/prefab-libcxx): libc++ statically linker
+- [Magisk](https://github.com/topjohnwu/Magisk/): 使一切成为可能
+- [ZygiskNext](https://github.com/Dr-TSNG/ZygiskNext): 原始 API 参考
+- [KernelPatch](https://github.com/bmax121/KernelPatch): Kernel Patch 模块
+- [libcxx](https://github.com/LSPosed/prefab-libcxx): libc++ 静态链接器
 
 <details>
-<summary>used for inline hooking</summary>
+<summary>内联钩子</summary>
 
 - [Dobby](https://github.com/LSPosed/Dobby): a lightweight, multi-platform, multi-architecture hook framework
 - [rv64hook](https://github.com/eirv/riscv64-inline-hook): Lightweight inline hook library for RISC-V 64 / 适用于 RISC-V 64 的轻量级 Inline Hook 库
@@ -136,7 +136,7 @@ This project is made possible by the following open-source contributions:
 </details>
 
 <details>
-<summary>used for plt hooking</summary>
+<summary>PLT 钩子</summary>
 
 - [LSPlt](https://github.com/LSPosed/LSPlt): Simple PLT hook for Android
 - [ByteHook](https://github.com/bytedance/bhook): 通用的Android PLT hook库，支持armeabi-v7a，arm64-v8a，x86，x86_64
@@ -152,7 +152,7 @@ This project is made possible by the following open-source contributions:
 </details>
 
 <details>
-<summary>decompressors</summary>
+<summary>用于解压</summary>
 
 - [LZMA SDK](https://www.7-zip.org/sdk.html): 7-Zip
 - [xz-embedded](https://github.com/tukaani-project/xz-embedded): XZ Embedded
@@ -162,11 +162,11 @@ This project is made possible by the following open-source contributions:
 
 ---
 
-### License
+### 许可证
 
-ZNNext is licensed under the:
+ZNNext 采用了以下许可证：
 
-- [**GNU General Public License v3 (GPL-3)**](../LICENSE).
-- [**Developers And Contributors Are Lesbians Public License v2.0 (DCLPLv2)**](../LICENSE-DCLPL).
+- [**GNU General Public License v3 (GPL-3)**](LICENSE).
+- [**Developers And Contributors Are Lesbians Public License v2.0 (DCLPLv2)**](LICENSE-DCLPL).
 
-Third-party license texts are bundled verbatim under `licenses/` in the module zip.
+第三方协议已在模块压缩包中的 `licenses/` 被存放。
