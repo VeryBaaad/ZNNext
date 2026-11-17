@@ -1,6 +1,6 @@
 [package]
 name = "daemon"
-version = "2.18.0+1"
+version = "2.18.0+2"
 edition = "2024"
 description = "A from-scratch, standalone implementation of the Zygisk Next module."
 license = "GPL-3.0-or-later AND LicenseRef-DCLPL-2.0"
