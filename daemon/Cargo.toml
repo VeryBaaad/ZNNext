@@ -13,7 +13,7 @@ clap = { version = "4.6.7", default-features = false, features = [
 ] }
 libc = "0.2.191"
 netlink-sys = { version = "0.9", default-features = false }
-nix = { version = "0.31.3", default-features = false, features = [
+nix = { version = "0.32.0", default-features = false, features = [
     "feature",
     "fs",
     "poll",
