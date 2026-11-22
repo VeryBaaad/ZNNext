@@ -783,16 +783,6 @@ impl Daemon {
         loge!("dlopen({}) failed for pid {pid}: {error}", tracee.loader);
         self.record_failure(pid, &tracee.exe, &format!("dlopen failed: {error}"));
 
-        if error.contains("Permission denied") {
-            loge!(
-                "hint for pid {pid}: the loader image is a memfd created inside the target, so the target's domain needs `execute` and `getattr` on its own tmpfs label. ZNNext ships those two rules in module/src/sepolicy.rule; Magisk loads them at boot from a preinit mirror that is only rewritten when the module is installed, updated or toggled in the manager, so reinstall it after changing that file."
-            );
-        } else if error.contains("not accessible") {
-            loge!(
-                "hint for pid {pid}: the linker rejected the library path for its namespace (loading must go through a tmpfs memfd)"
-            );
-        }
-
         self.undo(pid, tracee);
         Progress::Finished
     }
@@ -844,12 +834,6 @@ impl Daemon {
         loge!(
             "fatal signal {crash_signal} in pid {pid} at pc={pc:#x} lr={link:#x} sp={sp:#x} in {location}"
         );
-
-        if matches!(tracee.state, State::Dlopen | State::Dlsym | State::Init) {
-            loge!(
-                "hint for pid {pid}: the loader was already running, so this is most likely the module's hook engine being denied executable memory. Android 14+ needs `execmem` in the target's domain (`allow <domain> <domain> process execmem`) and every ZN module must ship that rule in its own sepolicy.rule; verify with `dmesg | grep execmem`."
-            );
-        }
     }
 }
 

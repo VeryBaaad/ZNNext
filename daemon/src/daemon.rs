@@ -406,15 +406,6 @@ impl Daemon {
                 self.state.status_reason = "loader architecture mismatch".to_owned();
             }
         }
-
-        if let Ok(cap) = fs::read_to_string("/sys/fs/selinux/policy_capabilities/memfd_class")
-            && cap.trim() == "1"
-        {
-            logw!(
-                "this policy enables memfd_class: memfds are labelled with the creating domain, so \
-                 the module policy may need a `memfd_file` rule for non-app targets"
-            );
-        }
     }
 
     fn reap_traces(&mut self) {
