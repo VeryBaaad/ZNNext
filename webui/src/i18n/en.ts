@@ -82,6 +82,15 @@ export const en: Record<string, string> = {
   "config.saveFailed": "Failed to save configuration",
   "config.disable": "Disable",
 
+  "color.title": "Material color tool",
+  "color.seed": "Seed color",
+  "color.spec": "Color spec",
+  "color.hue": "Hue",
+  "color.tone": "Saturation and brightness",
+  "color.reset": "Reset",
+  "color.done": "Done",
+  "color.close": "Close",
+
   "ui.material": "Material",
   "ui.miuix": "Miuix",
   "ui.zn": "ZN-like",

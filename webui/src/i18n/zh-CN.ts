@@ -83,6 +83,15 @@ export const zhCN: Dictionary = {
   "config.saveFailed": "保存失败",
   "config.disable": "禁用",
 
+  "color.title": "Material 取色工具",
+  "color.seed": "种子色",
+  "color.spec": "取色标准",
+  "color.hue": "色相",
+  "color.tone": "饱和度与明度",
+  "color.reset": "恢复默认",
+  "color.done": "完成",
+  "color.close": "关闭",
+
   "ui.material": "Material",
   "ui.miuix": "Miuix",
   "ui.zn": "类ZN风格",

@@ -22,12 +22,13 @@
 
 import "./elements";
 
-import { computed } from "vue";
+import { computed, watch } from "vue";
 
 import type { HookConfig } from "../../api/config";
 import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import type { SystemInfo } from "../../api/system";
+import { themeScheme } from "../../theme";
 import MaterialConfigCard from "./MaterialConfigCard.vue";
 import MaterialEmptyCard from "./MaterialEmptyCard.vue";
 import MaterialErrorCard from "./MaterialErrorCard.vue";
@@ -36,6 +37,11 @@ import MaterialInfoCard from "./MaterialInfoCard.vue";
 import MaterialModulesCard from "./MaterialModulesCard.vue";
 import MaterialStatusCard from "./MaterialStatusCard.vue";
 import MaterialTopBar from "./MaterialTopBar.vue";
+import {
+  applyMaterialTheme,
+  materialSeed,
+  materialSpec,
+} from "./material-color";
 
 const props = defineProps<{
   ksuAvailable: boolean;
@@ -45,6 +51,21 @@ const props = defineProps<{
   modules: ZnnModule[] | null;
   config: HookConfig | null;
 }>();
+
+watch(
+  [themeScheme, materialSeed, materialSpec],
+  ([scheme]) => {
+    applyMaterialTheme(
+      materialSeed.value,
+      materialSpec.value,
+      scheme === "dark",
+    );
+    document
+      .getElementById("znn-theme")
+      ?.setAttribute("color", materialSeed.value);
+  },
+  { immediate: true },
+);
 
 const empty = computed(
   () =>

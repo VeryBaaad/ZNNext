@@ -461,3 +461,211 @@ html[data-znn-ui="material"] .github-logo {
     animation: none;
   }
 }
+
+html[data-znn-ui="material"] .config-seed-hex {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+html[data-znn-ui="material"] .color-dialog {
+  --m3e-dialog-min-width: min(92vw, 400px);
+  --m3e-dialog-max-width: min(94vw, 520px);
+  --m3e-dialog-max-height: min(88vh, 780px);
+  --m3e-dialog-container-color: var(--md-sys-color-surface-container-high);
+  --m3e-dialog-content-color: var(--md-sys-color-on-surface);
+}
+
+html[data-znn-ui="material"] .color-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-measurement-space150);
+}
+
+html[data-znn-ui="material"] .color-picker {
+  display: grid;
+  grid-template-columns: clamp(100px, 36%, 148px) minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--md-sys-measurement-space150);
+}
+
+html[data-znn-ui="material"] .hue-wheel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #ff0000,
+    #ffff00,
+    #00ff00,
+    #00ffff,
+    #0000ff,
+    #ff00ff,
+    #ff0000
+  );
+  cursor: crosshair;
+  touch-action: none;
+}
+
+html[data-znn-ui="material"] .hue-wheel::after {
+  content: "";
+  position: absolute;
+  inset: 26%;
+  border-radius: 50%;
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: 0 0 0 1px
+    color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent);
+  pointer-events: none;
+}
+
+html[data-znn-ui="material"] .hue-wheel:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 3px;
+}
+
+html[data-znn-ui="material"] .hue-thumb {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+html[data-znn-ui="material"] .hue-thumb::before {
+  content: "";
+  position: absolute;
+  top: 5.5%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin-inline-start: -9px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: hsl(var(--znn-hue) 100% 50%);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+html[data-znn-ui="material"] .sv-area {
+  position: relative;
+  border-radius: 16px;
+  background-color: hsl(var(--znn-hue) 100% 50%);
+  background-image:
+    linear-gradient(to top, #000, transparent),
+    linear-gradient(to right, #fff, transparent);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+html[data-znn-ui="material"] .sv-area:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+}
+
+html[data-znn-ui="material"] .sv-thumb {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+html[data-znn-ui="material"] .hex-row {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-measurement-space100);
+}
+
+html[data-znn-ui="material"] .seed-hex-field {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  padding-inline: var(--md-sys-measurement-space200);
+  border-radius: 14px;
+  background: var(--md-sys-color-surface-container);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--md-sys-color-outline-variant) 80%, transparent);
+}
+
+html[data-znn-ui="material"] .seed-hex-field:focus-within {
+  box-shadow: inset 0 0 0 2px var(--md-sys-color-primary);
+}
+
+html[data-znn-ui="material"] .seed-hex-input {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font: inherit;
+  font-size: 1.0625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+html[data-znn-ui="material"] .hex-reset {
+  flex: none;
+}
+
+html[data-znn-ui="material"] .seed-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+html[data-znn-ui="material"] .seed-preset {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+html[data-znn-ui="material"] .seed-preset-dot {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--znn-swatch);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--md-sys-color-outline) 45%, transparent);
+}
+
+html[data-znn-ui="material"] .seed-preset.is-active .seed-preset-dot {
+  inset: 2px;
+  box-shadow:
+    0 0 0 2px var(--md-sys-color-surface-container-high),
+    0 0 0 4px var(--md-sys-color-primary);
+}
+
+html[data-znn-ui="material"] .color-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-measurement-space100);
+  overflow: clip;
+}
+
+html[data-znn-ui="material"] .color-section-label {
+  font-size: var(--md-sys-typescale-label-large-font-size);
+  font-weight: 500;
+  line-height: var(--md-sys-typescale-label-large-line-height);
+}
+
+html[data-znn-ui="material"] .spec-switch {
+  align-self: flex-start;
+  --m3e-segmented-button-height: 40px;
+}

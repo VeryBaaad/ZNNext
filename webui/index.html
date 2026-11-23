@@ -51,13 +51,31 @@
             ui = savedUi;
           }
         } catch (e) {}
+        var seed = '#6750a4';
+        try {
+          var savedSeed = localStorage.getItem('znn_material_seed');
+          var seedMatch = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(savedSeed || '');
+          if (seedMatch) {
+            var digits = seedMatch[1].toLowerCase();
+            if (digits.length === 3) {
+              digits =
+                digits[0] + digits[0] +
+                digits[1] + digits[1] +
+                digits[2] + digits[2];
+            }
+            seed = '#' + digits;
+          }
+        } catch (e) {}
         var root = document.documentElement;
         root.dataset.znnScheme = scheme;
         root.dataset.znnUi = ui;
         root.style.colorScheme = scheme;
         if (scheme === 'dark') root.classList.add('m-theme-dark');
         var host = document.getElementById('znn-theme');
-        if (host) host.setAttribute('scheme', scheme);
+        if (host) {
+          host.setAttribute('scheme', scheme);
+          host.setAttribute('color', seed);
+        }
       })();
     </script>
     <script type="module" src="/src/main.ts"></script>

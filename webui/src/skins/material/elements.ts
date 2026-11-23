@@ -24,9 +24,11 @@ import "../../styles/material.css";
 
 import "@m3e/web/theme";
 import "@m3e/web/card";
+import "@m3e/web/dialog";
 import "@m3e/web/icon";
 import "@m3e/web/icon-button";
 import "@m3e/web/menu";
+import "@m3e/web/segmented-button";
 import "@m3e/web/button";
 import "@m3e/web/list";
 import "@m3e/web/snackbar";
@@ -40,4 +42,6 @@ import "@m3e/icons/outlined/error";
 import "@m3e/icons/outlined/info";
 import "@m3e/icons/outlined/language";
 import "@m3e/icons/outlined/light_mode";
+import "@m3e/icons/outlined/palette";
 import "@m3e/icons/outlined/refresh";
+import "@m3e/icons/outlined/restart_alt";
