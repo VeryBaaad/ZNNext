@@ -72,10 +72,18 @@ html[data-znn-ui="miuix"] body {
 
 .znn-miuix .miuix-status-card.is-inactive {
   --m-card-color: var(--m-color-error-container);
+  --m-card-content-color: var(--m-color-on-error-container);
 }
 
-:root.m-theme-dark .znn-miuix .miuix-status-card.is-active {
+:root.m-theme-dark:not([data-znn-monet="true"])
+  .znn-miuix
+  .miuix-status-card.is-active {
   --m-card-color: #1a3825;
+}
+
+:root[data-znn-monet="true"] .znn-miuix .miuix-status-card.is-active {
+  --m-card-color: var(--m-color-secondary-container);
+  --m-card-content-color: var(--m-color-on-secondary-container);
 }
 
 .znn-miuix .miuix-status-body {
@@ -106,6 +114,13 @@ html[data-znn-ui="miuix"] body {
 
 .znn-miuix .miuix-status-card.is-active .miuix-status-mark {
   color: #36d167;
+}
+
+:root[data-znn-monet="true"]
+  .znn-miuix
+  .miuix-status-card.is-active
+  .miuix-status-mark {
+  color: var(--m-color-primary);
 }
 
 .znn-miuix .miuix-status-card.is-inactive .miuix-status-mark {
@@ -179,4 +194,121 @@ html[data-znn-ui="miuix"] body {
   width: 18px;
   height: 18px;
   fill: currentColor;
+}
+
+.znn-miuix .miuix-seed-value {
+  color: var(--m-color-on-surface-variant-actions);
+  font-size: var(--m-text-body2-size);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.miuix-color-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-block-start: 4px;
+}
+
+.miuix-color-body .color-picker {
+  --znn-picker-hole: var(--m-color-background);
+}
+
+.miuix-color-hex {
+  display: flex;
+}
+
+.miuix-color-hex-field {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  padding-inline: 16px;
+  border-radius: var(--m-radius-md);
+  background: var(--m-color-secondary-container);
+}
+
+.miuix-color-hex-input {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--m-color-on-background);
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.miuix-color-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.miuix-color-preset {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.miuix-color-preset-dot {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--znn-swatch);
+  box-shadow: inset 0 0 0 1px var(--m-color-outline);
+}
+
+.miuix-color-preset.is-active .miuix-color-preset-dot {
+  inset: 2px;
+  box-shadow:
+    0 0 0 2px var(--m-color-background),
+    0 0 0 4px var(--m-color-primary);
+}
+
+.miuix-color-spec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.miuix-color-spec-label {
+  color: var(--m-color-on-background);
+  font-size: var(--m-text-body1-size);
+  font-weight: 500;
+}
+
+.miuix-color-spec-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.miuix-color-spec-buttons .m-button {
+  flex: 1;
+  min-height: 36px;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+.miuix-color-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-block-start: 16px;
+}
+
+.miuix-color-actions .m-button {
+  min-height: 36px;
+  padding: 8px 14px;
+  font-size: 14px;
 }

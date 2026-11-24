@@ -45,6 +45,32 @@
     } catch (error) {}
   }
 
+  var seed = params.get('seed');
+  if (seed) {
+    var seedMatch = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(seed);
+    if (seedMatch) {
+      var digits = seedMatch[1].toLowerCase();
+      if (digits.length === 3) {
+        digits =
+          digits[0] + digits[0] +
+          digits[1] + digits[1] +
+          digits[2] + digits[2];
+      }
+      try {
+        localStorage.setItem('znn_material_seed', '#' + digits);
+      } catch (error) {}
+    }
+  }
+
+  var spec = (params.get('spec') || '').toUpperCase().replace('-', '_');
+  if (spec === '2021') spec = 'SPEC_2021';
+  if (spec === '2025') spec = 'SPEC_2025';
+  if (spec === 'SPEC_2021' || spec === 'SPEC_2025') {
+    try {
+      localStorage.setItem('znn_material_spec', spec);
+    } catch (error) {}
+  }
+
   if (params.get('ksu') === '0') return;
 
   var latency = Number(params.get('slow') || 120);

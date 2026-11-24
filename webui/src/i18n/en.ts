@@ -82,6 +82,17 @@ export const en: Record<string, string> = {
   "config.saveFailed": "Failed to save configuration",
   "config.disable": "Disable",
 
+  "color.title": "Monet color tool",
+  "color.seed": "Seed color",
+  "color.spec": "Color spec",
+  "color.hue": "Hue",
+  "color.tone": "Saturation and brightness",
+  "color.reset": "Reset",
+  "color.done": "Done",
+  "color.close": "Close",
+
+  "miuix.monetEnable": "Enable Monet colors",
+
   "ui.material": "Material",
   "ui.miuix": "Miuix",
   "ui.zn": "ZN-like",

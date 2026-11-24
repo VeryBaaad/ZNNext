@@ -34,6 +34,8 @@ import {
 import type { HookRow } from "../../config-model";
 import { t } from "../../i18n";
 import { UI_MODES, isUiMode, setUiMode, uiMode } from "../../ui-mode";
+import MaterialColorDialog from "./MaterialColorDialog.vue";
+import { materialSeed } from "../../color/material-color";
 
 interface ConfigOption {
   id: string;
@@ -55,6 +57,8 @@ const actions = useAppActions();
 const root = ref<HTMLElement | null>(null);
 
 const busy = ref(false);
+
+const colorOpen = ref(false);
 
 const rows = computed<ConfigRow[]>(() => {
   const make = (row: HookRow, entry: HookEngineEntry): ConfigRow => ({
@@ -156,6 +160,21 @@ function onSwitch(row: ConfigRow, event: Event): void {
           </m3e-menu>
         </template>
       </div>
+
+      <div class="config-row">
+        <span class="config-label">{{ t("color.seed") }}</span>
+        <m3e-button
+          class="config-value"
+          size="extra-small"
+          variant="tonal"
+          :aria-label="t('color.seed')"
+          @click="colorOpen = true"
+        >
+          <span class="config-seed-hex">{{ materialSeed.toUpperCase() }}</span>
+        </m3e-button>
+      </div>
     </div>
   </m3e-card>
+
+  <MaterialColorDialog :open="colorOpen" @close="colorOpen = false" />
 </template>

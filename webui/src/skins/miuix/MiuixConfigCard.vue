@@ -21,6 +21,7 @@
  */
 
 import {
+  MiuixArrowPreference,
   MiuixCard,
   MiuixDropdownPreference,
   MiuixSwitchPreference,
@@ -37,8 +38,11 @@ import {
   uiModeLabel,
 } from "../../config-model";
 import type { HookRow } from "../../config-model";
+import { materialSeed } from "../../color/material-color";
 import { t } from "../../i18n";
 import { UI_MODES, isUiMode, setUiMode, uiMode } from "../../ui-mode";
+import MiuixColorDialog from "./MiuixColorDialog.vue";
+import { miuixMonetEnabled, setMiuixMonetEnabled } from "./monet";
 
 interface ConfigRow {
   kind: string;
@@ -54,6 +58,8 @@ const props = defineProps<{ config: HookConfig }>();
 const actions = useAppActions();
 
 const busy = ref(false);
+
+const colorOpen = ref(false);
 
 const rows = computed<ConfigRow[]>(() => {
   const make = (row: HookRow, entry: HookEngineEntry): ConfigRow => ({
@@ -126,5 +132,25 @@ async function select(row: ConfigRow, position: number): Promise<void> {
         @update:model-value="(position: number) => select(row, position)"
       />
     </template>
+
+    <MiuixSwitchPreference
+      class="miuix-config-row"
+      :title="t('miuix.monetEnable')"
+      :model-value="miuixMonetEnabled"
+      @update:model-value="setMiuixMonetEnabled"
+    />
+
+    <MiuixArrowPreference
+      v-if="miuixMonetEnabled"
+      class="miuix-config-row miuix-seed-row"
+      :title="t('color.seed')"
+      @click="colorOpen = true"
+    >
+      <template #end>
+        <span class="miuix-seed-value">{{ materialSeed.toUpperCase() }}</span>
+      </template>
+    </MiuixArrowPreference>
   </MiuixCard>
+
+  <MiuixColorDialog :open="colorOpen" @close="colorOpen = false" />
 </template>
