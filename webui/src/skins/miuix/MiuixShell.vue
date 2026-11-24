@@ -28,12 +28,13 @@ import {
   MiuixSnackbarHost,
   setThemeMode as setMiuixThemeMode,
 } from "miuix-vue";
-import { computed, watch } from "vue";
+import { computed, onBeforeUnmount, watch } from "vue";
 
 import type { HookConfig } from "../../api/config";
 import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import type { SystemInfo } from "../../api/system";
+import { materialSeed, materialSpec } from "../../color/material-color";
 import { themeScheme } from "../../theme";
 import MiuixAppBar from "./MiuixAppBar.vue";
 import MiuixConfigCard from "./MiuixConfigCard.vue";
@@ -44,6 +45,7 @@ import MiuixInfoCard from "./MiuixInfoCard.vue";
 import MiuixLargeTitle from "./MiuixLargeTitle.vue";
 import MiuixModulesCard from "./MiuixModulesCard.vue";
 import MiuixStatusCard from "./MiuixStatusCard.vue";
+import { applyMiuixMonet, clearMiuixMonet, miuixMonetEnabled } from "./monet";
 
 const props = defineProps<{
   ksuAvailable: boolean;
@@ -80,6 +82,24 @@ const failed = computed(
  * its controller as well as onto the document.
  */
 watch(themeScheme, (scheme) => setMiuixThemeMode(scheme), { immediate: true });
+
+watch(
+  [themeScheme, materialSeed, materialSpec, miuixMonetEnabled],
+  ([scheme, , , enabled]) => {
+    if (enabled) {
+      applyMiuixMonet(
+        materialSeed.value,
+        materialSpec.value,
+        scheme === "dark",
+      );
+    } else {
+      clearMiuixMonet();
+    }
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(clearMiuixMonet);
 </script>
 
 <template>

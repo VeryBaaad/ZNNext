@@ -83,7 +83,7 @@ export const lzh: Dictionary = {
   "config.saveFailed": "未載",
   "config.disable": "黜置",
 
-  "color.title": "取色之器",
+  "color.title": "Monet 取色之器",
   "color.seed": "子色",
   "color.spec": "取色之準",
   "color.hue": "色相",
@@ -91,6 +91,8 @@ export const lzh: Dictionary = {
   "color.reset": "復其初",
   "color.done": "已",
   "color.close": "閉",
+
+  "miuix.monetEnable": "啟用 Monet 之色",
 
   "ui.material": "質樸",
   "ui.miuix": "米格",

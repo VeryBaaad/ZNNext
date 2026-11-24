@@ -22,7 +22,7 @@
 
 import { computed, ref, watch } from "vue";
 
-import { t } from "../../i18n";
+import { t } from "../i18n";
 import { normalizeSeed } from "./material-color";
 
 interface Hsv {
@@ -264,3 +264,100 @@ function channel(value: number): string {
     </div>
   </div>
 </template>
+
+<style scoped>
+.color-picker {
+  display: grid;
+  grid-template-columns: clamp(100px, 36%, 148px) minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--md-sys-measurement-space150, 12px);
+}
+
+.hue-wheel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #ff0000,
+    #ffff00,
+    #00ff00,
+    #00ffff,
+    #0000ff,
+    #ff00ff,
+    #ff0000
+  );
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.hue-wheel::after {
+  content: "";
+  position: absolute;
+  inset: 26%;
+  border-radius: 50%;
+  background: var(--znn-picker-hole, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent);
+  pointer-events: none;
+}
+
+.hue-wheel:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.hue-thumb {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hue-thumb::before {
+  content: "";
+  position: absolute;
+  top: 5.5%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin-inline-start: -9px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: hsl(var(--znn-hue) 100% 50%);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.sv-area {
+  position: relative;
+  border-radius: 16px;
+  background-color: hsl(var(--znn-hue) 100% 50%);
+  background-image:
+    linear-gradient(to top, #000, transparent),
+    linear-gradient(to right, #fff, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 20%, transparent);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.sv-area:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.sv-thumb {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+</style>

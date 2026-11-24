@@ -23,7 +23,7 @@
 import { ref, watch } from "vue";
 
 import { t } from "../../i18n";
-import MaterialColorPicker from "./MaterialColorPicker.vue";
+import ColorWheelPicker from "../../color/ColorWheelPicker.vue";
 import {
   DEFAULT_MATERIAL_SEED,
   MATERIAL_SEED_PRESETS,
@@ -35,7 +35,7 @@ import {
   setMaterialSpec,
   specLabel,
   type MaterialSpec,
-} from "./material-color";
+} from "../../color/material-color";
 
 const props = defineProps<{ open: boolean }>();
 
@@ -112,7 +112,7 @@ function isPresetActive(seed: string): boolean {
       <span slot="header">{{ t("color.title") }}</span>
 
       <div class="color-dialog-body">
-        <MaterialColorPicker
+        <ColorWheelPicker
           :model-value="materialSeed"
           @update:model-value="chooseSeed"
         />

@@ -41,7 +41,7 @@ import {
   applyMaterialTheme,
   materialSeed,
   materialSpec,
-} from "./material-color";
+} from "../../color/material-color";
 
 const props = defineProps<{
   ksuAvailable: boolean;

@@ -35,7 +35,7 @@ import type { HookRow } from "../../config-model";
 import { t } from "../../i18n";
 import { UI_MODES, isUiMode, setUiMode, uiMode } from "../../ui-mode";
 import MaterialColorDialog from "./MaterialColorDialog.vue";
-import { materialSeed } from "./material-color";
+import { materialSeed } from "../../color/material-color";
 
 interface ConfigOption {
   id: string;

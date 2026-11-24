@@ -83,7 +83,7 @@ export const zhCN: Dictionary = {
   "config.saveFailed": "保存失败",
   "config.disable": "禁用",
 
-  "color.title": "Material 取色工具",
+  "color.title": "Monet 取色工具",
   "color.seed": "种子色",
   "color.spec": "取色标准",
   "color.hue": "色相",
@@ -91,6 +91,8 @@ export const zhCN: Dictionary = {
   "color.reset": "恢复默认",
   "color.done": "完成",
   "color.close": "关闭",
+
+  "miuix.monetEnable": "启用 Monet 颜色",
 
   "ui.material": "Material",
   "ui.miuix": "Miuix",
