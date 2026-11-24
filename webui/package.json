@@ -17,6 +17,7 @@
     "@material/material-color-utilities": "^0.4.0",
     "@vueuse/core": "^15.0.0",
     "kernelsu": "^3.3.0",
+    "konsta": "^5.5.0",
     "lit": "^3.3.3",
     "miuix-vue": "^0.1.1",
     "motion-v": "^2.13.0",
@@ -24,9 +25,11 @@
     "vue": "^3.5.45"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
     "@types/node": "^26.6.6",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitejs/plugin-vue": "^6.0.11",
+    "tailwindcss": "^4.3.5",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^8.3.8",
     "vue-tsc": "^3.3.14"

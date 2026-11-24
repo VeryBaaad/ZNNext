@@ -97,6 +97,7 @@ export const lzh: Dictionary = {
   "ui.material": "質樸",
   "ui.miuix": "米格",
   "ui.zn": "擬古",
+  "ui.ios": "蘋果之風",
 
   "empty.title": "無卷可展",
 

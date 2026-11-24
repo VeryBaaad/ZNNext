@@ -35,6 +35,7 @@ const MiuixShell = defineAsyncComponent(
   () => import("./skins/miuix/MiuixShell.vue"),
 );
 const ZnShell = defineAsyncComponent(() => import("./skins/zn/ZnShell.vue"));
+const IosShell = defineAsyncComponent(() => import("./skins/ios/IosShell.vue"));
 
 const {
   ksuAvailable,
@@ -58,6 +59,7 @@ const SHELLS: Record<UiMode, Component> = {
   material: MaterialShell,
   miuix: MiuixShell,
   zn: ZnShell,
+  ios: IosShell,
 };
 
 const shell = computed(() => SHELLS[uiMode.value]);

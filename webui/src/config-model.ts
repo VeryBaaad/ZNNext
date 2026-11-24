@@ -103,5 +103,6 @@ export function hookOptionLabel(kind: HookKind, id: string): string {
 export function uiModeLabel(mode: string): string {
   if (mode === "miuix") return t("ui.miuix");
   if (mode === "zn") return t("ui.zn");
+  if (mode === "ios") return t("ui.ios");
   return t("ui.material");
 }

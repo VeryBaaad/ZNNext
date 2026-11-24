@@ -1,0 +1,96 @@
+<script setup lang="ts">
+/*
+ * SPDX-License-Identifier: GPL-3.0-or-later AND LicenseRef-DCLPL-2.0
+ *
+ * This file is part of ZNNext.
+ *
+ * ZNNext is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * ZNNext is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with ZNNext. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
+ */
+
+import { kList, kListItem } from "konsta/vue";
+import { computed } from "vue";
+
+import { MODULE_NAME, VER_NAME } from "../../app-info";
+import type { DaemonStatus } from "../../api/daemon";
+import type { SystemInfo } from "../../api/system";
+import { t } from "../../i18n";
+import IosIcon from "./IosIcon.vue";
+
+const props = defineProps<{
+  system: SystemInfo;
+  status: DaemonStatus | null;
+  error?: boolean;
+}>();
+
+interface InfoRow {
+  label: string;
+  value: string;
+}
+
+const abiText = computed(() => {
+  const primary = (props.system.abi || "").trim();
+  const rest = (props.system.abilist || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0 && value !== primary);
+  const parts = [primary || t("info.unknown")];
+  parts.push(...rest);
+  return parts.join(", ");
+});
+
+const modeText = computed(() => {
+  if (!props.status?.running) return t("info.unknown");
+  const mode = props.status?.mode;
+  if (mode === "kernel") return t("config.mode.kernel");
+  if (mode === "proc") return t("config.mode.proc");
+  if (mode === "ptrace") return t("config.mode.ptrace");
+  if (mode === "late") return t("config.mode.late");
+  return t("info.unknown");
+});
+
+const rows = computed<InfoRow[]>(() => [
+  { label: MODULE_NAME, value: VER_NAME },
+  { label: "Kernel", value: props.system.kernel || t("info.unknown") },
+  {
+    label: "Android SDK",
+    value: props.system.sdk > 0 ? String(props.system.sdk) : t("info.unknown"),
+  },
+  { label: "ABI", value: abiText.value },
+  { label: t("info.mode"), value: modeText.value },
+]);
+</script>
+
+<template>
+  <section class="ios-section">
+    <h2 class="ios-section-title">{{ t("card.basic") }}</h2>
+
+    <k-list v-if="!props.error" inset strong class="ios-list">
+      <k-list-item v-for="row in rows" :key="row.label" :title="row.label">
+        <template #after>
+          <span class="ios-value" :title="row.value">{{ row.value }}</span>
+        </template>
+      </k-list-item>
+    </k-list>
+
+    <k-list v-else inset strong class="ios-list">
+      <k-list-item :title="t('error.title')">
+        <template #after>
+          <IosIcon class="text-red-500" name="warning" :size="20" />
+        </template>
+      </k-list-item>
+    </k-list>
+  </section>
+</template>

@@ -39,7 +39,7 @@
   }
 
   var ui = params.get('ui');
-  if (ui === 'material' || ui === 'miuix' || ui === 'zn') {
+  if (ui === 'material' || ui === 'miuix' || ui === 'zn' || ui === 'ios') {
     try {
       localStorage.setItem('znn_ui', ui);
     } catch (error) {}

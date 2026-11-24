@@ -1,0 +1,323 @@
+/*
+ * SPDX-License-Identifier: GPL-3.0-or-later AND LicenseRef-DCLPL-2.0
+ *
+ * This file is part of ZNNext.
+ *
+ * ZNNext is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * ZNNext is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with ZNNext. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
+ */
+
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "konsta/vue/theme.css";
+
+@layer base {
+  .znn-ios,
+  .znn-ios *,
+  .znn-ios *::before,
+  .znn-ios *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+
+  .znn-ios h1,
+  .znn-ios h2,
+  .znn-ios h3,
+  .znn-ios h4,
+  .znn-ios h5,
+  .znn-ios h6 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  .znn-ios ol,
+  .znn-ios ul,
+  .znn-ios menu {
+    list-style: none;
+  }
+
+  .znn-ios button,
+  .znn-ios input,
+  .znn-ios select,
+  .znn-ios textarea {
+    font: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    background-color: transparent;
+    border-radius: 0;
+    opacity: 1;
+  }
+
+  .znn-ios button {
+    cursor: pointer;
+  }
+
+  .znn-ios a {
+    color: inherit;
+    text-decoration: inherit;
+  }
+
+  .znn-ios svg {
+    display: flex;
+    vertical-align: middle;
+  }
+
+  .znn-ios [hidden] {
+    display: none !important;
+  }
+}
+
+html[data-znn-ui="ios"] {
+  -webkit-text-size-adjust: 100%;
+}
+
+html[data-znn-ui="ios"],
+html[data-znn-ui="ios"] body {
+  height: 100%;
+  overflow: hidden;
+  background-color: #efeff4;
+}
+
+html[data-znn-ui="ios"][data-znn-scheme="dark"],
+html[data-znn-ui="ios"][data-znn-scheme="dark"] body {
+  background-color: #000000;
+}
+
+html[data-znn-ui="ios"] body {
+  overscroll-behavior: none;
+}
+
+.znn-ios {
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+}
+
+.znn-ios .k-page {
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.znn-ios .k-navbar > .font-bold,
+.znn-ios .k-navbar .font-semibold {
+  font-weight: 500;
+}
+
+.znn-ios .k-navbar .k-glass .k-link {
+  width: 40px;
+  height: 40px;
+}
+
+.ios-content {
+  padding-top: 2px;
+  padding-bottom: 8px;
+}
+
+.ios-section {
+  margin-top: 22px;
+}
+
+.ios-section:first-of-type {
+  margin-top: 8px;
+}
+
+.ios-section-title {
+  margin: 0 0 7px;
+  padding: 0 32px;
+  color: rgba(60, 60, 67, 0.6);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+.dark .ios-section-title {
+  color: rgba(235, 235, 245, 0.6);
+}
+
+.znn-ios .ios-list.k-list {
+  margin-block: 0;
+}
+
+.znn-ios .k-list-item > button,
+.znn-ios .k-list-item > a {
+  width: 100%;
+}
+
+.ios-value {
+  display: block;
+  max-width: 58vw;
+  overflow: hidden;
+  text-align: end;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ios-chip.k-chip {
+  height: 26px;
+  padding-inline: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ios-module-name {
+  display: block;
+  max-width: 46vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.znn-ios .ios-module-item > button svg {
+  transition: transform 200ms ease;
+}
+
+.znn-ios .ios-module-item.ios-expanded > button svg {
+  transform: rotate(90deg);
+}
+
+.znn-ios .ios-child-item > * {
+  padding-inline-start: calc(var(--k-safe-area-left, 0px) + 1.75rem);
+}
+
+.ios-failure {
+  display: block;
+  max-width: 44vw;
+  overflow: hidden;
+  color: #ff3b30;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark .ios-failure {
+  color: #ff6961;
+}
+
+.ios-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 16px 0;
+  padding: 12px 14px;
+  color: #b25000;
+  font-size: 15px;
+  line-height: 1.35;
+  background: rgba(255, 149, 0, 0.12);
+  border-radius: 16px;
+}
+
+.dark .ios-alert {
+  color: #ffb340;
+  background: rgba(255, 159, 10, 0.16);
+}
+
+.ios-alert > .ios-icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.ios-alert-inline {
+  margin: 10px 8px 0;
+}
+
+.ios-picker {
+  padding-bottom: max(14px, var(--k-safe-area-bottom, 0px));
+}
+
+.ios-picker-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 16px 16px 8px;
+}
+
+.ios-picker-title {
+  grid-column: 2;
+  color: #000000;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.dark .ios-picker-title {
+  color: #ffffff;
+}
+
+.ios-picker-done {
+  grid-column: 3;
+  justify-self: end;
+  color: var(--color-primary);
+  font-size: 17px;
+  font-weight: 400;
+}
+
+.znn-ios .ios-picker-list.k-list {
+  max-height: 55dvh;
+  margin: 0 12px;
+  overflow-y: auto;
+  border-radius: 14px;
+  overscroll-behavior: contain;
+}
+
+.ios-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 16px max(28px, var(--k-safe-area-bottom, 0px));
+}
+
+.ios-footer-link {
+  font-size: 15px;
+}
+
+.znn-ios .ios-placeholder.k-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 24px 16px;
+  padding-block: 30px;
+  color: rgba(60, 60, 67, 0.6);
+  font-size: 15px;
+  text-align: center;
+}
+
+.dark .znn-ios .ios-placeholder.k-block {
+  color: rgba(235, 235, 245, 0.6);
+}
+
+.znn-ios .ios-placeholder-error.k-block {
+  color: #ff3b30;
+}
+
+.ios-spin {
+  animation: ios-spin 900ms linear infinite;
+}
+
+.znn-ios button:disabled {
+  cursor: default;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+@keyframes ios-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

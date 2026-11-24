@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'node:path';
 
@@ -46,6 +47,7 @@ export default defineConfig(() => ({
         },
       },
     }),
+    tailwindcss(),
     ksuPreviewMock(),
   ],
   define: {

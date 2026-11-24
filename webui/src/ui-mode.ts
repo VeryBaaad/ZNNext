@@ -21,13 +21,13 @@
 
 import { computed, ref, watch, type ComputedRef } from "vue";
 
-export type UiMode = "material" | "miuix" | "zn";
+export type UiMode = "material" | "miuix" | "zn" | "ios";
 
 export const UI_MODE_STORAGE_KEY = "znn_ui";
 
 export const DEFAULT_UI_MODE: UiMode = "material";
 
-export const UI_MODES: UiMode[] = ["material", "miuix", "zn"];
+export const UI_MODES: UiMode[] = ["material", "miuix", "zn", "ios"];
 
 const modeRef = ref<UiMode>(detectUiMode());
 

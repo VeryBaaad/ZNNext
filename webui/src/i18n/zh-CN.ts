@@ -97,6 +97,7 @@ export const zhCN: Dictionary = {
   "ui.material": "Material",
   "ui.miuix": "Miuix",
   "ui.zn": "类ZN风格",
+  "ui.ios": "iOS 风格",
 
   "empty.title": "无卡片可绘制",
 

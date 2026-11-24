@@ -96,6 +96,7 @@ export const en: Record<string, string> = {
   "ui.material": "Material",
   "ui.miuix": "Miuix",
   "ui.zn": "ZN-like",
+  "ui.ios": "iOS Design",
 
   "empty.title": "No cards to display",
 
