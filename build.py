@@ -28,7 +28,7 @@ VERSION_PATTERN = re.compile(r"^[vV]?(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?$")
 
 MODULE_ID = "zygisknextsu"
 MODULE_NAME = "ZNNext"
-VER_NAME = "v2.20.1"
+VER_NAME = "v2.20.2"
 UPDATE_URL = "https://raw.githubusercontent.com/VeryBaaad/ZNNext/refs/heads/update/update.json"
 KPM_ID = "znnext"
 KPM_VERSION = VER_NAME.removeprefix("v")
