@@ -21,12 +21,14 @@
 
 #include "hook/plt.h"
 
+#include <dlfcn.h>
 #include <link.h>
 #include <sys/mman.h>
 
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "hook/backend.h"
@@ -46,115 +48,91 @@ const MapEntry* findMapping(const std::vector<MapEntry>& maps, uintptr_t base) {
   return nullptr;
 }
 
+class DlopenPin {
+ public:
+  explicit DlopenPin(const std::string& path) {
+    if (!path.empty()) handle_ = dlopen(path.c_str(), RTLD_NOW | RTLD_NOLOAD);
+  }
+  ~DlopenPin() {
+    if (handle_) dlclose(handle_);
+  }
+  bool valid() const { return handle_ != nullptr; }
+
+ private:
+  void* handle_ = nullptr;
+};
+
 struct ElfTarget {
   uintptr_t header = 0;
   uintptr_t load_bias = 0;
+  std::string name;
+  std::vector<ElfW(Phdr)> phdrs;
   const MapEntry* mapping = nullptr;
-  const ElfW(Phdr) * phdr = nullptr;
-  size_t phnum = 0;
 };
 
-bool readElfTarget(uintptr_t candidate, const std::vector<MapEntry>& maps,
-                   uintptr_t reference, ElfTarget* target) {
-  const MapEntry* mapping = nullptr;
-  for (const auto& m : maps) {
-    if (m.inode == 0 || !(m.perms & PROT_READ)) continue;
-    if (candidate < m.start || candidate >= m.end) continue;
-    if (m.end - candidate < sizeof(ElfW(Ehdr))) continue;
-    mapping = &m;
-    break;
-  }
-  if (!mapping) return false;
+struct ElfTargetContext {
+  uintptr_t reference;
+  ElfTarget* target;
+  bool found;
+};
 
-  const auto* ehdr = reinterpret_cast<const ElfW(Ehdr)*>(candidate);
-  if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0) return false;
-  if (ehdr->e_ident[EI_CLASS] != (sizeof(void*) == 8 ? ELFCLASS64 : ELFCLASS32))
-    return false;
-  if (ehdr->e_type != ET_DYN && ehdr->e_type != ET_EXEC) return false;
-  if (ehdr->e_phentsize != sizeof(ElfW(Phdr)) || ehdr->e_phnum == 0 ||
-      ehdr->e_phnum > 4096)
-    return false;
+int findElfTarget(struct dl_phdr_info* info, size_t, void* data) {
+  auto* context = static_cast<ElfTargetContext*>(data);
+  if (!info->dlpi_phdr) return 0;
 
-  uintptr_t phdr_address = 0;
-  if (__builtin_add_overflow(candidate, static_cast<uintptr_t>(ehdr->e_phoff),
-                             &phdr_address))
-    return false;
-  uintptr_t phdr_size = 0;
-  if (__builtin_mul_overflow(static_cast<uintptr_t>(ehdr->e_phnum),
-                             sizeof(ElfW(Phdr)), &phdr_size))
-    return false;
-  if (phdr_address < mapping->start || phdr_address > mapping->end)
-    return false;
-  if (phdr_size > mapping->end - phdr_address) return false;
-
-  const auto* phdr = reinterpret_cast<const ElfW(Phdr)*>(phdr_address);
-  uintptr_t load_bias = 0;
-  bool has_base = false;
-  for (size_t i = 0; i < ehdr->e_phnum; ++i) {
-    if (phdr[i].p_type != PT_LOAD || phdr[i].p_offset != 0) continue;
-    if (candidate < phdr[i].p_vaddr) return false;
-    load_bias = candidate - phdr[i].p_vaddr;
-    has_base = true;
-    break;
-  }
-  if (!has_base) return false;
-
-  bool contains_reference = false;
-  for (size_t i = 0; i < ehdr->e_phnum; ++i) {
-    if (phdr[i].p_type != PT_LOAD) continue;
+  for (int i = 0; i < info->dlpi_phnum; ++i) {
+    const ElfW(Phdr) & phdr = info->dlpi_phdr[i];
+    if (phdr.p_type != PT_LOAD) continue;
     uintptr_t start = 0;
-    if (__builtin_add_overflow(load_bias, phdr[i].p_vaddr, &start)) continue;
+    if (__builtin_add_overflow(static_cast<uintptr_t>(info->dlpi_addr),
+                               phdr.p_vaddr, &start))
+      continue;
     uintptr_t end = 0;
-    if (__builtin_add_overflow(start, phdr[i].p_memsz, &end)) continue;
-    if (reference >= start && reference < end) {
-      contains_reference = true;
-      break;
-    }
-  }
-  if (!contains_reference) return false;
+    if (__builtin_add_overflow(start, phdr.p_memsz, &end)) continue;
+    if (context->reference < start || context->reference >= end) continue;
 
-  target->header = candidate;
-  target->load_bias = load_bias;
-  target->mapping = mapping;
-  target->phdr = phdr;
-  target->phnum = ehdr->e_phnum;
-  return true;
+    context->target->load_bias = static_cast<uintptr_t>(info->dlpi_addr);
+    context->target->phdrs.assign(info->dlpi_phdr,
+                                  info->dlpi_phdr + info->dlpi_phnum);
+    if (info->dlpi_name) context->target->name = info->dlpi_name;
+
+    uintptr_t first_vaddr = 0;
+    bool have_first = false;
+    for (int j = 0; j < info->dlpi_phnum; ++j) {
+      const ElfW(Phdr) & load = info->dlpi_phdr[j];
+      if (load.p_type != PT_LOAD) continue;
+      if (!have_first) {
+        first_vaddr = load.p_vaddr;
+        have_first = true;
+      }
+      if (load.p_offset == 0) {
+        context->target->header =
+            static_cast<uintptr_t>(info->dlpi_addr) + load.p_vaddr;
+        break;
+      }
+    }
+    if (context->target->header == 0 && have_first)
+      context->target->header =
+          static_cast<uintptr_t>(info->dlpi_addr) + first_vaddr;
+    context->found = context->target->header != 0;
+    return 1;
+  }
+  return 0;
 }
 
 bool resolveElfTarget(const std::vector<MapEntry>& maps, const MapEntry& hit,
                       ElfTarget* target) {
-  std::vector<uintptr_t> candidates;
-  candidates.push_back(hit.start);
-  if (hit.start >= hit.offset) candidates.push_back(hit.start - hit.offset);
+  ElfTargetContext context{hit.start, target, false};
+  dl_iterate_phdr(findElfTarget, &context);
+  if (!context.found || !target->header) return false;
+
   for (const auto& m : maps) {
-    if (m.dev != hit.dev || m.inode != hit.inode) continue;
-    if (!(m.perms & PROT_READ)) continue;
-    candidates.push_back(m.start);
+    if (m.inode == 0) continue;
+    if (target->header < m.start || target->header >= m.end) continue;
+    target->mapping = &m;
+    break;
   }
-
-  for (const uintptr_t candidate : candidates) {
-    if (candidate != 0 && readElfTarget(candidate, maps, hit.start, target))
-      return true;
-  }
-  return false;
-}
-
-struct LinkerPathContext {
-  uintptr_t load_bias;
-  const char* path;
-};
-
-int findLinkerPath(struct dl_phdr_info* info, size_t, void* data) {
-  auto* context = static_cast<LinkerPathContext*>(data);
-  if (static_cast<uintptr_t>(info->dlpi_addr) != context->load_bias) return 0;
-  if (info->dlpi_name && info->dlpi_name[0]) context->path = info->dlpi_name;
-  return 1;
-}
-
-std::string linkerPathForLoadBias(uintptr_t load_bias) {
-  LinkerPathContext context{load_bias, nullptr};
-  dl_iterate_phdr(findLinkerPath, &context);
-  return context.path ? context.path : "";
+  return target->mapping != nullptr;
 }
 
 void fileRangeForTarget(const std::vector<MapEntry>& maps,
@@ -168,8 +146,7 @@ void fileRangeForTarget(const std::vector<MapEntry>& maps,
     if (m.offset < *file_offset) continue;
 
     bool overlaps_load = false;
-    for (size_t i = 0; i < target.phnum; ++i) {
-      const ElfW(Phdr) & phdr = target.phdr[i];
+    for (const ElfW(Phdr) & phdr : target.phdrs) {
       if (phdr.p_type != PT_LOAD) continue;
       uintptr_t start = 0;
       if (__builtin_add_overflow(target.load_bias, phdr.p_vaddr, &start))
@@ -197,7 +174,7 @@ bool pltHook(void* base, const char* symbol, void* replacement,
   ensurePltEngineReady();
 
   const uintptr_t b = reinterpret_cast<uintptr_t>(base);
-  const auto maps = parseMaps("self");
+  auto maps = parseMaps("self");
   const MapEntry* hit = findMapping(maps, b);
   if (!hit) {
     LOGE("pltHook %s: base %p not found in maps", symbol, base);
@@ -212,11 +189,26 @@ bool pltHook(void* base, const char* symbol, void* replacement,
     LOGE("pltHook %s: base %p has no path in maps", symbol, base);
     return false;
   }
-  const std::string linker_path = linkerPathForLoadBias(elf.load_bias);
+
+  DlopenPin pin(elf.name.empty() ? elf.mapping->path : elf.name);
+  if (pin.valid()) {
+    maps = parseMaps("self");
+    hit = findMapping(maps, b);
+    if (!hit) {
+      LOGE("pltHook %s: base %p disappeared while pinning", symbol, base);
+      return false;
+    }
+    ElfTarget refreshed;
+    if (!resolveElfTarget(maps, *hit, &refreshed)) {
+      LOGE("pltHook %s: target %p became invalid while pinning", symbol, base);
+      return false;
+    }
+    elf = std::move(refreshed);
+  }
 
   backend::PltTarget target;
   target.maps_path = elf.mapping->path;
-  target.linker_path = linker_path.empty() ? elf.mapping->path : linker_path;
+  target.linker_path = elf.name.empty() ? elf.mapping->path : elf.name;
   target.dev = elf.mapping->dev;
   target.inode = elf.mapping->inode;
   target.base = elf.header;

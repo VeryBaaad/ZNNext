@@ -41,7 +41,8 @@ namespace znn::hook::backend {
 namespace {
 
 struct HookContext {
-  std::atomic<void*> original{nullptr};
+  std::atomic<void*> first_original{nullptr};
+  std::atomic<void*> latest_original{nullptr};
   std::atomic<int> status{BYTEHOOK_STATUS_CODE_UNINIT};
   std::atomic<void**> caller_output{nullptr};
 };
@@ -56,9 +57,7 @@ std::vector<std::unique_ptr<HookContext>> g_retired_contexts;
 std::set<std::string> g_pending;
 
 std::string hookKey(const PltTarget& target, const char* symbol) {
-  std::string key = std::to_string(target.base);
-  key += '\x01';
-  key += target.linker_path;
+  std::string key = target.linker_path;
   key += '\x01';
   key += symbol;
   return key;
@@ -78,16 +77,16 @@ static void bytehookHooked(bytehook_stub_t stub, int status_code,
   auto* context = static_cast<HookContext*>(arg);
   if (status_code == BYTEHOOK_STATUS_CODE_ORIG_ADDR) {
     if (prev_func) {
-      context->original.store(prev_func, std::memory_order_release);
+      void* expected = nullptr;
+      context->first_original.compare_exchange_strong(expected, prev_func);
+      context->latest_original.store(prev_func, std::memory_order_release);
       if (void** output = context->caller_output.load()) *output = prev_func;
     }
     return;
   }
   context->status.store(status_code, std::memory_order_release);
-  if (status_code == BYTEHOOK_STATUS_CODE_OK && prev_func) {
-    context->original.store(prev_func, std::memory_order_release);
-    if (void** output = context->caller_output.load()) *output = prev_func;
-  }
+  if (status_code == BYTEHOOK_STATUS_CODE_OK && prev_func)
+    context->latest_original.store(prev_func, std::memory_order_release);
 }
 }
 
@@ -116,16 +115,18 @@ bool bytehookHook(const PltTarget& target, const char* symbol,
     std::lock_guard<std::mutex> lk(g_mutex);
     auto stub_it = g_stubs.find(key);
     if (stub_it != g_stubs.end()) {
-      void* current = g_originals[key];
+      void* first = g_originals[key];
+      void* latest = g_originals[key];
       auto context_it = g_contexts.find(key);
-      if (context_it != g_contexts.end())
-        current = context_it->second->original.load(std::memory_order_acquire);
+      if (context_it != g_contexts.end()) {
+        first =
+            context_it->second->first_original.load(std::memory_order_acquire);
+        latest =
+            context_it->second->latest_original.load(std::memory_order_acquire);
+      }
       // unhook by passing original
-      if (replacement == current) {
-        if (bytehook_unhook(stub_it->second) != 0) {
-          LOGE("pltHook %s: bytehook_unhook failed", symbol);
-          return false;
-        }
+      if (replacement == first || replacement == latest) {
+        bytehook_unhook(stub_it->second);
         if (context_it != g_contexts.end()) {
           g_retired_contexts.push_back(std::move(context_it->second));
           g_contexts.erase(context_it);
@@ -151,6 +152,7 @@ bool bytehookHook(const PltTarget& target, const char* symbol,
       bytehook_hook_single(caller_path.c_str(), nullptr, symbol, replacement,
                            bytehookHooked, context.get());
   if (!stub) {
+    context->caller_output.store(nullptr);
     {
       std::lock_guard<std::mutex> lk(g_mutex);
       g_pending.erase(key);
@@ -161,23 +163,13 @@ bool bytehookHook(const PltTarget& target, const char* symbol,
     return false;
   }
 
-  void* resolved = context->original.load(std::memory_order_acquire);
+  context->caller_output.store(nullptr);
+  void* resolved = context->latest_original.load(std::memory_order_acquire);
   const int status = context->status.load(std::memory_order_acquire);
   if (status != BYTEHOOK_STATUS_CODE_OK || !resolved) {
     LOGE("pltHook %s: no matching relocation in %s", symbol,
          caller_path.c_str());
-    if (bytehook_unhook(stub) != 0) {
-      LOGE("pltHook %s: bytehook_unhook failed after %s", symbol,
-           "installation failure");
-      if (resolved) {
-        std::lock_guard<std::mutex> lk(g_mutex);
-        g_pending.erase(key);
-        g_stubs[key] = stub;
-        g_originals[key] = resolved;
-        g_contexts[key] = std::move(context);
-        return true;
-      }
-    }
+    bytehook_unhook(stub);
     {
       std::lock_guard<std::mutex> lk(g_mutex);
       g_pending.erase(key);

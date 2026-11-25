@@ -27,6 +27,7 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "hook/backend.h"
@@ -46,6 +47,7 @@ struct Slot {
   void** addr;
   void* previous;
   int prot;
+  bool installed;
 };
 
 struct Record {
@@ -56,6 +58,7 @@ struct Record {
 
 std::mutex g_mutex;
 std::map<std::string, Record> g_records;
+std::vector<std::pair<std::string, Record>> g_recovery;
 
 std::string recordKey(const PltTarget& target, const char* symbol) {
   std::string key = std::to_string(target.base);
@@ -87,6 +90,33 @@ bool writeSlot(const Slot& slot, void* value) {
   return true;
 }
 
+void recoverLocked(const std::string& key) {
+  for (auto it = g_recovery.begin(); it != g_recovery.end();) {
+    if (it->first != key) {
+      ++it;
+      continue;
+    }
+    Record& record = it->second;
+    bool remaining = false;
+    for (Slot& slot : record.slots) {
+      if (!slot.installed) continue;
+      if (*slot.addr != record.replacement) {
+        slot.installed = false;
+        continue;
+      }
+      if (writeSlot(slot, slot.previous))
+        slot.installed = false;
+      else
+        remaining = true;
+    }
+    if (!remaining) {
+      it = g_recovery.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
+
 bool symbolMatches(const char* name, const char* symbol, size_t length) {
   return strncmp(name, symbol, length) == 0 &&
          (name[length] == '\0' || name[length] == '@');
@@ -108,7 +138,7 @@ bool collectSlots(plthook_t* handle, const char* symbol,
       LOGE("pltHook %s: no memory protection for slot %p", symbol, addr);
       return false;
     }
-    slots->push_back(Slot{addr, *addr, prot});
+    slots->push_back(Slot{addr, *addr, prot, false});
   }
   if (rv != EOF) {
     LOGE("pltHook %s: plthook_enum failed: %s", symbol, plthook_error());
@@ -139,6 +169,7 @@ bool plthookHook(const PltTarget& target, const char* symbol, void* replacement,
 
   const std::string key = recordKey(target, symbol);
   std::lock_guard<std::mutex> lk(g_mutex);
+  recoverLocked(key);
 
   if (auto it = g_records.find(key); it != g_records.end()) {
     Record& record = it->second;
@@ -149,13 +180,30 @@ bool plthookHook(const PltTarget& target, const char* symbol, void* replacement,
     }
     size_t restored = 0;
     for (; restored < record.slots.size(); ++restored) {
-      if (!writeSlot(record.slots[restored], record.slots[restored].previous)) {
+      Slot& slot = record.slots[restored];
+      if (!slot.installed) continue;
+      if (*slot.addr != record.replacement) {
+        LOGW("pltHook %s: slot %p changed by another owner", symbol, slot.addr);
+        slot.installed = false;
+        continue;
+      }
+      if (!writeSlot(slot, slot.previous)) {
         LOGE("pltHook %s: cannot restore slot in %s", symbol,
              caller_path.c_str());
-        for (size_t i = 0; i <= restored; ++i)
-          writeSlot(record.slots[i], record.replacement);
+        bool rollback_failed = false;
+        for (size_t i = 0; i <= restored; ++i) {
+          Slot& rollback = record.slots[i];
+          if (!rollback.installed) continue;
+          if (writeSlot(rollback, record.replacement))
+            rollback.installed = true;
+          else
+            rollback_failed = true;
+        }
+        if (rollback_failed)
+          LOGW("pltHook: unhook rollback failed, keeping the record");
         return false;
       }
+      slot.installed = false;
     }
     void* const previous = record.original;
     g_records.erase(it);
@@ -190,18 +238,24 @@ bool plthookHook(const PltTarget& target, const char* symbol, void* replacement,
   for (; hooked < slots.size(); ++hooked) {
     if (!writeSlot(slots[hooked], replacement)) {
       LOGE("pltHook %s: cannot hook slot in %s", symbol, caller_path.c_str());
+      slots[hooked].installed = true;
       bool rollback_failed = false;
       for (size_t i = 0; i <= hooked; ++i) {
-        if (!writeSlot(slots[i], slots[i].previous)) rollback_failed = true;
+        if (!slots[i].installed) continue;
+        if (writeSlot(slots[i], slots[i].previous))
+          slots[i].installed = false;
+        else
+          rollback_failed = true;
       }
-      if (!rollback_failed) return false;
-
-      LOGW("pltHook %s: rollback failed in %s, keeping the record", symbol,
-           caller_path.c_str());
-      Record record{replacement, resolved, std::move(slots)};
-      g_records.emplace(key, std::move(record));
-      return true;
+      if (rollback_failed) {
+        LOGW("pltHook %s: rollback failed in %s, keeping recovery state",
+             symbol, caller_path.c_str());
+        g_recovery.emplace_back(
+            key, Record{replacement, resolved, std::move(slots)});
+      }
+      return false;
     }
+    slots[hooked].installed = true;
   }
 
   Record record{replacement, resolved, std::move(slots)};
