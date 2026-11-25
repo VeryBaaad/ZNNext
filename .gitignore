@@ -6,6 +6,7 @@ local.properties
 daemon/target/
 module/sign/target/
 loader/src/external/srx_hook/target/
+loader/src/external/srx_inline_hook/target/
 __pycache__/
 *.pyc
 .build

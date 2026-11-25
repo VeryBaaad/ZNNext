@@ -21,7 +21,7 @@ set(ZNN_INLINE_BACKENDS)
 set(ZNN_PLT_BACKENDS)
 if (ANDROID_ABI STREQUAL "arm64-v8a")
     set(ZNN_INLINE_BACKENDS
-        DOBBY SHADOWHOOK SANDHOOK AND64INLINEHOOK FRIDA_GUM HOOKZZ URHOOK WHALE BAAADHOOK YUKIIHOOK)
+        DOBBY SHADOWHOOK SRXINLINEHOOK SANDHOOK AND64INLINEHOOK FRIDA_GUM HOOKZZ URHOOK WHALE BAAADHOOK YUKIIHOOK)
     set(ZNN_PLT_BACKENDS
         LSPLT PLTI BYTEHOOK XHOOK PLTHOOK URHOOK BAAADHOOK YUKIPLT PROFILO SRXHOOK)
 elseif (ANDROID_ABI STREQUAL "armeabi-v7a")
@@ -31,7 +31,7 @@ elseif (ANDROID_ABI STREQUAL "x86")
     set(ZNN_INLINE_BACKENDS DOBBY FRIDA_GUM WHALE BAAADHOOK)
     set(ZNN_PLT_BACKENDS LSPLT PLTI BYTEHOOK XHOOK PLTHOOK BAAADHOOK YUKIPLT PROFILO)
 elseif (ANDROID_ABI STREQUAL "x86_64")
-    set(ZNN_INLINE_BACKENDS DOBBY FRIDA_GUM HOOKZZ WHALE BAAADHOOK)
+    set(ZNN_INLINE_BACKENDS DOBBY SRXINLINEHOOK FRIDA_GUM HOOKZZ WHALE BAAADHOOK)
     set(ZNN_PLT_BACKENDS LSPLT PLTI BYTEHOOK XHOOK PLTHOOK BAAADHOOK YUKIPLT PROFILO SRXHOOK)
 elseif (ANDROID_ABI STREQUAL "riscv64")
     set(ZNN_INLINE_BACKENDS RV64HOOK BAAADHOOK)
@@ -100,6 +100,7 @@ else ()
     list(APPEND ZNN_LOADER_SOURCES
         hook/backend/dobby.cpp
         hook/backend/shadowhook.cpp
+        hook/backend/srx_inline_hook.cpp
         hook/backend/sandhook.cpp
         hook/backend/rv64hook.cpp
         hook/backend/and64inlinehook.cpp
@@ -202,6 +203,9 @@ else ()
     if (TARGET srx_hook_ffi)
         set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} srx_hook_ffi)
     endif ()
+    if (TARGET srx_inline_hook_ffi)
+        set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} srx_inline_hook_ffi)
+    endif ()
     if (NOT ANDROID_ABI STREQUAL "riscv64")
         set(LOADER_LINK_LIBS ${LOADER_LINK_LIBS} c++abi unwind)
         target_link_options(zn_loader PRIVATE -Wl,--allow-multiple-definition)
@@ -217,6 +221,9 @@ if (TARGET frida_gum_build)
 endif ()
 if (TARGET srx_hook_ffi_archive)
     add_dependencies(zn_loader srx_hook_ffi_archive)
+endif ()
+if (TARGET srx_inline_hook_ffi_archive)
+    add_dependencies(zn_loader srx_inline_hook_ffi_archive)
 endif ()
 if (TARGET cxx::cxx)
     target_link_libraries(zn_loader PRIVATE cxx::cxx)

@@ -95,6 +95,7 @@ fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
             "baaadhook",
             "yukiihook",
             "sandhook",
+            "srxinlinehook",
             "disable",
         ],
         "armeabi-v7a" => vec![
@@ -113,6 +114,7 @@ fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
             "hookzz",
             "whale",
             "baaadhook",
+            "srxinlinehook",
             "disable",
         ],
         "x86" => vec!["dobby", "frida-gum", "whale", "baaadhook", "disable"],

@@ -52,6 +52,8 @@ bool inlineHook(void* target, void* replacement, void** original) {
       return backend::yukiihookHook(target, replacement, original);
     case InlineEngine::kSandHook:
       return backend::sandhookHook(target, replacement, original);
+    case InlineEngine::kSrxInlineHook:
+      return backend::srxinlinehookHook(target, replacement, original);
     case InlineEngine::kDisable:
       return false;
   }
@@ -84,6 +86,8 @@ bool inlineUnhook(void* target) {
       return backend::yukiihookUnhook(target);
     case InlineEngine::kSandHook:
       return backend::sandhookUnhook(target);
+    case InlineEngine::kSrxInlineHook:
+      return backend::srxinlinehookUnhook(target);
     case InlineEngine::kDisable:
       return false;
   }

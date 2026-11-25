@@ -212,6 +212,7 @@ endif ()
 
 if (NOT ZNN_LEGACY AND (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "x86_64"))
     add_subdirectory(srx_hook)
+    add_subdirectory(srx_inline_hook)
 endif ()
 
 add_subdirectory(lzma)

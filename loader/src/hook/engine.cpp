@@ -59,6 +59,8 @@ const char* inlineEngineName(InlineEngine e) {
       return "baaadhook";
     case InlineEngine::kYukiIhook:
       return "yukiihook";
+    case InlineEngine::kSrxInlineHook:
+      return "srxinlinehook";
     case InlineEngine::kDisable:
       return "disable";
   }
@@ -157,6 +159,12 @@ bool inlineEngineSupported(InlineEngine e) {
 #endif
     case InlineEngine::kYukiIhook:
 #ifdef ZNN_HAS_YUKIIHOOK
+      return true;
+#else
+      return false;
+#endif
+    case InlineEngine::kSrxInlineHook:
+#ifdef ZNN_HAS_SRXINLINEHOOK
       return true;
 #else
       return false;
@@ -282,6 +290,8 @@ bool parseInlineEngine(const char* name, InlineEngine* out) {
     e = InlineEngine::kBaaadHook;
   } else if (strcmp(name, "yukiihook") == 0) {
     e = InlineEngine::kYukiIhook;
+  } else if (strcmp(name, "srxinlinehook") == 0) {
+    e = InlineEngine::kSrxInlineHook;
   } else if (strcmp(name, "disable") == 0) {
     e = InlineEngine::kDisable;
   } else {
@@ -351,6 +361,9 @@ void ensureInlineEngineReady() {
       break;
     case InlineEngine::kFridaGum:
       ready = backend::fridaGumInit();
+      break;
+    case InlineEngine::kSrxInlineHook:
+      ready = backend::srxinlinehookInit();
       break;
     default:
       return;

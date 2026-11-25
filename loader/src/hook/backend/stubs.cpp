@@ -88,6 +88,12 @@ bool sandhookHook(void*, void*, void**) { return false; }
 bool sandhookUnhook(void*) { return false; }
 #endif
 
+#ifndef ZNN_HAS_SRXINLINEHOOK
+bool srxinlinehookInit() { return false; }
+bool srxinlinehookHook(void*, void*, void**) { return false; }
+bool srxinlinehookUnhook(void*) { return false; }
+#endif
+
 #ifndef ZNN_HAS_LSPLT
 bool lspltHook(const PltTarget&, const char*, void*, void**) { return false; }
 #endif

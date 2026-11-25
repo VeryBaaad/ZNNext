@@ -77,6 +77,10 @@ bool sandhookInit();
 bool sandhookHook(void* target, void* replacement, void** original);
 bool sandhookUnhook(void* target);
 
+bool srxinlinehookInit();
+bool srxinlinehookHook(void* target, void* replacement, void** original);
+bool srxinlinehookUnhook(void* target);
+
 bool lspltHook(const PltTarget& target, const char* symbol, void* replacement,
                void** original);
 
