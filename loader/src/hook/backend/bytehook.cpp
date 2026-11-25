@@ -44,8 +44,10 @@ std::map<std::string, void*> g_stubs;
 std::map<std::string, void*> g_originals;
 std::set<std::string> g_pending;
 
-std::string hookKey(const std::string& caller_path, const char* symbol) {
-  std::string key = caller_path;
+std::string hookKey(const PltTarget& target, const char* symbol) {
+  std::string key = std::to_string(target.base);
+  key += '\x01';
+  key += target.linker_path;
   key += '\x01';
   key += symbol;
   return key;
@@ -61,7 +63,8 @@ static void bytehookHooked(bytehook_stub_t stub, int status_code,
   (void)caller_path_name;
   (void)sym_name;
   (void)new_func;
-  if (status_code == 0 && prev_func) {
+  if ((status_code == 0 || status_code == BYTEHOOK_STATUS_CODE_ORIG_ADDR) &&
+      prev_func) {
     auto* out = static_cast<void**>(arg);
     if (out && *out == nullptr) *out = prev_func;
   }
@@ -83,11 +86,12 @@ bool bytehookInit() {
   return true;
 }
 
-bool bytehookHook(const std::string& caller_path, const char* symbol,
+bool bytehookHook(const PltTarget& target, const char* symbol,
                   void* replacement, void** original) {
   if (!bytehookInit()) return false;
 
-  const std::string key = hookKey(caller_path, symbol);
+  const std::string& caller_path = target.linker_path;
+  const std::string key = hookKey(target, symbol);
   {
     std::lock_guard<std::mutex> lk(g_mutex);
     auto stub_it = g_stubs.find(key);
@@ -151,9 +155,9 @@ bool bytehookHook(const std::string& caller_path, const char* symbol,
 
 bool bytehookInit() { return false; }
 
-bool bytehookHook(const std::string& caller_path, const char* symbol,
+bool bytehookHook(const PltTarget& target, const char* symbol,
                   void* replacement, void** original) {
-  (void)caller_path;
+  (void)target;
   (void)symbol;
   (void)replacement;
   (void)original;

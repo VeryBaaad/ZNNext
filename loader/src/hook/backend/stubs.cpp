@@ -59,7 +59,7 @@ bool hookzzUnhook(void*) { return false; }
 #ifndef ZNN_HAS_URHOOK
 bool urhookHook(void*, void*, void**) { return false; }
 bool urhookUnhook(void*) { return false; }
-bool urhookPltHook(const std::string&, uintptr_t, const char*, void*, void**) {
+bool urhookPltHook(const PltTarget&, const char*, void*, void**) {
   return false;
 }
 #endif
@@ -72,7 +72,7 @@ bool whaleUnhook(void*) { return false; }
 #ifndef ZNN_HAS_BAAADHOOK
 bool baaadhookHook(void*, void*, void**) { return false; }
 bool baaadhookUnhook(void*) { return false; }
-bool baaadhookPltHook(const std::string&, const char*, void*, void**) {
+bool baaadhookPltHook(const PltTarget&, const char*, void*, void**) {
   return false;
 }
 #endif
@@ -89,48 +89,40 @@ bool sandhookUnhook(void*) { return false; }
 #endif
 
 #ifndef ZNN_HAS_LSPLT
-bool lspltHook(dev_t, ino_t, const char*, void*, void**) { return false; }
+bool lspltHook(const PltTarget&, const char*, void*, void**) { return false; }
 #endif
 
 #ifndef ZNN_HAS_BYTEHOOK
 bool bytehookInit() { return false; }
-bool bytehookHook(const std::string&, const char*, void*, void**) {
+bool bytehookHook(const PltTarget&, const char*, void*, void**) {
   return false;
 }
 #endif
 
 #ifndef ZNN_HAS_XHOOK
-bool xhookHook(const std::string&, const char*, void*, void**) { return false; }
+bool xhookHook(const PltTarget&, const char*, void*, void**) { return false; }
 #endif
 
 #ifndef ZNN_HAS_PLTI
-bool pltiHook(const std::string&, uintptr_t, const char*, void*, void**) {
-  return false;
-}
+bool pltiHook(const PltTarget&, const char*, void*, void**) { return false; }
 #endif
 
 #ifndef ZNN_HAS_PLTHOOK
-bool plthookHook(const std::string&, uintptr_t, const char*, void*, void**) {
-  return false;
-}
+bool plthookHook(const PltTarget&, const char*, void*, void**) { return false; }
 #endif
 
 #ifndef ZNN_HAS_YUKIPLT
-bool yukipltHook(const std::string&, uintptr_t, const char*, void*, void**) {
-  return false;
-}
+bool yukipltHook(const PltTarget&, const char*, void*, void**) { return false; }
 #endif
 
 #ifndef ZNN_HAS_PROFILO
 bool profiloInit() { return false; }
-bool profiloHook(const std::string&, uintptr_t, const char*, void*, void**) {
-  return false;
-}
+bool profiloHook(const PltTarget&, const char*, void*, void**) { return false; }
 #endif
 
 #ifndef ZNN_HAS_SRXHOOK
 bool srxhookInit() { return false; }
-bool srxhookPltHook(const std::string&, uintptr_t, const char*, void*, void**) {
+bool srxhookPltHook(const PltTarget&, const char*, void*, void**) {
   return false;
 }
 #endif

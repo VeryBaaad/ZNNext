@@ -105,8 +105,9 @@ bool commitLocked() {
 
 }  // namespace
 
-bool xhookHook(const std::string& caller_path, const char* symbol,
-               void* replacement, void** original) {
+bool xhookHook(const PltTarget& target, const char* symbol, void* replacement,
+               void** original) {
+  const std::string& caller_path = target.maps_path;
   if (caller_path.empty() || !symbol || !replacement) return false;
 
   const std::string key = recordKey(caller_path, symbol);
@@ -151,9 +152,9 @@ bool xhookHook(const std::string& caller_path, const char* symbol,
 
 #else
 
-bool xhookHook(const std::string& caller_path, const char* symbol,
-               void* replacement, void** original) {
-  (void)caller_path;
+bool xhookHook(const PltTarget& target, const char* symbol, void* replacement,
+               void** original) {
+  (void)target;
   (void)symbol;
   (void)replacement;
   (void)original;

@@ -51,8 +51,10 @@ std::map<uintptr_t, InlineRecord> g_inline_records;
 std::mutex g_plt_mutex;
 std::map<std::string, PltRecord> g_plt_records;
 
-std::string pltRecordKey(const std::string& caller_path, const char* symbol) {
-  std::string key = caller_path;
+std::string pltRecordKey(const PltTarget& target, const char* symbol) {
+  std::string key = std::to_string(target.base);
+  key += '\x01';
+  key += target.linker_path;
   key += '\x01';
   key += symbol;
   return key;
@@ -128,11 +130,12 @@ bool urhookUnhook(void* target) {
   return true;
 }
 
-bool urhookPltHook(const std::string& caller_path, uintptr_t caller_base,
-                   const char* symbol, void* replacement, void** original) {
+bool urhookPltHook(const PltTarget& target, const char* symbol,
+                   void* replacement, void** original) {
+  const std::string& caller_path = target.linker_path;
   if (caller_path.empty() || !symbol || !replacement) return false;
 
-  const std::string key = pltRecordKey(caller_path, symbol);
+  const std::string key = pltRecordKey(target, symbol);
   std::lock_guard<std::mutex> lk(g_plt_mutex);
 
   const auto it = g_plt_records.find(key);
@@ -155,7 +158,7 @@ bool urhookPltHook(const std::string& caller_path, uintptr_t caller_base,
   }
 
   ur_plthook_t* handle = nullptr;
-  if (!openPltHandle(caller_path, caller_base, &handle)) return false;
+  if (!openPltHandle(caller_path, target.base, &handle)) return false;
 
   void* backup = nullptr;
   if (ur_plthook_hook_symbol(handle, symbol, replacement, &backup) !=
@@ -185,10 +188,9 @@ bool urhookUnhook(void* target) {
   return false;
 }
 
-bool urhookPltHook(const std::string& caller_path, uintptr_t caller_base,
-                   const char* symbol, void* replacement, void** original) {
-  (void)caller_path;
-  (void)caller_base;
+bool urhookPltHook(const PltTarget& target, const char* symbol,
+                   void* replacement, void** original) {
+  (void)target;
   (void)symbol;
   (void)replacement;
   (void)original;

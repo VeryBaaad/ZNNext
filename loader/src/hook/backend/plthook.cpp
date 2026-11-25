@@ -19,6 +19,7 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
+#include <dlfcn.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -57,8 +58,10 @@ struct Record {
 std::mutex g_mutex;
 std::map<std::string, Record> g_records;
 
-std::string recordKey(const std::string& path, const char* symbol) {
-  std::string key = path;
+std::string recordKey(const PltTarget& target, const char* symbol) {
+  std::string key = std::to_string(target.base);
+  key += '\x01';
+  key += target.maps_path;
   key += '\x01';
   key += symbol;
   return key;
@@ -130,11 +133,12 @@ bool openPlthook(const std::string& path, uintptr_t base, plthook_t** out) {
 
 }  // namespace
 
-bool plthookHook(const std::string& caller_path, uintptr_t caller_base,
-                 const char* symbol, void* replacement, void** original) {
+bool plthookHook(const PltTarget& target, const char* symbol, void* replacement,
+                 void** original) {
+  const std::string& caller_path = target.maps_path;
   if (caller_path.empty() || !symbol || !replacement) return false;
 
-  const std::string key = recordKey(caller_path, symbol);
+  const std::string key = recordKey(target, symbol);
   std::lock_guard<std::mutex> lk(g_mutex);
 
   if (auto it = g_records.find(key); it != g_records.end()) {
@@ -161,7 +165,7 @@ bool plthookHook(const std::string& caller_path, uintptr_t caller_base,
   }
 
   plthook_t* handle = nullptr;
-  if (!openPlthook(caller_path, caller_base, &handle)) return false;
+  if (!openPlthook(caller_path, target.base, &handle)) return false;
 
   std::vector<Slot> slots;
   const bool collected = collectSlots(handle, symbol, &slots);
@@ -183,7 +187,9 @@ bool plthookHook(const std::string& caller_path, uintptr_t caller_base,
     }
   }
 
-  Record record{replacement, slots.front().previous, std::move(slots)};
+  void* resolved = dlsym(RTLD_DEFAULT, symbol);
+  if (!resolved) resolved = slots.front().previous;
+  Record record{replacement, resolved, std::move(slots)};
   if (original) *original = record.original;
   g_records.emplace(key, std::move(record));
   return true;
@@ -191,10 +197,9 @@ bool plthookHook(const std::string& caller_path, uintptr_t caller_base,
 
 #else
 
-bool plthookHook(const std::string& caller_path, uintptr_t caller_base,
-                 const char* symbol, void* replacement, void** original) {
-  (void)caller_path;
-  (void)caller_base;
+bool plthookHook(const PltTarget& target, const char* symbol, void* replacement,
+                 void** original) {
+  (void)target;
   (void)symbol;
   (void)replacement;
   (void)original;

@@ -46,8 +46,10 @@ struct Record {
 std::mutex g_mutex;
 std::map<std::string, Record> g_records;
 
-std::string recordKey(const std::string& path, const char* symbol) {
-  std::string key = path;
+std::string recordKey(const PltTarget& target, const char* symbol) {
+  std::string key = std::to_string(target.base);
+  key += '\x01';
+  key += target.linker_path;
   key += '\x01';
   key += symbol;
   return key;
@@ -62,9 +64,10 @@ void restoreQuietly(const std::string& caller_path, const char* symbol,
   }
 }
 
-bool hookLocked(const std::string& caller_path, uintptr_t caller_base,
-                const char* symbol, void* replacement, void** original) {
-  const std::string key = recordKey(caller_path, symbol);
+bool hookLocked(const PltTarget& target, const char* symbol, void* replacement,
+                void** original) {
+  const std::string& caller_path = target.linker_path;
+  const std::string key = recordKey(target, symbol);
 
   if (const auto it = g_records.find(key); it != g_records.end()) {
     const Record& record = it->second;
@@ -93,14 +96,14 @@ bool hookLocked(const std::string& caller_path, uintptr_t caller_base,
   auto lib = facebook::linker::sharedLib(caller_path.c_str());
   if (!lib.success) {
     LOGE("pltHook: no linker data for %s (base %p)", caller_path.c_str(),
-         reinterpret_cast<void*>(caller_base));
+         reinterpret_cast<void*>(target.base));
     return false;
   }
   const uintptr_t load_bias = lib.data.getLoadBias();
-  if (caller_base != 0 && load_bias != 0 && load_bias != caller_base) {
+  if (target.base != 0 && load_bias != 0 && load_bias != target.base) {
     LOGE("pltHook: %s is loaded at %p, not %p", caller_path.c_str(),
          reinterpret_cast<void*>(load_bias),
-         reinterpret_cast<void*>(caller_base));
+         reinterpret_cast<void*>(target.base));
     return false;
   }
   auto* const elf_symbol = lib.data.find_symbol_by_name(symbol);
@@ -141,13 +144,14 @@ bool profiloInit() {
   return true;
 }
 
-bool profiloHook(const std::string& caller_path, uintptr_t caller_base,
-                 const char* symbol, void* replacement, void** original) {
+bool profiloHook(const PltTarget& target, const char* symbol, void* replacement,
+                 void** original) {
+  const std::string& caller_path = target.linker_path;
   if (caller_path.empty() || !symbol || !replacement) return false;
 
   std::lock_guard<std::mutex> lk(g_mutex);
   try {
-    return hookLocked(caller_path, caller_base, symbol, replacement, original);
+    return hookLocked(target, symbol, replacement, original);
   } catch (const std::exception& error) {
     LOGE("pltHook %s in %s failed: %s", symbol, caller_path.c_str(),
          error.what());
@@ -163,10 +167,9 @@ bool profiloHook(const std::string& caller_path, uintptr_t caller_base,
 
 bool profiloInit() { return false; }
 
-bool profiloHook(const std::string& caller_path, uintptr_t caller_base,
-                 const char* symbol, void* replacement, void** original) {
-  (void)caller_path;
-  (void)caller_base;
+bool profiloHook(const PltTarget& target, const char* symbol, void* replacement,
+                 void** original) {
+  (void)target;
   (void)symbol;
   (void)replacement;
   (void)original;

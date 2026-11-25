@@ -44,8 +44,10 @@ std::mutex g_mutex;
 bool g_ready = false;
 std::map<std::string, PltRecord> g_records;
 
-std::string recordKey(const std::string& caller_path, const char* symbol) {
-  std::string key = caller_path;
+std::string recordKey(const PltTarget& target, const char* symbol) {
+  std::string key = std::to_string(target.base);
+  key += '\x01';
+  key += target.linker_path;
   key += '\x01';
   key += symbol;
   return key;
@@ -70,12 +72,12 @@ bool srxhookInit() {
   return ensureReadyLocked();
 }
 
-bool srxhookPltHook(const std::string& caller_path, uintptr_t caller_base,
-                    const char* symbol, void* replacement, void** original) {
-  (void)caller_base;
+bool srxhookPltHook(const PltTarget& target, const char* symbol,
+                    void* replacement, void** original) {
+  const std::string& caller_path = target.linker_path;
   if (caller_path.empty() || !symbol || !replacement) return false;
 
-  const std::string key = recordKey(caller_path, symbol);
+  const std::string key = recordKey(target, symbol);
   std::lock_guard<std::mutex> lk(g_mutex);
 
   const auto it = g_records.find(key);
@@ -123,10 +125,9 @@ namespace znn::hook::backend {
 
 bool srxhookInit() { return false; }
 
-bool srxhookPltHook(const std::string& caller_path, uintptr_t caller_base,
-                    const char* symbol, void* replacement, void** original) {
-  (void)caller_path;
-  (void)caller_base;
+bool srxhookPltHook(const PltTarget& target, const char* symbol,
+                    void* replacement, void** original) {
+  (void)target;
   (void)symbol;
   (void)replacement;
   (void)original;

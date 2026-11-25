@@ -33,6 +33,7 @@ namespace znn::hook::backend {
 namespace {
 
 struct PltRecord {
+  std::string path;
   void* replacement = nullptr;
   void* original = nullptr;
 };
@@ -40,8 +41,10 @@ struct PltRecord {
 std::mutex g_plt_mutex;
 std::map<std::string, PltRecord> g_plt_records;
 
-std::string pltRecordKey(const std::string& caller_path, const char* symbol) {
-  std::string key = caller_path;
+std::string pltRecordKey(const PltTarget& target, const char* symbol) {
+  std::string key = std::to_string(target.base);
+  key += '\x01';
+  key += target.linker_path;
   key += '\x01';
   key += symbol;
   return key;
@@ -67,23 +70,24 @@ bool baaadhookUnhook(void* target) {
   return true;
 }
 
-bool baaadhookPltHook(const std::string& caller_path, const char* symbol,
+bool baaadhookPltHook(const PltTarget& target, const char* symbol,
                       void* replacement, void** original) {
+  const std::string& caller_path = target.linker_path;
   if (caller_path.empty() || !symbol || !replacement) return false;
 
-  const std::string key = pltRecordKey(caller_path, symbol);
+  const std::string key = pltRecordKey(target, symbol);
   std::lock_guard<std::mutex> lk(g_plt_mutex);
 
   if (const auto it = g_plt_records.find(key); it != g_plt_records.end()) {
     PltRecord& record = it->second;
     if (replacement != record.original) {
       LOGE("pltHook %s: %s is already hooked, unhook first", symbol,
-           caller_path.c_str());
+           record.path.c_str());
       return false;
     }
-    if (bh_plt_unhook(caller_path.c_str(), symbol, record.replacement) < 0) {
+    if (bh_plt_unhook(record.path.c_str(), symbol, record.replacement) < 0) {
       LOGE("pltHook %s: cannot restore slot in %s", symbol,
-           caller_path.c_str());
+           record.path.c_str());
       return false;
     }
     void* const previous = record.original;
@@ -107,7 +111,7 @@ bool baaadhookPltHook(const std::string& caller_path, const char* symbol,
     return false;
   }
 
-  g_plt_records.emplace(key, PltRecord{replacement, resolved});
+  g_plt_records.emplace(key, PltRecord{caller_path, replacement, resolved});
   if (original) *original = resolved;
   return true;
 }

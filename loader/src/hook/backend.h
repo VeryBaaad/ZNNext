@@ -23,10 +23,21 @@
 
 #include <sys/types.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
 namespace znn::hook::backend {
+
+struct PltTarget {
+  std::string maps_path;
+  std::string linker_path;
+  dev_t dev = 0;
+  ino_t inode = 0;
+  uintptr_t base = 0;
+  uintptr_t file_offset = 0;
+  size_t file_size = 0;
+};
 
 bool dobbyHook(void* target, void* replacement, void** original);
 bool dobbyUnhook(void* target);
@@ -65,37 +76,37 @@ bool sandhookInit();
 bool sandhookHook(void* target, void* replacement, void** original);
 bool sandhookUnhook(void* target);
 
-bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
+bool lspltHook(const PltTarget& target, const char* symbol, void* replacement,
                void** original);
 
 bool bytehookInit();
-bool bytehookHook(const std::string& caller_path, const char* symbol,
+bool bytehookHook(const PltTarget& target, const char* symbol,
                   void* replacement, void** original);
 
-bool xhookHook(const std::string& caller_path, const char* symbol,
-               void* replacement, void** original);
+bool xhookHook(const PltTarget& target, const char* symbol, void* replacement,
+               void** original);
 
-bool pltiHook(const std::string& caller_path, uintptr_t caller_base,
-              const char* symbol, void* replacement, void** original);
+bool pltiHook(const PltTarget& target, const char* symbol, void* replacement,
+              void** original);
 
-bool plthookHook(const std::string& caller_path, uintptr_t caller_base,
-                 const char* symbol, void* replacement, void** original);
+bool plthookHook(const PltTarget& target, const char* symbol, void* replacement,
+                 void** original);
 
-bool urhookPltHook(const std::string& caller_path, uintptr_t caller_base,
-                   const char* symbol, void* replacement, void** original);
+bool urhookPltHook(const PltTarget& target, const char* symbol,
+                   void* replacement, void** original);
 
-bool baaadhookPltHook(const std::string& caller_path, const char* symbol,
+bool baaadhookPltHook(const PltTarget& target, const char* symbol,
                       void* replacement, void** original);
 
-bool yukipltHook(const std::string& caller_path, uintptr_t caller_base,
-                 const char* symbol, void* replacement, void** original);
+bool yukipltHook(const PltTarget& target, const char* symbol, void* replacement,
+                 void** original);
 
 bool profiloInit();
-bool profiloHook(const std::string& caller_path, uintptr_t caller_base,
-                 const char* symbol, void* replacement, void** original);
+bool profiloHook(const PltTarget& target, const char* symbol, void* replacement,
+                 void** original);
 
 bool srxhookInit();
-bool srxhookPltHook(const std::string& caller_path, uintptr_t caller_base,
-                    const char* symbol, void* replacement, void** original);
+bool srxhookPltHook(const PltTarget& target, const char* symbol,
+                    void* replacement, void** original);
 
 }  // namespace znn::hook::backend

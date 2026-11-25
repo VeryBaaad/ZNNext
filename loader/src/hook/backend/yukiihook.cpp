@@ -104,13 +104,6 @@ bool patchWindowFree(uintptr_t address) {
   return true;
 }
 
-bool singleThreaded(const char* what, void* target) {
-  if (yuki::ihook::single_threaded_process()) return true;
-  LOGE("inline%s %p refused: this process has more than one thread", what,
-       target);
-  return false;
-}
-
 }  // namespace
 
 bool yukiihookHook(void* target, void* replacement, void** original) {
@@ -124,7 +117,6 @@ bool yukiihookHook(void* target, void* replacement, void** original) {
     return false;
   }
   if (!patchWindowFree(address)) return false;
-  if (!singleThreaded("Hook", target)) return false;
 
   yuki::ihook::Hook& hook = g_records[address];
   yuki::ihook::a64::Error reason = yuki::ihook::a64::Error::None;
@@ -152,8 +144,6 @@ bool yukiihookUnhook(void* target) {
     LOGE("inlineUnhook %p failed: not hooked", target);
     return false;
   }
-  if (!singleThreaded("Unhook", target)) return false;
-
   if (!yuki::ihook::uninstall(&it->second)) {
     LOGE("inlineUnhook %p failed", target);
     return false;

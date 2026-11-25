@@ -50,13 +50,24 @@ std::mutex g_mutex;
 std::map<std::string, Record> g_records;
 std::map<std::string, Pending> g_pending;
 
-std::string recordKey(dev_t dev, ino_t inode, const char* symbol) {
-  std::string key = std::to_string(static_cast<unsigned long long>(dev));
+std::string recordKey(const PltTarget& target, const char* symbol) {
+  std::string key = std::to_string(static_cast<unsigned long long>(target.dev));
   key += ':';
-  key += std::to_string(static_cast<unsigned long long>(inode));
+  key += std::to_string(static_cast<unsigned long long>(target.inode));
+  key += ':';
+  key += std::to_string(target.base);
   key += '\x01';
   key += symbol;
   return key;
+}
+
+bool registerHook(const PltTarget& target, const char* symbol, void* callback,
+                  void** backup) {
+  if (target.file_size != 0)
+    return lsplt::RegisterHook(target.dev, target.inode, target.file_offset,
+                               target.file_size, symbol, callback, backup);
+  return lsplt::RegisterHook(target.dev, target.inode, symbol, callback,
+                             backup);
 }
 
 void reconcileLocked() {
@@ -104,14 +115,14 @@ bool finishPending(std::map<std::string, Pending>::iterator pending,
 
 }  // namespace
 
-bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
+bool lspltHook(const PltTarget& target, const char* symbol, void* replacement,
                void** original) {
   if (!symbol) return false;
 
   std::lock_guard<std::mutex> lk(g_mutex);
   reconcileLocked();
 
-  const std::string key = recordKey(dev, inode, symbol);
+  const std::string key = recordKey(target, symbol);
   auto record = g_records.find(key);
   if (record != g_records.end()) {
     void* const previous = record->second.original;
@@ -128,8 +139,8 @@ bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
       state.restoring = true;
       state.slot = std::move(slot);
       pending = g_pending.emplace(key, std::move(state)).first;
-      if (!lsplt::RegisterHook(dev, inode, symbol, previous,
-                               &pending->second.slot->value)) {
+      if (!registerHook(target, symbol, previous,
+                        &pending->second.slot->value)) {
         g_pending.erase(pending);
         LOGE("pltHook %s: RegisterHook failed", symbol);
         return false;
@@ -161,8 +172,8 @@ bool lspltHook(dev_t dev, ino_t inode, const char* symbol, void* replacement,
   state.restoring = false;
   state.slot = std::move(slot);
   pending = g_pending.emplace(key, std::move(state)).first;
-  if (!lsplt::RegisterHook(dev, inode, symbol, replacement,
-                           &pending->second.slot->value)) {
+  if (!registerHook(target, symbol, replacement,
+                    &pending->second.slot->value)) {
     g_pending.erase(pending);
     LOGE("pltHook %s: RegisterHook failed", symbol);
     return false;

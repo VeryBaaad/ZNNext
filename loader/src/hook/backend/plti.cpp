@@ -45,8 +45,10 @@ bool g_initialized = false;
 struct plti g_context;
 std::map<std::string, Record> g_records;
 
-std::string recordKey(const std::string& path, const char* symbol) {
-  std::string key = path;
+std::string recordKey(const PltTarget& target, const char* symbol) {
+  std::string key = std::to_string(target.base);
+  key += '\x01';
+  key += target.linker_path;
   key += '\x01';
   key += symbol;
   return key;
@@ -71,11 +73,12 @@ bool addLibraryLocked(const std::string& path, uintptr_t base) {
 
 }  // namespace
 
-bool pltiHook(const std::string& caller_path, uintptr_t caller_base,
-              const char* symbol, void* replacement, void** original) {
+bool pltiHook(const PltTarget& target, const char* symbol, void* replacement,
+              void** original) {
+  const std::string& caller_path = target.linker_path;
   if (caller_path.empty() || !symbol || !replacement) return false;
 
-  const std::string key = recordKey(caller_path, symbol);
+  const std::string key = recordKey(target, symbol);
   std::lock_guard<std::mutex> lk(g_mutex);
   if (!ensureContextLocked()) return false;
 
@@ -84,13 +87,13 @@ bool pltiHook(const std::string& caller_path, uintptr_t caller_base,
     Record& rec = it->second;
     if (replacement != rec.original) {
       LOGE("pltHook %s: %s is already hooked, unhook first", symbol,
-           caller_path.c_str());
+           rec.path.c_str());
       return false;
     }
     void* restore = rec.original;
-    if (!plti_remove_hook(&g_context, caller_path.c_str(), symbol, &restore)) {
+    if (!plti_remove_hook(&g_context, rec.path.c_str(), symbol, &restore)) {
       LOGE("pltHook %s: plti_remove_hook failed for %s", symbol,
-           caller_path.c_str());
+           rec.path.c_str());
       return false;
     }
     g_records.erase(it);
@@ -98,7 +101,7 @@ bool pltiHook(const std::string& caller_path, uintptr_t caller_base,
     return true;
   }
 
-  if (!addLibraryLocked(caller_path, caller_base)) return false;
+  if (!addLibraryLocked(caller_path, target.base)) return false;
 
   void* backup = nullptr;
   if (!plti_add_hook(&g_context, caller_path.c_str(), symbol, replacement,
