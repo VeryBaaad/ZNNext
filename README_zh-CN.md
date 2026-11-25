@@ -132,6 +132,7 @@ v[Major].[Minor].[Patch][.Revision]
 - [BaaadHook](https://github.com/VeryBaaad/BaaadHook): inline/plt hook
 - [YukiZygisk](https://github.com/Rouyashiki/YukiZygisk): A new kernel-level Zygisk implementation designed to explore better, cleaner, and more flexible ways of injecting.
 - [SandHook](https://github.com/asLody/SandHook): Android ART Hook/Native Inline Hook/Single Instruction Hook - support 4.4 - 11.0 32/64 bit - Xposed API Compat
+- [srx_inline_hook](https://github.com/Kindness-Kismet/srx_inline_hook): Rust inline hook
 
 </details>
 

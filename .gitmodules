@@ -64,3 +64,6 @@
 [submodule "loader/src/external/sandhook"]
 	path = loader/src/external/sandhook
 	url = https://github.com/asLody/SandHook.git
+[submodule "loader/src/external/srx_inline_hook/srx_inline_hook"]
+	path = loader/src/external/srx_inline_hook/srx_inline_hook
+	url = https://github.com/Kindness-Kismet/srx_inline_hook.git
