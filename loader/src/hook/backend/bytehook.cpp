@@ -19,10 +19,13 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
+#include <atomic>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "hook/backend.h"
 #include "log.h"
@@ -37,11 +40,19 @@ namespace znn::hook::backend {
 
 namespace {
 
+struct HookContext {
+  std::atomic<void*> original{nullptr};
+  std::atomic<int> status{BYTEHOOK_STATUS_CODE_UNINIT};
+  std::atomic<void**> caller_output{nullptr};
+};
+
 std::once_flag g_init_once;
 int g_init_result = -1;
 std::mutex g_mutex;
 std::map<std::string, void*> g_stubs;
 std::map<std::string, void*> g_originals;
+std::map<std::string, std::unique_ptr<HookContext>> g_contexts;
+std::vector<std::unique_ptr<HookContext>> g_retired_contexts;
 std::set<std::string> g_pending;
 
 std::string hookKey(const PltTarget& target, const char* symbol) {
@@ -63,10 +74,20 @@ static void bytehookHooked(bytehook_stub_t stub, int status_code,
   (void)caller_path_name;
   (void)sym_name;
   (void)new_func;
-  if ((status_code == 0 || status_code == BYTEHOOK_STATUS_CODE_ORIG_ADDR) &&
-      prev_func) {
-    auto* out = static_cast<void**>(arg);
-    if (out && *out == nullptr) *out = prev_func;
+  if (!arg) return;
+  auto* context = static_cast<HookContext*>(arg);
+  if (status_code == BYTEHOOK_STATUS_CODE_ORIG_ADDR) {
+    void* expected = nullptr;
+    if (prev_func &&
+        context->original.compare_exchange_strong(expected, prev_func)) {
+      if (void** output = context->caller_output.load()) *output = prev_func;
+    }
+    return;
+  }
+  context->status.store(status_code, std::memory_order_release);
+  if (status_code == BYTEHOOK_STATUS_CODE_OK && prev_func) {
+    void* expected = nullptr;
+    context->original.compare_exchange_strong(expected, prev_func);
   }
 }
 }
@@ -103,6 +124,10 @@ bool bytehookHook(const PltTarget& target, const char* symbol,
           return false;
         }
         if (original) *original = g_originals[key];
+        if (auto context = g_contexts.find(key); context != g_contexts.end()) {
+          g_retired_contexts.push_back(std::move(context->second));
+          g_contexts.erase(context);
+        }
         g_originals.erase(key);
         g_stubs.erase(stub_it);
         return true;
@@ -118,36 +143,45 @@ bool bytehookHook(const PltTarget& target, const char* symbol,
     g_pending.insert(key);
   }
 
-  void* backup = nullptr;
+  auto context = std::make_unique<HookContext>();
+  context->caller_output.store(original);
   const bytehook_stub_t stub =
       bytehook_hook_single(caller_path.c_str(), nullptr, symbol, replacement,
-                           bytehookHooked, &backup);
+                           bytehookHooked, context.get());
   if (!stub) {
     {
       std::lock_guard<std::mutex> lk(g_mutex);
       g_pending.erase(key);
+      g_retired_contexts.push_back(std::move(context));
     }
     LOGE("pltHook %s: bytehook_hook_single failed for %s", symbol,
          caller_path.c_str());
     return false;
   }
-  if (!backup) {
+
+  context->caller_output.store(nullptr);
+  void* resolved = context->original.load(std::memory_order_acquire);
+  const int status = context->status.load(std::memory_order_acquire);
+  if (status != BYTEHOOK_STATUS_CODE_OK || !resolved) {
     LOGE("pltHook %s: no matching relocation in %s", symbol,
          caller_path.c_str());
     bytehook_unhook(stub);
     {
       std::lock_guard<std::mutex> lk(g_mutex);
       g_pending.erase(key);
+      g_retired_contexts.push_back(std::move(context));
     }
     return false;
   }
+
   {
     std::lock_guard<std::mutex> lk(g_mutex);
     g_pending.erase(key);
     g_stubs[key] = stub;
-    g_originals[key] = backup;
+    g_originals[key] = resolved;
+    g_contexts[key] = std::move(context);
   }
-  if (original) *original = backup;
+  if (original) *original = resolved;
   return true;
 }
 

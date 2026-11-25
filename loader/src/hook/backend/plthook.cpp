@@ -19,7 +19,6 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-#include <dlfcn.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -153,7 +152,7 @@ bool plthookHook(const PltTarget& target, const char* symbol, void* replacement,
       if (!writeSlot(record.slots[restored], record.slots[restored].previous)) {
         LOGE("pltHook %s: cannot restore slot in %s", symbol,
              caller_path.c_str());
-        for (size_t i = 0; i < restored; ++i)
+        for (size_t i = 0; i <= restored; ++i)
           writeSlot(record.slots[i], record.replacement);
         return false;
       }
@@ -181,15 +180,13 @@ bool plthookHook(const PltTarget& target, const char* symbol, void* replacement,
   for (; hooked < slots.size(); ++hooked) {
     if (!writeSlot(slots[hooked], replacement)) {
       LOGE("pltHook %s: cannot hook slot in %s", symbol, caller_path.c_str());
-      for (size_t i = 0; i < hooked; ++i)
+      for (size_t i = 0; i <= hooked; ++i)
         writeSlot(slots[i], slots[i].previous);
       return false;
     }
   }
 
-  void* resolved = dlsym(RTLD_DEFAULT, symbol);
-  if (!resolved) resolved = slots.front().previous;
-  Record record{replacement, resolved, std::move(slots)};
+  Record record{replacement, slots.front().previous, std::move(slots)};
   if (original) *original = record.original;
   g_records.emplace(key, std::move(record));
   return true;

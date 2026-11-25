@@ -44,9 +44,15 @@ struct Record {
   void* original = nullptr;
 };
 
+struct Recovery {
+  yukiplt_c_handle handle{};
+  std::unique_ptr<void*> original_storage;
+};
+
 std::mutex g_mutex;
 std::map<std::string, Record> g_records;
-std::vector<yukiplt_c_handle> g_recovery;
+std::vector<Recovery> g_recovery;
+std::vector<std::unique_ptr<void*>> g_retired_storage;
 
 std::string recordKey(const PltTarget& target, const char* symbol) {
   std::string key = std::to_string(target.base);
@@ -59,10 +65,12 @@ std::string recordKey(const PltTarget& target, const char* symbol) {
 
 void recoverLocked() {
   for (auto it = g_recovery.begin(); it != g_recovery.end();) {
-    const yukiplt_c_error error = yukiplt_c_unhook(&*it, nullptr, 0);
+    const yukiplt_c_error error = yukiplt_c_unhook(&it->handle, nullptr, 0);
     if (error.code == YUKIPLT_C_SUCCESS ||
         error.code == YUKIPLT_C_IMAGE_INVALIDATED) {
       LOGW("pltHook: recovered a retained YukiPLT handle");
+      if (it->original_storage)
+        g_retired_storage.push_back(std::move(it->original_storage));
       it = g_recovery.erase(it);
       continue;
     }
@@ -173,6 +181,8 @@ bool yukipltHook(const PltTarget& target, const char* symbol, void* replacement,
       LOGW("pltHook %s: %s is no longer loaded, dropping the hook", symbol,
            caller_path.c_str());
     void* const previous = record.original;
+    if (record.original_storage)
+      g_retired_storage.push_back(std::move(record.original_storage));
     g_records.erase(it);
     if (original) *original = previous;
     return true;
@@ -182,21 +192,27 @@ bool yukipltHook(const PltTarget& target, const char* symbol, void* replacement,
   std::string image_path;
   if (!findImage(target, &image, &image_path)) return false;
 
-  auto storage = std::make_unique<void*>(nullptr);
+  std::unique_ptr<void*> private_storage;
+  void** storage = original;
+  if (!storage) {
+    private_storage = std::make_unique<void*>(nullptr);
+    storage = private_storage.get();
+  }
+
   yukiplt_c_handle handle{};
   const yukiplt_c_error error =
-      hookImage(image, image_path, symbol, replacement, storage.get(), &handle);
+      hookImage(image, image_path, symbol, replacement, storage, &handle);
   if (error.code != YUKIPLT_C_SUCCESS) {
     if (handle.token != 0) {
       if (error.code == YUKIPLT_C_INDETERMINATE) {
-        g_recovery.push_back(handle);
+        g_recovery.push_back(Recovery{handle, std::move(private_storage)});
         LOGE("pltHook %s in %s: %s, retained the handle for recovery", symbol,
              caller_path.c_str(), yukiplt_c_error_name(error.code));
       } else {
         const yukiplt_c_error cleanup = yukiplt_c_unhook(&handle, nullptr, 0);
         if (cleanup.code != YUKIPLT_C_SUCCESS &&
             cleanup.code != YUKIPLT_C_IMAGE_INVALIDATED) {
-          g_recovery.push_back(handle);
+          g_recovery.push_back(Recovery{handle, std::move(private_storage)});
           LOGE("pltHook %s in %s: cleanup failed, retained the handle", symbol,
                caller_path.c_str());
         }
@@ -208,11 +224,11 @@ bool yukipltHook(const PltTarget& target, const char* symbol, void* replacement,
     return false;
   }
 
-  void* const resolved = yukiplt_c_load_original(storage.get());
+  void* const resolved = yukiplt_c_load_original(storage);
   Record record;
   record.handle = handle;
   record.original = resolved;
-  record.original_storage = std::move(storage);
+  record.original_storage = std::move(private_storage);
   g_records.emplace(key, std::move(record));
   if (original) *original = resolved;
   return true;

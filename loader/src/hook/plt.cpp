@@ -89,20 +89,18 @@ std::string linkerPathForBase(uintptr_t base) {
 }
 
 void fileRangeForTarget(const std::vector<MapEntry>& maps,
-                        const MapEntry& entry, uintptr_t load_base,
+                        const MapEntry& entry, uintptr_t file_tag,
                         uintptr_t* file_offset, size_t* file_size) {
   *file_offset = entry.offset;
   uintptr_t file_end = 0;
   for (const auto& m : maps) {
     if (m.dev != entry.dev || m.inode != entry.inode) continue;
-    if (m.start < m.offset || m.start - m.offset != load_base) continue;
-    if (m.end < load_base) continue;
-    const uintptr_t mapping_end = m.end - load_base;
+    if (m.start < m.offset || m.start - m.offset != file_tag) continue;
+    if (m.offset < entry.offset) continue;
+    const uintptr_t mapping_end = (m.offset - entry.offset) + (m.end - m.start);
     if (mapping_end > file_end) file_end = mapping_end;
   }
-  *file_size = file_end > *file_offset
-                   ? static_cast<size_t>(file_end - *file_offset)
-                   : 0;
+  *file_size = static_cast<size_t>(file_end);
 }
 
 }  // namespace
@@ -124,17 +122,19 @@ bool pltHook(void* base, const char* symbol, void* replacement,
     LOGE("pltHook %s: base %p has no path in maps", symbol, base);
     return false;
   }
-  const uintptr_t load_base =
-      hit->start >= hit->offset ? hit->start - hit->offset : entry->start;
-  const std::string linker_path = linkerPathForBase(load_base);
+  const uintptr_t image_base = entry->start;
+  const uintptr_t file_tag = entry->start >= entry->offset
+                                 ? entry->start - entry->offset
+                                 : entry->start;
+  const std::string linker_path = linkerPathForBase(image_base);
 
   backend::PltTarget target;
   target.maps_path = entry->path;
   target.linker_path = linker_path.empty() ? entry->path : linker_path;
   target.dev = entry->dev;
   target.inode = entry->inode;
-  target.base = load_base;
-  fileRangeForTarget(maps, *entry, load_base, &target.file_offset,
+  target.base = image_base;
+  fileRangeForTarget(maps, *entry, file_tag, &target.file_offset,
                      &target.file_size);
 
   LOGI("pltHook base=%p symbol=%s path=%s linker=%s dev=%llu inode=%llu", base,
