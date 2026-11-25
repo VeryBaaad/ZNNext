@@ -180,11 +180,9 @@ bool yukipltHook(const PltTarget& target, const char* symbol, void* replacement,
     if (error.code == YUKIPLT_C_IMAGE_INVALIDATED)
       LOGW("pltHook %s: %s is no longer loaded, dropping the hook", symbol,
            caller_path.c_str());
-    void* const previous = record.original;
     if (record.original_storage)
       g_retired_storage.push_back(std::move(record.original_storage));
     g_records.erase(it);
-    if (original) *original = previous;
     return true;
   }
 
@@ -203,19 +201,35 @@ bool yukipltHook(const PltTarget& target, const char* symbol, void* replacement,
   const yukiplt_c_error error =
       hookImage(image, image_path, symbol, replacement, storage, &handle);
   if (error.code != YUKIPLT_C_SUCCESS) {
-    if (handle.token != 0) {
-      if (error.code == YUKIPLT_C_INDETERMINATE) {
+    if (handle.token != 0 && error.code == YUKIPLT_C_INDETERMINATE) {
+      void* const partial = yukiplt_c_load_original(storage);
+      if (partial) {
+        Record record;
+        record.handle = handle;
+        record.original = partial;
+        record.original_storage = std::move(private_storage);
+        g_records.emplace(key, std::move(record));
+        LOGE("pltHook %s in %s: %s, reporting installed to keep ownership",
+             symbol, caller_path.c_str(), yukiplt_c_error_name(error.code));
+        return true;
+      }
+      const yukiplt_c_error cleanup = yukiplt_c_unhook(&handle, nullptr, 0);
+      if (cleanup.code != YUKIPLT_C_SUCCESS &&
+          cleanup.code != YUKIPLT_C_IMAGE_INVALIDATED) {
         g_recovery.push_back(Recovery{handle, std::move(private_storage)});
-        LOGE("pltHook %s in %s: %s, retained the handle for recovery", symbol,
-             caller_path.c_str(), yukiplt_c_error_name(error.code));
-      } else {
-        const yukiplt_c_error cleanup = yukiplt_c_unhook(&handle, nullptr, 0);
-        if (cleanup.code != YUKIPLT_C_SUCCESS &&
-            cleanup.code != YUKIPLT_C_IMAGE_INVALIDATED) {
-          g_recovery.push_back(Recovery{handle, std::move(private_storage)});
-          LOGE("pltHook %s in %s: cleanup failed, retained the handle", symbol,
-               caller_path.c_str());
-        }
+      }
+      LOGE("pltHook %s in %s failed: %s", symbol, caller_path.c_str(),
+           yukiplt_c_error_name(error.code));
+      return false;
+    }
+
+    if (handle.token != 0) {
+      const yukiplt_c_error cleanup = yukiplt_c_unhook(&handle, nullptr, 0);
+      if (cleanup.code != YUKIPLT_C_SUCCESS &&
+          cleanup.code != YUKIPLT_C_IMAGE_INVALIDATED) {
+        g_recovery.push_back(Recovery{handle, std::move(private_storage)});
+        LOGE("pltHook %s in %s: cleanup failed, retained the handle", symbol,
+             caller_path.c_str());
       }
     } else {
       LOGE("pltHook %s in %s failed: %s", symbol, caller_path.c_str(),
@@ -230,7 +244,6 @@ bool yukipltHook(const PltTarget& target, const char* symbol, void* replacement,
   record.original = resolved;
   record.original_storage = std::move(private_storage);
   g_records.emplace(key, std::move(record));
-  if (original) *original = resolved;
   return true;
 }
 

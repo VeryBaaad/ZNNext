@@ -77,17 +77,16 @@ static void bytehookHooked(bytehook_stub_t stub, int status_code,
   if (!arg) return;
   auto* context = static_cast<HookContext*>(arg);
   if (status_code == BYTEHOOK_STATUS_CODE_ORIG_ADDR) {
-    void* expected = nullptr;
-    if (prev_func &&
-        context->original.compare_exchange_strong(expected, prev_func)) {
+    if (prev_func) {
+      context->original.store(prev_func, std::memory_order_release);
       if (void** output = context->caller_output.load()) *output = prev_func;
     }
     return;
   }
   context->status.store(status_code, std::memory_order_release);
   if (status_code == BYTEHOOK_STATUS_CODE_OK && prev_func) {
-    void* expected = nullptr;
-    context->original.compare_exchange_strong(expected, prev_func);
+    context->original.store(prev_func, std::memory_order_release);
+    if (void** output = context->caller_output.load()) *output = prev_func;
   }
 }
 }
@@ -117,16 +116,19 @@ bool bytehookHook(const PltTarget& target, const char* symbol,
     std::lock_guard<std::mutex> lk(g_mutex);
     auto stub_it = g_stubs.find(key);
     if (stub_it != g_stubs.end()) {
+      void* current = g_originals[key];
+      auto context_it = g_contexts.find(key);
+      if (context_it != g_contexts.end())
+        current = context_it->second->original.load(std::memory_order_acquire);
       // unhook by passing original
-      if (replacement == g_originals[key]) {
+      if (replacement == current) {
         if (bytehook_unhook(stub_it->second) != 0) {
           LOGE("pltHook %s: bytehook_unhook failed", symbol);
           return false;
         }
-        if (original) *original = g_originals[key];
-        if (auto context = g_contexts.find(key); context != g_contexts.end()) {
-          g_retired_contexts.push_back(std::move(context->second));
-          g_contexts.erase(context);
+        if (context_it != g_contexts.end()) {
+          g_retired_contexts.push_back(std::move(context_it->second));
+          g_contexts.erase(context_it);
         }
         g_originals.erase(key);
         g_stubs.erase(stub_it);
@@ -159,13 +161,23 @@ bool bytehookHook(const PltTarget& target, const char* symbol,
     return false;
   }
 
-  context->caller_output.store(nullptr);
   void* resolved = context->original.load(std::memory_order_acquire);
   const int status = context->status.load(std::memory_order_acquire);
   if (status != BYTEHOOK_STATUS_CODE_OK || !resolved) {
     LOGE("pltHook %s: no matching relocation in %s", symbol,
          caller_path.c_str());
-    bytehook_unhook(stub);
+    if (bytehook_unhook(stub) != 0) {
+      LOGE("pltHook %s: bytehook_unhook failed after %s", symbol,
+           "installation failure");
+      if (resolved) {
+        std::lock_guard<std::mutex> lk(g_mutex);
+        g_pending.erase(key);
+        g_stubs[key] = stub;
+        g_originals[key] = resolved;
+        g_contexts[key] = std::move(context);
+        return true;
+      }
+    }
     {
       std::lock_guard<std::mutex> lk(g_mutex);
       g_pending.erase(key);
@@ -181,7 +193,6 @@ bool bytehookHook(const PltTarget& target, const char* symbol,
     g_originals[key] = resolved;
     g_contexts[key] = std::move(context);
   }
-  if (original) *original = resolved;
   return true;
 }
 

@@ -176,18 +176,35 @@ bool plthookHook(const PltTarget& target, const char* symbol, void* replacement,
     return false;
   }
 
+  void* resolved = slots.front().previous;
+  for (const Slot& slot : slots) {
+    if (slot.previous != resolved) {
+      LOGE("pltHook %s: slots in %s have different originals", symbol,
+           caller_path.c_str());
+      return false;
+    }
+  }
+  if (original) *original = resolved;
+
   size_t hooked = 0;
   for (; hooked < slots.size(); ++hooked) {
     if (!writeSlot(slots[hooked], replacement)) {
       LOGE("pltHook %s: cannot hook slot in %s", symbol, caller_path.c_str());
-      for (size_t i = 0; i <= hooked; ++i)
-        writeSlot(slots[i], slots[i].previous);
-      return false;
+      bool rollback_failed = false;
+      for (size_t i = 0; i <= hooked; ++i) {
+        if (!writeSlot(slots[i], slots[i].previous)) rollback_failed = true;
+      }
+      if (!rollback_failed) return false;
+
+      LOGW("pltHook %s: rollback failed in %s, keeping the record", symbol,
+           caller_path.c_str());
+      Record record{replacement, resolved, std::move(slots)};
+      g_records.emplace(key, std::move(record));
+      return true;
     }
   }
 
-  Record record{replacement, slots.front().previous, std::move(slots)};
-  if (original) *original = record.original;
+  Record record{replacement, resolved, std::move(slots)};
   g_records.emplace(key, std::move(record));
   return true;
 }

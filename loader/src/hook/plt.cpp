@@ -25,6 +25,7 @@
 #include <sys/mman.h>
 
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -45,59 +46,144 @@ const MapEntry* findMapping(const std::vector<MapEntry>& maps, uintptr_t base) {
   return nullptr;
 }
 
-const MapEntry* firstMappingOfFile(const std::vector<MapEntry>& maps,
-                                   const MapEntry& hit) {
-  if (hit.start < hit.offset) return &hit;
-  const uintptr_t load_base = hit.start - hit.offset;
-  const MapEntry* first_readable = nullptr;
+struct ElfTarget {
+  uintptr_t header = 0;
+  uintptr_t load_bias = 0;
+  const MapEntry* mapping = nullptr;
+  const ElfW(Phdr) * phdr = nullptr;
+  size_t phnum = 0;
+};
+
+bool readElfTarget(uintptr_t candidate, const std::vector<MapEntry>& maps,
+                   uintptr_t reference, ElfTarget* target) {
+  const MapEntry* mapping = nullptr;
+  for (const auto& m : maps) {
+    if (m.inode == 0 || !(m.perms & PROT_READ)) continue;
+    if (candidate < m.start || candidate >= m.end) continue;
+    if (m.end - candidate < sizeof(ElfW(Ehdr))) continue;
+    mapping = &m;
+    break;
+  }
+  if (!mapping) return false;
+
+  const auto* ehdr = reinterpret_cast<const ElfW(Ehdr)*>(candidate);
+  if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0) return false;
+  if (ehdr->e_ident[EI_CLASS] != (sizeof(void*) == 8 ? ELFCLASS64 : ELFCLASS32))
+    return false;
+  if (ehdr->e_type != ET_DYN && ehdr->e_type != ET_EXEC) return false;
+  if (ehdr->e_phentsize != sizeof(ElfW(Phdr)) || ehdr->e_phnum == 0 ||
+      ehdr->e_phnum > 4096)
+    return false;
+
+  uintptr_t phdr_address = 0;
+  if (__builtin_add_overflow(candidate, static_cast<uintptr_t>(ehdr->e_phoff),
+                             &phdr_address))
+    return false;
+  uintptr_t phdr_size = 0;
+  if (__builtin_mul_overflow(static_cast<uintptr_t>(ehdr->e_phnum),
+                             sizeof(ElfW(Phdr)), &phdr_size))
+    return false;
+  if (phdr_address < mapping->start || phdr_address > mapping->end)
+    return false;
+  if (phdr_size > mapping->end - phdr_address) return false;
+
+  const auto* phdr = reinterpret_cast<const ElfW(Phdr)*>(phdr_address);
+  uintptr_t load_bias = 0;
+  bool has_base = false;
+  for (size_t i = 0; i < ehdr->e_phnum; ++i) {
+    if (phdr[i].p_type != PT_LOAD || phdr[i].p_offset != 0) continue;
+    if (candidate < phdr[i].p_vaddr) return false;
+    load_bias = candidate - phdr[i].p_vaddr;
+    has_base = true;
+    break;
+  }
+  if (!has_base) return false;
+
+  bool contains_reference = false;
+  for (size_t i = 0; i < ehdr->e_phnum; ++i) {
+    if (phdr[i].p_type != PT_LOAD) continue;
+    uintptr_t start = 0;
+    if (__builtin_add_overflow(load_bias, phdr[i].p_vaddr, &start)) continue;
+    uintptr_t end = 0;
+    if (__builtin_add_overflow(start, phdr[i].p_memsz, &end)) continue;
+    if (reference >= start && reference < end) {
+      contains_reference = true;
+      break;
+    }
+  }
+  if (!contains_reference) return false;
+
+  target->header = candidate;
+  target->load_bias = load_bias;
+  target->mapping = mapping;
+  target->phdr = phdr;
+  target->phnum = ehdr->e_phnum;
+  return true;
+}
+
+bool resolveElfTarget(const std::vector<MapEntry>& maps, const MapEntry& hit,
+                      ElfTarget* target) {
+  std::vector<uintptr_t> candidates;
+  candidates.push_back(hit.start);
+  if (hit.start >= hit.offset) candidates.push_back(hit.start - hit.offset);
   for (const auto& m : maps) {
     if (m.dev != hit.dev || m.inode != hit.inode) continue;
-    if (m.start < m.offset || m.start - m.offset != load_base) continue;
     if (!(m.perms & PROT_READ)) continue;
-    if (m.offset == 0) return &m;
-    if (!first_readable) first_readable = &m;
+    candidates.push_back(m.start);
   }
-  return first_readable ? first_readable : &hit;
+
+  for (const uintptr_t candidate : candidates) {
+    if (candidate != 0 && readElfTarget(candidate, maps, hit.start, target))
+      return true;
+  }
+  return false;
 }
 
 struct LinkerPathContext {
-  uintptr_t base;
+  uintptr_t load_bias;
   const char* path;
 };
 
 int findLinkerPath(struct dl_phdr_info* info, size_t, void* data) {
   auto* context = static_cast<LinkerPathContext*>(data);
-  uintptr_t image_base = UINTPTR_MAX;
-  for (int i = 0; i < info->dlpi_phnum; ++i) {
-    const ElfW(Phdr) & phdr = info->dlpi_phdr[i];
-    if (phdr.p_type != PT_LOAD) continue;
-    const uintptr_t address =
-        static_cast<uintptr_t>(info->dlpi_addr) + phdr.p_vaddr;
-    if (address < image_base) image_base = address;
-  }
-  if (image_base == UINTPTR_MAX)
-    image_base = static_cast<uintptr_t>(info->dlpi_addr);
-  if (image_base != context->base) return 0;
+  if (static_cast<uintptr_t>(info->dlpi_addr) != context->load_bias) return 0;
   if (info->dlpi_name && info->dlpi_name[0]) context->path = info->dlpi_name;
   return 1;
 }
 
-std::string linkerPathForBase(uintptr_t base) {
-  LinkerPathContext context{base, nullptr};
+std::string linkerPathForLoadBias(uintptr_t load_bias) {
+  LinkerPathContext context{load_bias, nullptr};
   dl_iterate_phdr(findLinkerPath, &context);
   return context.path ? context.path : "";
 }
 
 void fileRangeForTarget(const std::vector<MapEntry>& maps,
-                        const MapEntry& entry, uintptr_t file_tag,
-                        uintptr_t* file_offset, size_t* file_size) {
-  *file_offset = entry.offset;
+                        const ElfTarget& target, uintptr_t* file_offset,
+                        size_t* file_size) {
+  *file_offset = target.mapping->offset;
   uintptr_t file_end = 0;
   for (const auto& m : maps) {
-    if (m.dev != entry.dev || m.inode != entry.inode) continue;
-    if (m.start < m.offset || m.start - m.offset != file_tag) continue;
-    if (m.offset < entry.offset) continue;
-    const uintptr_t mapping_end = (m.offset - entry.offset) + (m.end - m.start);
+    if (m.dev != target.mapping->dev || m.inode != target.mapping->inode)
+      continue;
+    if (m.offset < *file_offset) continue;
+
+    bool overlaps_load = false;
+    for (size_t i = 0; i < target.phnum; ++i) {
+      const ElfW(Phdr) & phdr = target.phdr[i];
+      if (phdr.p_type != PT_LOAD) continue;
+      uintptr_t start = 0;
+      if (__builtin_add_overflow(target.load_bias, phdr.p_vaddr, &start))
+        continue;
+      uintptr_t end = 0;
+      if (__builtin_add_overflow(start, phdr.p_memsz, &end)) continue;
+      if (m.start < end && m.end > start) {
+        overlaps_load = true;
+        break;
+      }
+    }
+    if (!overlaps_load) continue;
+
+    const uintptr_t mapping_end = (m.offset - *file_offset) + (m.end - m.start);
     if (mapping_end > file_end) file_end = mapping_end;
   }
   *file_size = static_cast<size_t>(file_end);
@@ -117,30 +203,30 @@ bool pltHook(void* base, const char* symbol, void* replacement,
     LOGE("pltHook %s: base %p not found in maps", symbol, base);
     return false;
   }
-  const MapEntry* entry = firstMappingOfFile(maps, *hit);
-  if (entry->path.empty()) {
+  ElfTarget elf;
+  if (!resolveElfTarget(maps, *hit, &elf)) {
+    LOGE("pltHook %s: cannot resolve the ELF header for base %p", symbol, base);
+    return false;
+  }
+  if (elf.mapping->path.empty()) {
     LOGE("pltHook %s: base %p has no path in maps", symbol, base);
     return false;
   }
-  const uintptr_t image_base = entry->start;
-  const uintptr_t file_tag = entry->start >= entry->offset
-                                 ? entry->start - entry->offset
-                                 : entry->start;
-  const std::string linker_path = linkerPathForBase(image_base);
+  const std::string linker_path = linkerPathForLoadBias(elf.load_bias);
 
   backend::PltTarget target;
-  target.maps_path = entry->path;
-  target.linker_path = linker_path.empty() ? entry->path : linker_path;
-  target.dev = entry->dev;
-  target.inode = entry->inode;
-  target.base = image_base;
-  fileRangeForTarget(maps, *entry, file_tag, &target.file_offset,
-                     &target.file_size);
+  target.maps_path = elf.mapping->path;
+  target.linker_path = linker_path.empty() ? elf.mapping->path : linker_path;
+  target.dev = elf.mapping->dev;
+  target.inode = elf.mapping->inode;
+  target.base = elf.header;
+  target.load_bias = elf.load_bias;
+  fileRangeForTarget(maps, elf, &target.file_offset, &target.file_size);
 
   LOGI("pltHook base=%p symbol=%s path=%s linker=%s dev=%llu inode=%llu", base,
-       symbol, entry->path.c_str(), target.linker_path.c_str(),
-       static_cast<unsigned long long>(entry->dev),
-       static_cast<unsigned long long>(entry->inode));
+       symbol, elf.mapping->path.c_str(), target.linker_path.c_str(),
+       static_cast<unsigned long long>(elf.mapping->dev),
+       static_cast<unsigned long long>(elf.mapping->inode));
 
   switch (pltEngine()) {
     case PltEngine::kLsplt:

@@ -100,10 +100,11 @@ bool hookLocked(const PltTarget& target, const char* symbol, void* replacement,
     return false;
   }
   const uintptr_t load_bias = lib.data.getLoadBias();
-  if (target.base != 0 && load_bias != 0 && load_bias != target.base) {
+  if (target.load_bias != 0 && load_bias != 0 &&
+      load_bias != target.load_bias) {
     LOGE("pltHook: %s is loaded at %p, not %p", caller_path.c_str(),
          reinterpret_cast<void*>(load_bias),
-         reinterpret_cast<void*>(target.base));
+         reinterpret_cast<void*>(target.load_bias));
     return false;
   }
   auto* const elf_symbol = lib.data.find_symbol_by_name(symbol);

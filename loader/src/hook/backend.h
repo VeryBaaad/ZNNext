@@ -35,6 +35,7 @@ struct PltTarget {
   dev_t dev = 0;
   ino_t inode = 0;
   uintptr_t base = 0;
+  uintptr_t load_bias = 0;
   uintptr_t file_offset = 0;
   size_t file_size = 0;
 };
