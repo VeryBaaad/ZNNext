@@ -53,7 +53,7 @@ export const locale: ComputedRef<Locale> = computed(() => currentRef.value);
 function detectLocale(): Locale {
   try {
     const saved = localStorage.getItem(LOCALE_STORAGE_KEY);
-    if (saved === "lzh" || saved === "zh-CN" || saved === "en") return saved;
+    if (saved === "lzh" || saved === "zh-CN" || saved === "en" || saved === "ru") return saved;
   } catch {}
   const lang = (navigator.language || "en").toLowerCase();
   if (lang.startsWith("ru")) return "ru";
