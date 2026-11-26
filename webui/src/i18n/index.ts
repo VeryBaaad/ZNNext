@@ -24,23 +24,26 @@ import { computed, ref, type ComputedRef } from "vue";
 import { en, type Dictionary } from "./en";
 import { zhCN } from "./zh-CN";
 import { lzh } from "./lzh";
+import { ru } from "./ru";
 
-export type Locale = "lzh" | "zh-CN" | "en";
+export type Locale = "lzh" | "zh-CN" | "en" | "ru";
 
 export const LOCALE_STORAGE_KEY = "znn_locale";
 
-export const LOCALES: Locale[] = ["lzh", "zh-CN", "en"];
+export const LOCALES: Locale[] = ["lzh", "zh-CN", "en", "ru"];
 
 const dictionaries: Record<Locale, Dictionary> = {
   lzh: lzh,
   "zh-CN": zhCN,
   en,
+  ru,
 };
 
 export const LOCALE_LABELS: Record<Locale, string> = {
   lzh: "文言（華夏）",
   "zh-CN": "中文（简体）",
   en: "English",
+  ru: "Русский",
 };
 
 const currentRef = ref<Locale>(detectLocale());
@@ -50,9 +53,10 @@ export const locale: ComputedRef<Locale> = computed(() => currentRef.value);
 function detectLocale(): Locale {
   try {
     const saved = localStorage.getItem(LOCALE_STORAGE_KEY);
-    if (saved === "lzh" || saved === "zh-CN" || saved === "en") return saved;
+    if (saved === "lzh" || saved === "zh-CN" || saved === "en" || saved === "ru") return saved;
   } catch {}
   const lang = (navigator.language || "en").toLowerCase();
+  if (lang.startsWith("ru")) return "ru";
   return lang.startsWith("zh") ? "zh-CN" : "en";
 }
 
