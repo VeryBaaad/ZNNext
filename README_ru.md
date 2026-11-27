@@ -76,10 +76,10 @@ ZNNext поддерживает Android 5 и выше.
 
 | Канал | Источник |
 | --- | --- |
-| Стабильная версия (Stable) | [GitHub Releases](https://github.com/VeryBaaad/ZNNext/releases) |
-| CI (сборки из исходного кода) | [GitHub Actions](https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster) |
+| Ресурсы для разработчиков | [GitHub Releases](https://github.com/VeryBaaad/ZNNext/releases) |
+| CI | [GitHub Actions](https://github.com/VeryBaaad/ZNNext/actions/workflows/ci.yml?query=branch%3Amaster) |
 
-ПРИМЕЧАНИЕ: Отладочная (debug) версия доступна только в GitHub Actions.
+ПРИМЕЧАНИЕ: Отладочная версия доступна только в GitHub Actions.
 
 ---
 
