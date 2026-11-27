@@ -15,7 +15,7 @@
     "@m3e/web": "^2.13.6",
     "@material-symbols/font-400": "^0.49.0",
     "@material/material-color-utilities": "^0.4.0",
-    "@vueuse/core": "^15.0.0",
+    "@vueuse/core": "^15.1.0",
     "kernelsu": "^3.3.0",
     "konsta": "^5.5.0",
     "lit": "^3.3.3",
