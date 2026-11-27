@@ -51,7 +51,7 @@ ZNNext — это модуль Magisk с открытым исходным ко�
 
 ZNNext поддерживает Android 5 и выше.
 
-Поддерживаемые архитектуры (ABI): arm64-v8a, armeabi-v7a, armeabi, x86_64, x86, riscv64, mips64, mips
+Поддерживаемые ABI: arm64-v8a, armeabi-v7a, armeabi, x86_64, x86, riscv64, mips64, mips
 
 > [!TIP]
 > Некоторые функции могут не работать на определенных ядрах Linux; это не влияет на повседневное использование.
@@ -65,10 +65,10 @@ ZNNext поддерживает Android 5 и выше.
 
 ### Установка
 
-1. Установите Magisk 26402+ (или новее), KernelSU 11425+ (или новее) либо APatch 10700+ (или новее).
+1. Установите Magisk 26402+, KernelSU 11425+ либо APatch 10700+.
 2. [Скачайте](#download) и установите ZNNext через используемый вами менеджер root-прав.
 3. Перезагрузите устройство.
-4. Откройте веб-интерфейс (WebUI) модуля и приступайте к настройке под свои предпочтения :)
+4. Откройте WebUI модуля и приступайте к настройке под свои предпочтения :)
 
 ---
 
@@ -89,8 +89,8 @@ ZNNext поддерживает Android 5 и выше.
 
 **Если вы хотите помочь с переводом, убедитесь, что язык, на который вы переводите, является для вас **РОДНЫМ**.**
 
-- Проблемы (Issues) на GitHub: [Issues](https://github.com/VeryBaaad/ZNNext/issues/)
-- Запросы на включение кода (Pull Requests): [Pull Requests](https://github.com/VeryBaaad/ZNNext/pulls/)
+- Проблемы на GitHub: [Issues](https://github.com/VeryBaaad/ZNNext/issues/)
+- Запросы на включение кода: [Pull Requests](https://github.com/VeryBaaad/ZNNext/pulls/)
 - Обсуждения на GitHub: [Discussions](https://github.com/VeryBaaad/ZNNext/discussions)
 
 ---
