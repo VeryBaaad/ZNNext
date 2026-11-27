@@ -152,7 +152,7 @@ fn plt_hook_options_for(abi: &str) -> Vec<&'static str> {
             "srxhook",
             "disable",
         ],
-        "riscv64" => vec!["lsplt", "plti", "baaadhook", "disable"],
+        "riscv64" => vec!["lsplt", "plti", "baaadhook", "yukiplt", "disable"],
         "armeabi" => vec!["xhook", "disable"],
         "mips" | "mips64" => vec!["disable"],
         _ => vec![

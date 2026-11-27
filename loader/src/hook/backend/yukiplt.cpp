@@ -19,6 +19,8 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
+#include <yukiplt.h>
+
 #include <map>
 #include <memory>
 #include <mutex>
@@ -28,13 +30,7 @@
 #include "hook/backend.h"
 #include "log.h"
 
-#ifndef __riscv
-#include <yukiplt.h>
-#endif
-
 namespace znn::hook::backend {
-
-#ifndef __riscv
 
 namespace {
 
@@ -227,18 +223,5 @@ bool yukipltHook(const PltTarget& target, const char* symbol, void* replacement,
   g_records.emplace(key, std::move(record));
   return true;
 }
-
-#else
-
-bool yukipltHook(const PltTarget& target, const char* symbol, void* replacement,
-                 void** original) {
-  (void)target;
-  (void)symbol;
-  (void)replacement;
-  (void)original;
-  return false;
-}
-
-#endif
 
 }  // namespace znn::hook::backend

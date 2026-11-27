@@ -201,13 +201,12 @@ elseif (NOT ZNN_LEGACY)
 
     add_subdirectory(whale)
 
-    add_subdirectory(yukiplt)
-
     add_subdirectory(profilo)
 endif ()
 
 if (NOT ZNN_LEGACY)
     add_subdirectory(baaadhook)
+    add_subdirectory(yukiplt)
 endif ()
 
 if (NOT ZNN_LEGACY AND (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "x86_64"))
