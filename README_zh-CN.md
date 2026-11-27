@@ -21,7 +21,7 @@
 [license-dclpl-badge]: https://img.shields.io/badge/license-DCLPL--2.0-orange
 [license-dclpl-url]: LICENSE-DCLPL
 
-[English](README.md) [文言（華夏）](README_lzh.md)
+[English](README.md) [文言（華夏）](README_lzh.md) [Русский](README_ru.md)
 
 </div>
 

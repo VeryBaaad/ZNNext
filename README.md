@@ -21,7 +21,7 @@
 [license-dclpl-badge]: https://img.shields.io/badge/license-DCLPL--2.0-orange
 [license-dclpl-url]: LICENSE-DCLPL
 
-[中文（简体）](README_zh-CN.md) [文言（華夏）](README_lzh.md)
+[中文（简体）](README_zh-CN.md) [文言（華夏）](README_lzh.md) [Русский](README_ru.md)
 
 </div>
 
@@ -109,7 +109,7 @@ v[Major].[Minor].[Patch][.Revision]
 
 ---
 
-### Credits 
+### Credits
 
 This project is made possible by the following open-source contributions:
 
