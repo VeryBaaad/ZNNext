@@ -102,6 +102,12 @@ html[data-znn-ui="miuix"] body {
   min-width: 0;
 }
 
+.znn-miuix .miuix-status-head .status-updated {
+  display: block;
+  padding-inline-end: 67px;
+  overflow-wrap: anywhere;
+}
+
 .znn-miuix .miuix-status-mark {
   position: absolute;
   inset-block-end: -31px;

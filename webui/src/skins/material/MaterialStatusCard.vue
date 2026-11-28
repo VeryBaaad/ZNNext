@@ -22,8 +22,8 @@
 
 import { computed } from "vue";
 
-import { VER_NAME } from "../../app-info";
 import type { DaemonStatus } from "../../api/daemon";
+import StatusUpdated from "../../components/StatusUpdated.vue";
 import { t } from "../../i18n";
 
 const props = defineProps<{ status: DaemonStatus }>();
@@ -50,13 +50,11 @@ const mode = computed(() => {
         :name="props.status.running ? 'check_circle' : 'error'"
         :filled="true"
       ></m3e-icon>
-      <div class="status-text">
-        <div class="status-label">
-          {{ t(props.status.running ? "status.active" : "status.inactive") }}
-        </div>
-        <div class="status-version">{{ VER_NAME }}</div>
+      <div class="status-label">
+        {{ t(props.status.running ? "status.active" : "status.inactive") }}
       </div>
       <span v-if="mode" class="status-badge">{{ mode }}</span>
+      <StatusUpdated />
     </div>
   </m3e-card>
 </template>

@@ -264,6 +264,12 @@ html[data-znn-ui="zn"] body {
   gap: 8px;
 }
 
+.znn-zn .status-updated {
+  color: var(--zn-text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .zn-tag {
   display: inline-flex;
   align-items: center;

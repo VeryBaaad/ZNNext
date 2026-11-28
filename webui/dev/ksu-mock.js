@@ -32,7 +32,7 @@
   }
 
   var locale = params.get('locale');
-  if (locale === 'en' || locale === 'zh-CN' || locale === 'ru') {
+  if (locale === 'en' || locale === 'zh-CN' || locale === 'lzh' || locale === 'ru') {
     try {
       localStorage.setItem('znn_locale', locale);
     } catch (error) {}
@@ -276,6 +276,6 @@
 
   console.info(
     '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive ?modules=none ' +
-      '?ui=material|miuix|zn ?theme=light|dark|auto ?locale=zh-CN|en|ru ?slow=MS ?fail=config,modules@2',
+      '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=status@2,modules@2',
   );
 })();

@@ -24,7 +24,7 @@ import { computed } from "vue";
 
 import { useAppActions } from "../composables/app-actions";
 import type { DataSection } from "../composables/use-app-data";
-import { locale, t } from "../i18n";
+import { formatDateTime, t } from "../i18n";
 
 const props = defineProps<{ section: DataSection }>();
 const { sections, retrySection } = useAppActions();
@@ -32,12 +32,10 @@ const state = computed(() => sections[props.section]);
 const sectionLabel = computed(() => t(`refresh.section.${props.section}`));
 
 const message = computed(() => {
-  const { failed, lastSuccess } = state.value;
+  const { lastSuccess } = state.value;
   const section = sectionLabel.value;
   if (lastSuccess === null) return t("refresh.unavailable", { section });
-  const language = locale.value === "lzh" ? "zh-Hant" : locale.value;
-  const time = new Date(lastSuccess).toLocaleString(language);
-  return t(failed ? "refresh.stale" : "refresh.updated", { section, time });
+  return t("refresh.stale", { section, time: formatDateTime(lastSuccess) });
 });
 </script>
 
@@ -47,14 +45,9 @@ const message = computed(() => {
     class="refresh-section"
   >
     <slot />
-    <div
-      class="refresh-feedback"
-      :class="{ 'refresh-failed': state.failed }"
-      :data-section="section"
-    >
+    <div v-if="state.failed" class="refresh-feedback" :data-section="section">
       <span role="status">{{ message }}</span>
       <button
-        v-if="state.failed"
         type="button"
         :disabled="state.loading"
         :aria-label="t('refresh.retrySection', { section: sectionLabel })"
@@ -82,13 +75,6 @@ const message = computed(() => {
   margin-inline: 8px;
   font-size: 0.8125rem;
   line-height: 1.4;
-}
-
-.refresh-feedback:not(.refresh-failed) {
-  opacity: 0.75;
-}
-
-.refresh-failed {
   border-inline-start: 2px solid currentColor;
   padding-inline-start: 10px;
 }

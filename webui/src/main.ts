@@ -26,10 +26,10 @@ import { createApp } from "vue";
 import { enableEdgeToEdge, fullScreen } from "kernelsu";
 
 import App from "./App.vue";
-import { MODULE_NAME, VER_NAME } from "./app-info";
+import { MODULE_NAME } from "./app-info";
 import { isKsuAvailable } from "./api/ksu";
 
-document.title = `${MODULE_NAME} ${VER_NAME}`;
+document.title = MODULE_NAME;
 
 if (isKsuAvailable()) {
   try {

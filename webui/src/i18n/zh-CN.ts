@@ -31,7 +31,6 @@ export const zhCN: Dictionary = {
 
   "actions.refresh": "刷新",
 
-  "refresh.updated": "更新于 {time}",
   "refresh.unavailable": "无法加载{section}。",
   "refresh.stale": "无法刷新{section}，当前显示 {time} 的数据。",
   "refresh.retry": "重试",

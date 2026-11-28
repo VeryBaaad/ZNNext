@@ -31,7 +31,6 @@ export const lzh: Dictionary = {
 
   "actions.refresh": "賡續",
 
-  "refresh.updated": "已於 {time} 賡續",
   "refresh.unavailable": "未能載入{section}。",
   "refresh.stale": "未能賡續{section}，仍示 {time} 之舊錄。",
   "refresh.retry": "復試",

@@ -26,6 +26,7 @@ import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import { cleanVersion, type RootImplementation } from "../../api/system";
 import RefreshSection from "../../components/RefreshSection.vue";
+import StatusUpdated from "../../components/StatusUpdated.vue";
 import { useAppActions } from "../../composables/app-actions";
 import { t } from "../../i18n";
 import ZnCard from "./ZnCard.vue";
@@ -91,6 +92,7 @@ const daemonLabel = computed(() => {
             daemonLabel
           }}</ZnTag>
         </div>
+        <StatusUpdated />
       </div>
     </RefreshSection>
 

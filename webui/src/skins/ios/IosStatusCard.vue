@@ -25,6 +25,7 @@ import { computed } from "vue";
 
 import type { DaemonStatus } from "../../api/daemon";
 import { cleanVersion, type RootImplementation } from "../../api/system";
+import StatusUpdated from "../../components/StatusUpdated.vue";
 import { t } from "../../i18n";
 import IosTag from "./IosTag.vue";
 
@@ -69,6 +70,9 @@ const daemonLabel = computed(() => {
           <IosTag :tone="props.status.running ? 'ok' : 'warn'">
             {{ daemonLabel }}
           </IosTag>
+        </template>
+        <template #inner>
+          <StatusUpdated />
         </template>
       </k-list-item>
     </k-list>

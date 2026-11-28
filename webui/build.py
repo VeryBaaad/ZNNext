@@ -110,7 +110,6 @@ def main(argv=None):
     environment = os.environ.copy()
     environment["ZNN_MODULE_ID"] = znn.MODULE_ID
     environment["ZNN_MODULE_NAME"] = znn.MODULE_NAME
-    environment["ZNN_VER_NAME"] = znn.VER_NAME
     environment["ZNN_COMMIT_HASH"] = znn.commit_hash()
     settings = znn.optimize.from_environment()
     if settings.webui_drop_icon_font:

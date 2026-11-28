@@ -53,7 +53,6 @@ export default defineConfig(() => ({
   define: {
     __ZNN_MODULE_ID__: JSON.stringify(env('ZNN_MODULE_ID', 'zygisknextsu')),
     __ZNN_MODULE_NAME__: JSON.stringify(env('ZNN_MODULE_NAME', 'ZNNext')),
-    __ZNN_VER_NAME__: JSON.stringify(env('ZNN_VER_NAME', 'v0.0.0')),
     __ZNN_COMMIT_HASH__: JSON.stringify(env('ZNN_COMMIT_HASH', 'unknown')),
     __VUE_PROD_DEVTOOLS__: 'false',
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',

@@ -22,7 +22,6 @@
 
 import { computed } from "vue";
 
-import { MODULE_NAME, VER_NAME } from "../../app-info";
 import type { DaemonStatus } from "../../api/daemon";
 import type { SystemInfo } from "../../api/system";
 import { t } from "../../i18n";
@@ -60,7 +59,6 @@ const modeText = computed(() => {
 });
 
 const rows = computed<InfoRow[]>(() => [
-  { label: MODULE_NAME, value: VER_NAME },
   { label: "Kernel", value: props.system.kernel || t("info.unknown") },
   {
     label: "Android SDK",

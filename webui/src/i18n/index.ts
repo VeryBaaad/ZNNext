@@ -50,6 +50,22 @@ const currentRef = ref<Locale>(detectLocale());
 
 export const locale: ComputedRef<Locale> = computed(() => currentRef.value);
 
+const dateLocale = computed(() =>
+  locale.value === "lzh" ? "zh-Hant" : locale.value,
+);
+
+export function formatTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString(dateLocale.value, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+}
+
+export function formatDateTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleString(dateLocale.value);
+}
+
 function detectLocale(): Locale {
   try {
     const saved = localStorage.getItem(LOCALE_STORAGE_KEY);

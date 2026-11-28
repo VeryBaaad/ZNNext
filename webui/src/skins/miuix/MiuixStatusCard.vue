@@ -23,8 +23,8 @@
 import { MiuixCard, MiuixIcon, MiuixText } from "miuix-vue";
 import { computed } from "vue";
 
-import { VER_NAME } from "../../app-info";
 import type { DaemonStatus } from "../../api/daemon";
+import StatusUpdated from "../../components/StatusUpdated.vue";
 import { t } from "../../i18n";
 import { CHECK_CIRCLE, ERROR_CIRCLE, GLYPH_VIEW_BOX } from "./glyphs";
 
@@ -65,7 +65,7 @@ const mode = computed(() => {
         <MiuixText :size="22" weight="semibold">
           {{ t(active ? "status.active" : "status.inactive") }}
         </MiuixText>
-        <MiuixText :size="15">{{ VER_NAME }}</MiuixText>
+        <MiuixText :size="15"><StatusUpdated /></MiuixText>
       </div>
       <div v-if="mode" class="miuix-status-mode">
         <MiuixText :size="16" weight="medium">{{ mode }}</MiuixText>
