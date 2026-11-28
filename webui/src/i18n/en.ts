@@ -65,6 +65,7 @@ export const en: Record<string, string> = {
   "modules.disabled": "Disabled",
   "modules.noDeclarations": "No recognized declarations",
   "modules.missingLibraries": "Missing library files",
+  "modules.waitingForTarget": "Waiting for target process",
   "modules.processes": "{n} processes",
   "modules.failed": "Failure records ({n})",
   "modules.copyFailure": "Copy failure details",

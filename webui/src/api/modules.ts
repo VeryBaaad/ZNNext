@@ -40,6 +40,7 @@ export interface ZnnModule {
   disabled?: boolean;
   declarationIssue?: "noDeclarations" | "missingLibraries";
   missingLibraries?: string[];
+  waitingForTarget?: boolean;
   processes: InjectedProcess[];
   failed?: FailedProcess[];
 }
@@ -50,12 +51,14 @@ export function moduleStatusKey(
   | "modules.disabled"
   | "modules.noDeclarations"
   | "modules.missingLibraries"
+  | "modules.waitingForTarget"
   | undefined {
   if (module.disabled === true) return "modules.disabled";
   if (module.declarationIssue === "noDeclarations")
     return "modules.noDeclarations";
   if (module.declarationIssue === "missingLibraries")
     return "modules.missingLibraries";
+  if (module.waitingForTarget === true) return "modules.waitingForTarget";
 }
 
 function normaliseProcesses(raw: unknown): InjectedProcess[] {
@@ -118,6 +121,12 @@ function normaliseModule(raw: unknown): ZnnModule | null {
               typeof path === "string" && path.length > 0,
           )
         : undefined,
+    waitingForTarget:
+      module.waitingForTarget === true &&
+      Array.isArray(module.processes) &&
+      module.processes.length === 0 &&
+      Array.isArray(module.failed) &&
+      module.failed.length === 0,
     processes: normaliseProcesses(module.processes),
     failed: normaliseFailed(module.failed),
   };

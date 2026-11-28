@@ -43,6 +43,8 @@ pub struct StateReport<'a> {
     system: SystemReport<'a>,
     config: config::HookConfigReport,
     modules: Vec<ModuleReport<'a>>,
+    #[serde(rename = "idleDeclarationFingerprints")]
+    idle_declarations: std::collections::BTreeMap<&'a str, u64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -193,6 +195,17 @@ impl Daemon {
             },
             config: config::effective().report(),
             modules: self.modules.values().map(module_report).collect::<Vec<_>>(),
+            idle_declarations: self
+                .modules
+                .values()
+                .filter(|module| module.processes.is_empty() && module.failed.is_empty())
+                .map(|module| {
+                    (
+                        module.id.as_str(),
+                        crate::module_diagnostics::declaration_fingerprint(&module.declarations),
+                    )
+                })
+                .collect(),
         }
     }
 

@@ -175,6 +175,14 @@
     processes: [],
     failed: [],
   };
+  var waitingModule = {
+    id: 'waiting_example',
+    name: 'Waiting Example',
+    version: 'v1.0.0',
+    waitingForTarget: true,
+    processes: [],
+    failed: [],
+  };
   if (modulesOverride === 'none') {
     modules = [];
   } else if (modulesOverride === 'no-version') {
@@ -185,6 +193,8 @@
     modules = [undeclaredModule];
   } else if (modulesOverride === 'missing-libraries') {
     modules = [missingLibrariesModule];
+  } else if (modulesOverride === 'waiting') {
+    modules = [waitingModule];
   } else if (modulesOverride === 'mixed') {
     modules = [
       disabledModule,
@@ -193,6 +203,7 @@
         ...missingLibrariesModule,
         processes: [{ pid: 2215, name: 'native_service' }],
       },
+      waitingModule,
       {
         id: 'idle_example',
         name: 'Idle Example',
@@ -468,7 +479,7 @@
   };
 
   console.info(
-    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|mixed ?logs=empty ' +
+    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|waiting|mixed ?logs=empty ' +
       '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=logs@1,bugreport@1',
   );
 })();

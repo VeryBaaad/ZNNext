@@ -67,6 +67,7 @@ export const lzh: Dictionary = {
   "modules.disabled": "已停",
   "modules.noDeclarations": "無可辨之聲明",
   "modules.missingLibraries": "缺庫檔",
+  "modules.waitingForTarget": "候所需之務",
   "modules.processes": "公務有 {n}",
   "modules.failed": "未成者 {n} 條",
   "modules.copyFailure": "謄錄失敗之詳",

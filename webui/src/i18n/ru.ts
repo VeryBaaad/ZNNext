@@ -67,6 +67,7 @@ export const ru: Dictionary = {
   "modules.disabled": "Отключён",
   "modules.noDeclarations": "Нет распознанных объявлений",
   "modules.missingLibraries": "Файлы библиотек отсутствуют",
+  "modules.waitingForTarget": "Ожидание целевого процесса",
   "modules.processes": "{n} процесс(ов)",
   "modules.failed": "Записи о сбоях ({n})",
   "modules.copyFailure": "Скопировать сведения об ошибке",

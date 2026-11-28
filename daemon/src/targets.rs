@@ -32,7 +32,7 @@ use crate::procfs::{self, basename};
 use crate::sys::Pid;
 use crate::sys::fs as raw_fs;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Target {
     pub by_name: bool,
     pub value: String,
@@ -68,7 +68,7 @@ pub struct ModuleFailure {
     pub last_seen_ms: Option<u64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Declaration {
     pub target: Target,
     pub companion: bool,

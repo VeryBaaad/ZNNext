@@ -19,23 +19,30 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
+mod presence;
+
+use std::cell::LazyCell;
 use std::collections::{BTreeMap, BTreeSet};
 use std::{fs, io, path::Path};
 
 use serde_json::{Value, json, value::RawValue};
 
 use crate::targets::{declarations, module_library_path, read_prop};
+use presence::ProcessSnapshot;
+pub(crate) use presence::declaration_fingerprint;
 
-enum ModuleIssue {
+enum ModuleDiagnostic {
     Disabled,
     NoDeclarations,
     MissingLibraries(Vec<String>),
+    WaitingForTarget,
 }
 
-impl ModuleIssue {
+impl ModuleDiagnostic {
     fn mark(self, module: &mut Value) {
         match self {
             Self::Disabled => module["disabled"] = Value::Bool(true),
+            Self::WaitingForTarget => module["waitingForTarget"] = Value::Bool(true),
             Self::NoDeclarations => module["declarationIssue"] = json!("noDeclarations"),
             Self::MissingLibraries(paths) => {
                 module["declarationIssue"] = json!("missingLibraries");
@@ -45,36 +52,65 @@ impl ModuleIssue {
     }
 }
 
-fn library_missing(dir: &Path, library: &str) -> bool {
+fn library_present(dir: &Path, library: &str) -> io::Result<bool> {
     let file =
         module_library_path(dir, library).and_then(|path| path.map(fs::metadata).transpose());
     match file {
-        Ok(Some(metadata)) => !metadata.is_file(),
-        Ok(None) => true,
-        Err(error) => matches!(
-            error.kind(),
-            io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
-        ),
+        Ok(metadata) => Ok(metadata.is_some_and(|metadata| metadata.is_file())),
+        Err(error)
+            if matches!(
+                error.kind(),
+                io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+            ) =>
+        {
+            Ok(false)
+        }
+        Err(error) => Err(error),
     }
 }
 
-fn module_issue(dir: &Path) -> Option<ModuleIssue> {
-    if dir.join("disable").exists() {
-        return Some(ModuleIssue::Disabled);
+fn module_diagnostic<'a>(
+    dir: &Path,
+    fingerprint: Option<&u64>,
+    snapshot: impl FnOnce() -> Option<&'a ProcessSnapshot>,
+) -> Option<ModuleDiagnostic> {
+    if dir.join("disable").try_exists().ok()? {
+        return Some(ModuleDiagnostic::Disabled);
     }
     let entries = declarations(dir).ok()?;
     if entries.is_empty() {
-        return Some(ModuleIssue::NoDeclarations);
+        return Some(ModuleDiagnostic::NoDeclarations);
     }
-    let libraries: BTreeSet<_> = entries.into_iter().map(|entry| entry.library).collect();
-    let missing: Vec<_> = libraries
-        .into_iter()
-        .filter(|path| library_missing(dir, path))
-        .collect();
-    (!missing.is_empty()).then_some(ModuleIssue::MissingLibraries(missing))
+    let libraries: BTreeSet<_> = entries.iter().map(|entry| &entry.library).collect();
+    let mut verified = true;
+    let mut missing = Vec::new();
+    for library in libraries {
+        match library_present(dir, library) {
+            Ok(true) => (),
+            Ok(false) => missing.push(library.clone()),
+            Err(_) => verified = false,
+        }
+    }
+    if !missing.is_empty() {
+        return Some(ModuleDiagnostic::MissingLibraries(missing));
+    }
+    if !verified || *fingerprint? != declaration_fingerprint(&entries) {
+        return None;
+    }
+    let snapshot = snapshot()?;
+    entries
+        .iter()
+        .all(|entry| snapshot.absent(&entry.target))
+        .then_some(ModuleDiagnostic::WaitingForTarget)
 }
 
-pub fn include_diagnostics(live: &RawValue, root: &Path) -> io::Result<Option<Vec<Value>>> {
+pub fn include_diagnostics(
+    live: &RawValue,
+    idle_declarations: &BTreeMap<String, u64>,
+    root: &Path,
+    proc_root: &Path,
+) -> io::Result<Option<Vec<Value>>> {
+    let snapshot = LazyCell::new(|| ProcessSnapshot::read(proc_root).ok());
     let mut issues = BTreeMap::new();
     for entry in fs::read_dir(root)? {
         let entry = entry?;
@@ -88,7 +124,9 @@ pub fn include_diagnostics(live: &RawValue, root: &Path) -> io::Result<Option<Ve
         {
             continue;
         }
-        if let Some(issue) = module_issue(&dir) {
+        if let Some(issue) =
+            module_diagnostic(&dir, idle_declarations.get(&id), || snapshot.as_ref())
+        {
             issues.insert(id, (dir, issue));
         }
     }
@@ -100,11 +138,18 @@ pub fn include_diagnostics(live: &RawValue, root: &Path) -> io::Result<Option<Ve
     for module in &mut modules {
         if let Some(id) = module.get("id").and_then(Value::as_str)
             && let Some((_, issue)) = issues.remove(id)
+            && (!matches!(issue, ModuleDiagnostic::WaitingForTarget)
+                || ["processes", "failed"]
+                    .iter()
+                    .all(|key| module[*key].as_array().is_some_and(Vec::is_empty)))
         {
             issue.mark(module);
         }
     }
     for (id, (dir, issue)) in issues {
+        if matches!(issue, ModuleDiagnostic::WaitingForTarget) {
+            continue;
+        }
         let (name, version) = if dir.join("module.prop").is_file() {
             (read_prop(&dir, "name"), read_prop(&dir, "version"))
         } else {

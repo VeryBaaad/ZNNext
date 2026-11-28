@@ -140,10 +140,24 @@ fn system(snapshot: Option<&StateSnapshot>) -> i32 {
 }
 
 fn modules(snapshot: Option<&StateSnapshot>) -> i32 {
-    let Some(live) = snapshot.and_then(|state| state.modules.as_deref()) else {
+    let Some(StateSnapshot {
+        modules: Some(live),
+        idle_declarations,
+        ..
+    }) = snapshot
+    else {
         return print_json(&Vec::<Value>::new());
     };
-    match crate::module_diagnostics::include_diagnostics(live, Path::new(paths::MODULES_DIR)) {
+    let fingerprints = idle_declarations
+        .as_deref()
+        .and_then(|raw| serde_json::from_str(raw.get()).ok())
+        .unwrap_or_default();
+    match crate::module_diagnostics::include_diagnostics(
+        live,
+        &fingerprints,
+        Path::new(paths::MODULES_DIR),
+        Path::new("/proc"),
+    ) {
         Ok(Some(modules)) => print_json(&modules),
         Ok(None) => print_json(live),
         Err(error) => {
@@ -163,6 +177,8 @@ struct StateSnapshot {
     system: Option<Box<RawValue>>,
     #[serde(default)]
     modules: Option<Box<RawValue>>,
+    #[serde(default, rename = "idleDeclarationFingerprints")]
+    idle_declarations: Option<Box<RawValue>>,
 }
 
 /// Read a scalar the way the WebUI does: a value that arrived as a JSON string
