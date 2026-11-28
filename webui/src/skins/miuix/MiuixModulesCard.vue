@@ -31,6 +31,7 @@ import { computed, ref } from "vue";
 
 import type { ZnnModule } from "../../api/modules";
 import { t } from "../../i18n";
+import { formatFailureMetadata } from "../../util/failure-metadata";
 import { ChevronForward } from "./icons";
 
 const props = defineProps<{ modules: ZnnModule[] }>();
@@ -110,7 +111,11 @@ function open(module: ZnnModule): void {
         v-for="failure in failures"
         :key="`${failure.name}-${failure.reason}`"
         :title="basename(failure.name)"
-        :summary="failure.reason"
+        :summary="
+          [failure.reason, formatFailureMetadata(failure)]
+            .filter(Boolean)
+            .join(' · ')
+        "
         title-color="var(--m-color-error)"
       />
     </template>

@@ -29,6 +29,8 @@ export interface InjectedProcess {
 export interface FailedProcess {
   name: string;
   reason: string;
+  pid?: number;
+  lastSeenMs?: number;
 }
 
 export interface ZnnModule {
@@ -57,10 +59,20 @@ function normaliseFailed(raw: unknown): FailedProcess[] {
   const failed: FailedProcess[] = [];
   for (const item of raw) {
     if (typeof item !== "object" || item === null) continue;
-    const failure = item as { name?: unknown; reason?: unknown };
-    if (typeof failure.name !== "string" || typeof failure.reason !== "string")
-      continue;
-    failed.push({ name: failure.name, reason: failure.reason });
+    const { name, reason, pid, lastSeenMs } = item as Record<string, unknown>;
+    if (typeof name !== "string" || typeof reason !== "string") continue;
+
+    const failure: FailedProcess = { name, reason };
+    if (typeof pid === "number" && Number.isSafeInteger(pid) && pid > 0)
+      failure.pid = pid;
+    if (
+      typeof lastSeenMs === "number" &&
+      Number.isSafeInteger(lastSeenMs) &&
+      lastSeenMs >= 0 &&
+      lastSeenMs <= 8_640_000_000_000_000
+    )
+      failure.lastSeenMs = lastSeenMs;
+    failed.push(failure);
   }
   return failed;
 }

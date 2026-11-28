@@ -441,6 +441,13 @@ html[data-znn-ui="zn"] body {
   color: var(--zn-tag-warn-fg);
 }
 
+.zn-proc-failed .zn-proc-meta {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: end;
+}
+
 .zn-proc-section {
   margin-top: 8px;
   color: var(--zn-text-muted);

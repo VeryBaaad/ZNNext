@@ -98,6 +98,9 @@ struct ProcessReport<'a> {
 struct FailedReport<'a> {
     name: &'a str,
     reason: &'a str,
+    pid: u32,
+    #[serde(rename = "lastSeenMs", skip_serializing_if = "Option::is_none")]
+    last_seen_ms: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -329,7 +332,12 @@ fn module_report(module: &ModuleInfo) -> ModuleReport<'_> {
         failed: module
             .failed
             .iter()
-            .map(|(name, reason)| FailedReport { name, reason })
+            .map(|failure| FailedReport {
+                name: &failure.name,
+                reason: &failure.reason,
+                pid: failure.pid as u32,
+                last_seen_ms: failure.last_seen_ms,
+            })
             .collect(),
     }
 }

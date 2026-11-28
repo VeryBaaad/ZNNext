@@ -25,6 +25,7 @@ import { computed, ref } from "vue";
 
 import type { ZnnModule } from "../../api/modules";
 import { t } from "../../i18n";
+import { formatFailureMetadata } from "../../util/failure-metadata";
 import IosIcon from "./IosIcon.vue";
 import IosTag from "./IosTag.vue";
 
@@ -111,6 +112,7 @@ function basename(value: string): string {
             class="ios-child-item"
             title-font-size-ios="text-[15px]"
             :title="basename(failure.name)"
+            :subtitle="formatFailureMetadata(failure)"
           >
             <template #after>
               <span class="ios-failure" :title="failure.reason">

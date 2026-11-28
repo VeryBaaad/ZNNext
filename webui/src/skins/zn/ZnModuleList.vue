@@ -24,6 +24,7 @@ import { ref } from "vue";
 
 import type { ZnnModule } from "../../api/modules";
 import { t } from "../../i18n";
+import { formatFailureMetadata } from "../../util/failure-metadata";
 import ZnTag from "./ZnTag.vue";
 
 const props = defineProps<{ modules: ZnnModule[] }>();
@@ -98,9 +99,16 @@ const basename = (value: string): string => {
             <span class="zn-proc-name" :title="failure.name">{{
               basename(failure.name)
             }}</span>
-            <span class="zn-proc-meta" :title="failure.reason">{{
-              failure.reason
-            }}</span>
+            <div class="zn-proc-meta">
+              <div :title="failure.reason">{{ failure.reason }}</div>
+              <small
+                v-if="
+                  failure.pid !== undefined || failure.lastSeenMs !== undefined
+                "
+              >
+                {{ formatFailureMetadata(failure) }}
+              </small>
+            </div>
           </div>
         </template>
       </div>

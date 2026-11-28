@@ -23,6 +23,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::daemon::Daemon;
 use crate::log::logw;
@@ -55,7 +56,15 @@ pub struct ModuleInfo {
     pub targets: Vec<Target>,
     pub declarations: Vec<Declaration>,
     pub processes: Vec<(Pid, String)>,
-    pub failed: Vec<(String, String)>,
+    pub failed: Vec<ModuleFailure>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ModuleFailure {
+    pub name: String,
+    pub reason: String,
+    pub pid: Pid,
+    pub last_seen_ms: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -264,9 +273,7 @@ impl Daemon {
                 continue;
             }
             let failures = module.failed.len();
-            module
-                .failed
-                .retain(|(failed_name, _)| failed_name != &name);
+            module.failed.retain(|failure| failure.name != name);
             if module.failed.len() != failures {
                 changed = true;
             }
@@ -283,19 +290,33 @@ impl Daemon {
 
     pub fn record_failure(&mut self, pid: Pid, exe: &str, reason: &str) {
         let name = procfs::process_name(pid, exe);
+        let last_seen_ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .ok()
+            .and_then(|duration| u64::try_from(duration.as_millis()).ok());
         let mut changed = false;
         for module in self.modules.values_mut() {
             if !module_matches(module, exe) {
                 continue;
             }
-            if module
+            if let Some(failure) = module
                 .failed
-                .iter()
-                .any(|(failed_name, failed_reason)| *failed_name == name && failed_reason == reason)
+                .iter_mut()
+                .find(|failure| failure.name == name && failure.reason == reason)
             {
-                continue;
+                if failure.pid == pid && failure.last_seen_ms == last_seen_ms {
+                    continue;
+                }
+                failure.pid = pid;
+                failure.last_seen_ms = last_seen_ms;
+            } else {
+                module.failed.push(ModuleFailure {
+                    name: name.clone(),
+                    reason: reason.to_owned(),
+                    pid,
+                    last_seen_ms,
+                });
             }
-            module.failed.push((name.clone(), reason.to_owned()));
             changed = true;
         }
         if changed {

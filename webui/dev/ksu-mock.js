@@ -122,8 +122,13 @@
         { pid: pid(), name: 'hyos_spawner' },
       ],
       failed: [
-        { name: 'artd', reason: 'test' },
-        { name: 'hyos_spawner', reason: 'test' },
+        {
+          name: 'artd',
+          reason: 'memfd_create failed',
+          pid: pid(),
+          lastSeenMs: Date.now(),
+        },
+        { name: 'hyos_spawner', reason: 'no injection window' },
       ],
     },
   ];
