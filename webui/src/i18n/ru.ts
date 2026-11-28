@@ -128,6 +128,16 @@ export const ru: Dictionary = {
 
   "diagnostics.title": "Сводка диагностики",
   "diagnostics.copy": "Скопировать сводку диагностики",
+  "diagnostics.loadLogs": "Загрузить недавние логи",
+  "diagnostics.refreshLogs": "Обновить логи",
+  "diagnostics.loadingLogs": "Загрузка логов…",
+  "diagnostics.retryLogs": "Повторить загрузку",
+  "diagnostics.logsFailed": "Не удалось загрузить недавние логи.",
+  "diagnostics.export": "Экспортировать отчёт",
+  "diagnostics.exporting": "Экспорт…",
+  "diagnostics.exportFailed":
+    "Не удалось экспортировать отчёт. Попробуйте ещё раз.",
+  "diagnostics.saved": "Отчёт сохранён в {path}",
 
   "footer.github": "Github",
 };

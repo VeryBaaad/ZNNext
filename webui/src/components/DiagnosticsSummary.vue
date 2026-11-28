@@ -20,8 +20,9 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
+import { readDiagnosticLogs, saveDiagnosticReport } from "../api/diagnostics";
 import { isKsuAvailable } from "../api/ksu";
 import { useAppActions } from "../composables/app-actions";
 import { t } from "../i18n";
@@ -29,16 +30,94 @@ import CopyButton from "./CopyButton.vue";
 
 const available = isKsuAvailable();
 const { diagnosticSummary } = useAppActions();
-const text = computed(diagnosticSummary);
+const summary = computed(diagnosticSummary);
+const logs = ref<string | null>(null);
+const loadingLogs = ref(false);
+const logsFailed = ref(false);
+const exporting = ref(false);
+const exportFailed = ref(false);
+const savedPath = ref("");
+
+const text = computed(() =>
+  logs.value ? `${summary.value}\n\n${logs.value}` : summary.value,
+);
+
+const logsAction = computed(() => {
+  if (loadingLogs.value) return t("diagnostics.loadingLogs");
+  if (logsFailed.value) return t("diagnostics.retryLogs");
+  return t(
+    logs.value === null ? "diagnostics.loadLogs" : "diagnostics.refreshLogs",
+  );
+});
+
+const exportFeedback = computed(() => {
+  if (exportFailed.value) return t("diagnostics.exportFailed");
+  return savedPath.value
+    ? t("diagnostics.saved", { path: savedPath.value })
+    : "";
+});
+
+async function loadLogs(): Promise<void> {
+  if (loadingLogs.value) return;
+  loadingLogs.value = true;
+  logsFailed.value = false;
+  logs.value = null;
+  try {
+    logs.value = await readDiagnosticLogs();
+  } catch {
+    logsFailed.value = true;
+  } finally {
+    loadingLogs.value = false;
+  }
+}
+
+async function exportReport(): Promise<void> {
+  if (exporting.value) return;
+  exporting.value = true;
+  exportFailed.value = false;
+  savedPath.value = "";
+  try {
+    savedPath.value = await saveDiagnosticReport(
+      summary.value,
+      logs.value ?? undefined,
+    );
+  } catch {
+    exportFailed.value = true;
+  } finally {
+    exporting.value = false;
+  }
+}
 </script>
 
 <template>
   <details v-if="available" class="diagnostics-summary">
     <summary>{{ t("diagnostics.title") }}</summary>
-    <pre tabindex="0">{{ text }}</pre>
+    <div class="diagnostics-actions">
+      <button
+        class="diagnostics-button"
+        type="button"
+        :disabled="loadingLogs"
+        @click="loadLogs"
+      >
+        {{ logsAction }}
+      </button>
+    </div>
+    <p class="diagnostics-feedback" role="status">
+      {{ logsFailed ? t("diagnostics.logsFailed") : "" }}
+    </p>
+    <pre tabindex="0" :aria-busy="loadingLogs">{{ text }}</pre>
     <div class="diagnostics-actions">
       <CopyButton :label="t('diagnostics.copy')" :text="text" />
+      <button
+        class="diagnostics-button"
+        type="button"
+        :disabled="exporting"
+        @click="exportReport"
+      >
+        {{ t(exporting ? "diagnostics.exporting" : "diagnostics.export") }}
+      </button>
     </div>
+    <p class="diagnostics-feedback" role="status">{{ exportFeedback }}</p>
   </details>
 </template>
 
@@ -76,11 +155,40 @@ const text = computed(diagnosticSummary);
 
 .diagnostics-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 0 12px;
   margin-block-start: 4px;
 }
 
 .diagnostics-actions button {
   min-height: 44px;
+}
+
+.diagnostics-button {
+  min-width: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.diagnostics-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.diagnostics-feedback {
+  margin: 0;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.diagnostics-feedback:not(:empty) {
+  margin-block: 4px 8px;
 }
 </style>

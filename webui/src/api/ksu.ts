@@ -26,10 +26,10 @@ export function isKsuAvailable(): boolean {
   return typeof (window as unknown as { ksu?: unknown }).ksu !== "undefined";
 }
 
-export async function execJson<T>(
+export async function execText(
   command: string,
   timeoutMs = 5000,
-): Promise<T> {
+): Promise<string> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const result = await Promise.race([
@@ -46,12 +46,19 @@ export async function execJson<T>(
         `command failed (errno ${result.errno}): ${command}\n${result.stderr}`,
       );
     }
-    return JSON.parse(result.stdout.trim()) as T;
+    return result.stdout;
   } finally {
     if (timer !== undefined) {
       clearTimeout(timer);
     }
   }
+}
+
+export async function execJson<T>(
+  command: string,
+  timeoutMs = 5000,
+): Promise<T> {
+  return JSON.parse((await execText(command, timeoutMs)).trim()) as T;
 }
 
 export function getModuleDir(): string {

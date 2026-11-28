@@ -124,6 +124,15 @@ export const zhCN: Dictionary = {
 
   "diagnostics.title": "诊断摘要",
   "diagnostics.copy": "复制诊断摘要",
+  "diagnostics.loadLogs": "载入近期日志",
+  "diagnostics.refreshLogs": "刷新日志",
+  "diagnostics.loadingLogs": "正在载入日志…",
+  "diagnostics.retryLogs": "重试载入日志",
+  "diagnostics.logsFailed": "无法载入近期日志。",
+  "diagnostics.export": "导出报告",
+  "diagnostics.exporting": "正在导出…",
+  "diagnostics.exportFailed": "无法导出报告，请重试。",
+  "diagnostics.saved": "报告已保存到 {path}",
 
   "footer.github": "Github",
 };

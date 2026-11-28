@@ -75,7 +75,15 @@
 
   var latency = Number(params.get('slow') || 120);
   var failures = (params.get('fail') || '').split(',').filter(Boolean);
-  var readCounts = { status: 0, system: 0, modules: 0, config: 0 };
+  var readCounts = { status: 0, system: 0, modules: 0, config: 0, logs: 0, bugreport: 0 };
+  var moduleDir = '/data/adb/modules/zygisknextsu';
+  var logcatCommand = "set -o pipefail; /system/bin/logcat -b main -d -v brief znndaemon:I '*:S' | /system/bin/tail -n 100";
+  var daemonLogs = [
+    '--------- beginning of main',
+    'E/znndaemon( 4242): module verification failed: signature mismatch at /data/adb/modules/example/mazoku',
+    'E/znndaemon( 4242): cannot serve daemon state: permission denied in /data/adb/zygisknextsu',
+    'I/znndaemon( 4242): preview-only unknown entry from /data/user/0/com.example.private/files/session.txt',
+  ].join('\n');
   var pid = function () {
     return 300 + Math.floor(Math.random() * 9000);
   };
@@ -245,6 +253,11 @@
 
   function snapshot(cmd, operands) {
     switch (cmd) {
+      case 'logs':
+        return params.get('logs') === 'empty' ? '' : daemonLogs + '\n';
+      case 'bugreport':
+        if (!operands[0] || operands.length > 2) throw new Error('invalid bug report arguments');
+        return 'mock://Download/ZNNext-bugreport-' + Date.now() + '-' + readCounts.bugreport + '.tar.gz\n';
       case 'status': {
         var status = {
           running: state.running,
@@ -362,6 +375,12 @@
         var ctl = argc.indexOf('--ctl');
         var cmd = ctl >= 0 ? argc[ctl + 1] : '';
         var operands = ctl >= 0 ? argc.slice(ctl + 2) : [];
+        if (command === logcatCommand) {
+          cmd = 'logs';
+        } else if (argc[0] === '/system/bin/sh' && argc[1] === moduleDir + '/bugreport.sh') {
+          cmd = 'bugreport';
+          operands = argc.slice(2);
+        }
         var scheduledFailure = false;
         if (Object.prototype.hasOwnProperty.call(readCounts, cmd)) {
           readCounts[cmd] += 1;
@@ -372,14 +391,15 @@
           return;
         }
         try {
-          window[callbackName](0, JSON.stringify(snapshot(cmd, operands)), '');
+          var output = snapshot(cmd, operands);
+          window[callbackName](0, typeof output === 'string' ? output : JSON.stringify(output), '');
         } catch (error) {
           window[callbackName](1, '', String(error && error.message ? error.message : error));
         }
       }, latency);
     },
     moduleInfo: function () {
-      return JSON.stringify({ moduleDir: '/data/adb/modules/zygisknextsu' });
+      return JSON.stringify({ moduleDir: moduleDir });
     },
     toast: function (message) {
       console.info('[znn preview] toast:', message);
@@ -392,7 +412,7 @@
   };
 
   console.info(
-    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?pagesize=16384 ?modules=none|no-version ' +
-      '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=status@2,modules@2',
+    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?pagesize=16384 ?modules=none|no-version ?logs=empty ' +
+      '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=logs@1,bugreport@1',
   );
 })();

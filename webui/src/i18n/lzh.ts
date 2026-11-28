@@ -124,6 +124,15 @@ export const lzh: Dictionary = {
 
   "diagnostics.title": "診斷撮要",
   "diagnostics.copy": "謄錄診斷撮要",
+  "diagnostics.loadLogs": "載近誌",
+  "diagnostics.refreshLogs": "更載近誌",
+  "diagnostics.loadingLogs": "載誌中…",
+  "diagnostics.retryLogs": "重試載誌",
+  "diagnostics.logsFailed": "近誌未能載入。",
+  "diagnostics.export": "匯出呈報",
+  "diagnostics.exporting": "匯出中…",
+  "diagnostics.exportFailed": "呈報未能匯出，請重試。",
+  "diagnostics.saved": "呈報已存於 {path}",
 
   "footer.github": "章魚貓",
 };

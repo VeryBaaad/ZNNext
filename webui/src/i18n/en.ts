@@ -125,6 +125,15 @@ export const en: Record<string, string> = {
 
   "diagnostics.title": "Diagnostic summary",
   "diagnostics.copy": "Copy diagnostic summary",
+  "diagnostics.loadLogs": "Load recent logs",
+  "diagnostics.refreshLogs": "Refresh logs",
+  "diagnostics.loadingLogs": "Loading logs…",
+  "diagnostics.retryLogs": "Retry loading logs",
+  "diagnostics.logsFailed": "Couldn’t load recent logs.",
+  "diagnostics.export": "Export report",
+  "diagnostics.exporting": "Exporting…",
+  "diagnostics.exportFailed": "Couldn’t export the report. Try again.",
+  "diagnostics.saved": "Report saved to {path}",
 
   "footer.github": "Github",
 };
