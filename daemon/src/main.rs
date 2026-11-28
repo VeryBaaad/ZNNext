@@ -26,6 +26,7 @@ mod config;
 mod config_diff;
 mod ctl;
 mod daemon;
+mod disabled_modules;
 mod elf;
 mod fileio;
 mod handoff;

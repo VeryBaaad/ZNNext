@@ -48,6 +48,10 @@ function failures(module: ZnnModule): number {
   return (module.failed ?? []).length;
 }
 
+function tagsSlot(module: ZnnModule): "after" | "subtitle" {
+  return module.disabled === true ? "subtitle" : "after";
+}
+
 function basename(value: string): string {
   const cut = value.lastIndexOf("/");
   return cut >= 0 ? value.slice(cut + 1) : value;
@@ -79,13 +83,24 @@ function basename(value: string): string {
           <template #title>
             <span class="ios-module-name">{{ module.name }}</span>
           </template>
-          <template #after>
-            <IosTag v-if="failures(module) > 0" tone="warn">
-              {{ t("modules.failed", { n: failures(module) }) }}
-            </IosTag>
-            <IosTag tone="info">
-              {{ t("modules.processes", { n: module.processes.length }) }}
-            </IosTag>
+          <template #[tagsSlot(module)]>
+            <div
+              class="ios-module-tags"
+              :class="{ 'is-disabled': module.disabled === true }"
+            >
+              <IosTag v-if="module.disabled === true" tone="muted">
+                {{ t("modules.disabled") }}
+              </IosTag>
+              <IosTag v-if="failures(module) > 0" tone="warn">
+                {{ t("modules.failed", { n: failures(module) }) }}
+              </IosTag>
+              <IosTag
+                v-if="module.disabled !== true || module.processes.length > 0"
+                tone="info"
+              >
+                {{ t("modules.processes", { n: module.processes.length }) }}
+              </IosTag>
+            </div>
           </template>
         </k-list-item>
 
@@ -111,7 +126,11 @@ function basename(value: string): string {
             :after="`pid=${process.pid}`"
           />
           <k-list-item
-            v-if="module.processes.length === 0 && failures(module) === 0"
+            v-if="
+              module.disabled !== true &&
+              module.processes.length === 0 &&
+              failures(module) === 0
+            "
             class="ios-child-item"
             title-font-size-ios="text-[15px]"
             :title="t('modules.noProcesses')"
@@ -138,3 +157,17 @@ function basename(value: string): string {
     </k-list>
   </section>
 </template>
+
+<style scoped>
+.ios-module-tags {
+  display: contents;
+}
+
+.ios-module-tags.is-disabled {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-block-start: 2px;
+}
+</style>

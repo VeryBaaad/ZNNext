@@ -54,7 +54,7 @@ export const zhCN: Dictionary = {
   "zn.stopped": "未运行",
   "zn.daemon": "守护进程",
   "zn.modules.title": "ZN 模块 ({n})",
-  "zn.modules.empty": "未加载任何模块",
+  "zn.modules.empty": "无 ZN 模块",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
   "info.version": "版本",
@@ -64,6 +64,7 @@ export const zhCN: Dictionary = {
   "info.pageSize": "内存页大小",
   "info.unknown": "未知",
 
+  "modules.disabled": "已停用",
   "modules.processes": "{n} 个进程",
   "modules.failed": "{n} 条失败记录",
   "modules.copyFailure": "复制失败记录详情",

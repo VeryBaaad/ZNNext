@@ -50,7 +50,10 @@ const basename = (value: string): string => {
           @opened="expanded.add(module.id)"
           @closed="expanded.delete(module.id)"
         >
-          <span class="module-line">
+          <span
+            class="module-line"
+            :class="{ 'is-disabled': module.disabled === true }"
+          >
             <span class="module-name" :title="`${module.name} (${module.id})`">
               {{ module.name }} ({{ module.id }})
             </span>
@@ -58,7 +61,15 @@ const basename = (value: string): string => {
               class="module-count"
               :class="{ 'has-failed': (module.failed ?? []).length > 0 }"
             >
-              {{ t("modules.processes", { n: module.processes.length }) }}
+              <template v-if="module.disabled === true">
+                {{ t("modules.disabled") }}
+              </template>
+              <template
+                v-if="module.disabled !== true || module.processes.length > 0"
+              >
+                <template v-if="module.disabled === true"> · </template>
+                {{ t("modules.processes", { n: module.processes.length }) }}
+              </template>
               <template v-if="(module.failed ?? []).length > 0">
                 · {{ t("modules.failed", { n: (module.failed ?? []).length }) }}
               </template>
@@ -71,7 +82,12 @@ const basename = (value: string): string => {
                 module.version
               }}</span>
             </div>
-            <div v-if="module.processes.length === 0" class="proc-empty">—</div>
+            <div
+              v-if="module.disabled !== true && module.processes.length === 0"
+              class="proc-empty"
+            >
+              —
+            </div>
             <div
               v-for="process in module.processes"
               :key="process.pid"
@@ -116,3 +132,21 @@ const basename = (value: string): string => {
     </div>
   </m3e-card>
 </template>
+
+<style scoped>
+.module-line.is-disabled {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.module-line.is-disabled .module-name,
+.module-line.is-disabled .module-count {
+  flex: none;
+  max-width: 100%;
+}
+
+.module-line.is-disabled .module-count {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+</style>

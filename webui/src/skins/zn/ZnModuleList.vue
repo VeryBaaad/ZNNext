@@ -58,6 +58,7 @@ const basename = (value: string): string => {
     <div v-for="module in props.modules" :key="module.id" class="zn-module">
       <button
         class="zn-module-trigger"
+        :class="{ 'is-disabled': module.disabled === true }"
         type="button"
         :aria-expanded="expanded.has(module.id)"
         @click="toggle(module.id)"
@@ -66,12 +67,19 @@ const basename = (value: string): string => {
           {{ module.name }}
         </span>
         <span class="zn-module-tags">
+          <ZnTag v-if="module.disabled === true" tone="info" small>
+            {{ t("modules.disabled") }}
+          </ZnTag>
           <ZnTag v-if="failures(module) > 0" tone="warn" small>
             {{ t("modules.failed", { n: failures(module) }) }}
           </ZnTag>
-          <ZnTag tone="info" small>{{
-            t("modules.processes", { n: module.processes.length })
-          }}</ZnTag>
+          <ZnTag
+            v-if="module.disabled !== true || module.processes.length > 0"
+            tone="info"
+            small
+          >
+            {{ t("modules.processes", { n: module.processes.length }) }}
+          </ZnTag>
         </span>
       </button>
 
@@ -80,7 +88,10 @@ const basename = (value: string): string => {
           <span>{{ t("info.version") }}</span>
           <span class="zn-field-value">{{ module.version }}</span>
         </div>
-        <div v-if="module.processes.length === 0" class="zn-empty-line">
+        <div
+          v-if="module.disabled !== true && module.processes.length === 0"
+          class="zn-empty-line"
+        >
           {{ t("modules.noProcesses") }}
         </div>
         <div
@@ -123,3 +134,14 @@ const basename = (value: string): string => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.zn-module-trigger.is-disabled,
+.zn-module-trigger.is-disabled .zn-module-tags {
+  flex-wrap: wrap;
+}
+
+.zn-module-trigger.is-disabled .zn-module-tags {
+  max-width: 100%;
+}
+</style>

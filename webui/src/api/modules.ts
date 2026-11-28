@@ -37,6 +37,7 @@ export interface ZnnModule {
   id: string;
   name: string;
   version: string;
+  disabled?: boolean;
   processes: InjectedProcess[];
   failed?: FailedProcess[];
 }
@@ -86,6 +87,7 @@ function normaliseModule(raw: unknown): ZnnModule | null {
     id: module.id,
     name: module.name,
     version: typeof module.version === "string" ? module.version.trim() : "",
+    disabled: module.disabled === true,
     processes: normaliseProcesses(module.processes),
     failed: normaliseFailed(module.failed),
   };

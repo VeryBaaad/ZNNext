@@ -139,17 +139,20 @@ fn system(snapshot: Option<&StateSnapshot>) -> i32 {
     }
 }
 
-/// Echo the module list of the snapshot, empty while no daemon published one.
 fn modules(snapshot: Option<&StateSnapshot>) -> i32 {
-    match snapshot.and_then(|state| state.modules.as_deref()) {
-        Some(modules) => print_json(modules),
-        None => print_json(&Vec::<Value>::new()),
+    let Some(live) = snapshot.and_then(|state| state.modules.as_deref()) else {
+        return print_json(&Vec::<Value>::new());
+    };
+    match crate::disabled_modules::include_disabled(live, Path::new(paths::MODULES_DIR)) {
+        Ok(Some(modules)) => print_json(&modules),
+        Ok(None) => print_json(live),
+        Err(error) => {
+            eprintln!("cannot include disabled modules: {error}");
+            print_json(live)
+        }
     }
 }
 
-/// The snapshot the daemon last published. Only the fields the control channel
-/// reads are decoded; `system` and `modules` are kept as raw text so that they
-/// are handed back exactly as they were written.
 #[derive(Debug, Deserialize)]
 struct StateSnapshot {
     #[serde(default, deserialize_with = "lenient")]

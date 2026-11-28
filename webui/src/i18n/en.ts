@@ -52,7 +52,7 @@ export const en: Record<string, string> = {
   "zn.stopped": "Not running",
   "zn.daemon": "Daemon",
   "zn.modules.title": "ZN Modules ({n})",
-  "zn.modules.empty": "No modules loaded",
+  "zn.modules.empty": "No ZN modules",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
   "info.version": "Version",
@@ -62,6 +62,7 @@ export const en: Record<string, string> = {
   "info.pageSize": "Memory page size",
   "info.unknown": "Unknown",
 
+  "modules.disabled": "Disabled",
   "modules.processes": "{n} processes",
   "modules.failed": "Failure records ({n})",
   "modules.copyFailure": "Copy failure details",

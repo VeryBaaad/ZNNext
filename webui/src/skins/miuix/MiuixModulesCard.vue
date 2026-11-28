@@ -62,7 +62,11 @@ const basename = (value: string): string => {
 };
 
 function summary(module: ZnnModule): string {
-  const parts = [t("modules.processes", { n: module.processes.length })];
+  const parts = [];
+  if (module.disabled === true) parts.push(t("modules.disabled"));
+  if (module.disabled !== true || module.processes.length > 0) {
+    parts.push(t("modules.processes", { n: module.processes.length }));
+  }
   const failed = (module.failed ?? []).length;
   if (failed > 0) parts.push(t("modules.failed", { n: failed }));
   return parts.join(" · ");
@@ -105,7 +109,11 @@ function open(id: string): void {
       :summary="selected.version"
     />
     <MiuixBasicComponent
-      v-if="processes.length === 0 && failures.length === 0"
+      v-if="
+        selected?.disabled !== true &&
+        processes.length === 0 &&
+        failures.length === 0
+      "
       :title="t('modules.noProcesses')"
       disabled
     />

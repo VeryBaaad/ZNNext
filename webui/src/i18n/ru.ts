@@ -54,7 +54,7 @@ export const ru: Dictionary = {
   "zn.stopped": "Не работает",
   "zn.daemon": "Демон",
   "zn.modules.title": "Модули ZN ({n})",
-  "zn.modules.empty": "Модули не загружены",
+  "zn.modules.empty": "Нет модулей ZN",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
   "info.version": "Версия",
@@ -64,6 +64,7 @@ export const ru: Dictionary = {
   "info.pageSize": "Размер страницы памяти",
   "info.unknown": "Неизвестно",
 
+  "modules.disabled": "Отключён",
   "modules.processes": "{n} процесс(ов)",
   "modules.failed": "Записи о сбоях ({n})",
   "modules.copyFailure": "Скопировать сведения об ошибке",

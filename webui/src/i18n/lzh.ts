@@ -54,7 +54,7 @@ export const lzh: Dictionary = {
   "zn.stopped": "罷工",
   "zn.daemon": "宿衛",
   "zn.modules.title": "天樞諸司 ({n})",
-  "zn.modules.empty": "未設諸司",
+  "zn.modules.empty": "無司",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
   "info.version": "版次",
@@ -64,6 +64,7 @@ export const lzh: Dictionary = {
   "info.pageSize": "記憶體頁之大小",
   "info.unknown": "迷濛",
 
+  "modules.disabled": "已停",
   "modules.processes": "公務有 {n}",
   "modules.failed": "未成者 {n} 條",
   "modules.copyFailure": "謄錄失敗之詳",
