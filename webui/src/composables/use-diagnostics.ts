@@ -21,7 +21,11 @@
 
 import { computed, reactive, ref, watch } from "vue";
 
-import { readDiagnosticLogs, saveDiagnosticReport } from "../api/diagnostics";
+import {
+  readDiagnosticLogs,
+  readRecentBackends,
+  saveDiagnosticReport,
+} from "../api/diagnostics";
 import { isKsuAvailable } from "../api/ksu";
 import { readLoadHistory } from "../api/load-history";
 import { useAppActions } from "./app-actions";
@@ -34,6 +38,7 @@ export function useDiagnostics() {
   const { diagnosticSummary } = useAppActions();
   const summary = computed(diagnosticSummary);
   const logs = ref<string | null>(null);
+  const backends = ref<string[] | "failed" | null>(null);
   const loadingLogs = ref(false);
   const logsFailed = ref(false);
   const exporting = ref(false);
@@ -50,8 +55,22 @@ export function useDiagnostics() {
       }),
   );
 
+  const diagnosticLogs = computed(() => {
+    const sections = logs.value === null ? [] : [logs.value];
+    if (backends.value !== null) {
+      const details =
+        backends.value === "failed"
+          ? t("diagnostics.backendsUnavailable")
+          : backends.value.join("\n") || t("diagnostics.backendsEmpty");
+      sections.push(`${t("diagnostics.backendsTitle")}\n${details}`);
+    }
+    return sections.length ? sections.join("\n\n") : undefined;
+  });
+
   const text = computed(() =>
-    logs.value ? `${summary.value}\n\n${logs.value}` : summary.value,
+    diagnosticLogs.value
+      ? `${summary.value}\n\n${diagnosticLogs.value}`
+      : summary.value,
   );
 
   const logsAction = computed(() => {
@@ -84,13 +103,16 @@ export function useDiagnostics() {
     loadingLogs.value = true;
     logsFailed.value = false;
     logs.value = null;
-    try {
-      logs.value = await readDiagnosticLogs();
-    } catch {
-      logsFailed.value = true;
-    } finally {
-      loadingLogs.value = false;
-    }
+    backends.value = null;
+    const [logResult, backendResult] = await Promise.allSettled([
+      readDiagnosticLogs(),
+      readRecentBackends(),
+    ]);
+    if (logResult.status === "fulfilled") logs.value = logResult.value;
+    else logsFailed.value = true;
+    backends.value =
+      backendResult.status === "fulfilled" ? backendResult.value : "failed";
+    loadingLogs.value = false;
   }
 
   async function exportReport(): Promise<void> {
@@ -101,7 +123,7 @@ export function useDiagnostics() {
     try {
       savedPath.value = await saveDiagnosticReport(
         summary.value,
-        logs.value ?? undefined,
+        diagnosticLogs.value,
       );
     } catch {
       exportFailed.value = true;

@@ -21,6 +21,17 @@
 
 import { apiBinary, execJson } from "./ksu";
 
+export const knownAbis: ReadonlySet<string> = new Set([
+  "arm64-v8a",
+  "armeabi-v7a",
+  "armeabi",
+  "x86",
+  "x86_64",
+  "riscv64",
+  "mips",
+  "mips64",
+]);
+
 export interface RootImplementation {
   magisk: string | null;
   kernelSU: string | null;

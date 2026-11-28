@@ -121,6 +121,7 @@ else ()
 endif ()
 
 add_library(zn_loader SHARED ${ZNN_LOADER_SOURCES})
+target_compile_definitions(zn_loader PRIVATE ZNN_ANDROID_ABI="${ANDROID_ABI}")
 foreach (backend IN LISTS ZNN_INLINE_BACKENDS ZNN_PLT_BACKENDS)
     target_compile_definitions(zn_loader PRIVATE ZNN_HAS_${backend}=1)
 endforeach ()

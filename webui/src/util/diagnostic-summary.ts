@@ -22,20 +22,11 @@
 import {
   cleanVersion,
   formatPageSize,
+  knownAbis,
   type RootImplementation,
 } from "../api/system";
 import type { AppData } from "../composables/use-app-data";
 
-const knownAbis = new Set([
-  "arm64-v8a",
-  "armeabi-v7a",
-  "armeabi",
-  "x86",
-  "x86_64",
-  "riscv64",
-  "mips",
-  "mips64",
-]);
 const activeModes = ["kernel", "ptrace", "proc", "late"];
 const unknown = "unknown";
 

@@ -19,7 +19,37 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-import { execText, getModuleDir, shellQuote } from "./ksu";
+import { apiBinary, execJson, execText, getModuleDir, shellQuote } from "./ksu";
+import { knownAbis } from "./system";
+
+const inlineBackends = new Set([
+  "disable",
+  "dobby",
+  "shadowhook",
+  "sandhook",
+  "and64inlinehook",
+  "frida-gum",
+  "rv64hook",
+  "hookzz",
+  "urhook",
+  "whale",
+  "baaadhook",
+  "yukiihook",
+  "srxinlinehook",
+]);
+const pltBackends = new Set([
+  "disable",
+  "lsplt",
+  "bytehook",
+  "xhook",
+  "plti",
+  "plthook",
+  "urhook",
+  "baaadhook",
+  "yukiplt",
+  "profilo",
+  "srxhook",
+]);
 
 const events: [RegExp, string][] = [
   [/^ZNNext \S+ starting$/, "Daemon starting"],
@@ -74,6 +104,30 @@ export async function readDiagnosticLogs(): Promise<string> {
   }
   if (lines.length === 1) lines.push("No recent entries.");
   return lines.join("\n");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export async function readRecentBackends(): Promise<string[]> {
+  const result = await execJson<unknown>(`${apiBinary()} --ctl backends`);
+  if (!isRecord(result)) throw new Error("Unexpected backend report");
+
+  const lines = [];
+  for (const [abi, values] of Object.entries(result)) {
+    if (!knownAbis.has(abi) || !isRecord(values)) continue;
+    const { inline, plt } = values;
+    const backends = [];
+    if (typeof inline === "string" && inlineBackends.has(inline)) {
+      backends.push(`inline: ${inline}`);
+    }
+    if (typeof plt === "string" && pltBackends.has(plt)) {
+      backends.push(`PLT: ${plt}`);
+    }
+    if (backends.length) lines.push(`${abi}: ${backends.join(", ")}`);
+  }
+  return lines;
 }
 
 export async function saveDiagnosticReport(

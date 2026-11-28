@@ -90,7 +90,7 @@ pub struct HookConfigReport {
     hot_update: HookOption,
 }
 
-fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
+pub(crate) fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
     match abi {
         "arm64-v8a" => vec![
             "dobby",
@@ -133,7 +133,7 @@ fn inline_hook_options_for(abi: &str) -> Vec<&'static str> {
     }
 }
 
-fn plt_hook_options_for(abi: &str) -> Vec<&'static str> {
+pub(crate) fn plt_hook_options_for(abi: &str) -> Vec<&'static str> {
     match abi {
         "arm64-v8a" => vec![
             "lsplt",

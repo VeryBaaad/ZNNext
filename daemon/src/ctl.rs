@@ -56,7 +56,7 @@ const STOP_ATTEMPTS: u32 = 80;
 
 const START_TIMEOUT: Duration = Duration::from_secs(4);
 
-const USAGE: &str = "usage: znnd --ctl <status|system|modules|update-check|safe-boot <status|arm|cancel|enable ID>|config|config-export|config-diff [JSON]|config-import [JSON]|config-reset|config-undo|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
+const USAGE: &str = "usage: znnd --ctl <status|system|modules|backends|update-check|safe-boot <status|arm|cancel|enable ID>|config|config-export|config-diff [JSON]|config-import [JSON]|config-reset|config-undo|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
 
 const CONFIG_SET_USAGE: &str = "usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>";
 
@@ -77,7 +77,8 @@ pub fn command() -> ClapCommand {
                 .num_args(1..=3)
                 .conflicts_with(MODULE_DIR_ARGUMENT)
                 .help(
-                    "Control command: status, system, modules, update-check (verify the staged hot update), \
+                    "Control command: status, system, modules, backends (last selected hook backends by ABI), \
+                       update-check (verify the staged hot update), \
                        safe-boot <status|arm|cancel|enable ID> \
                        (pause ZNNext module loading for the next boot, then enable modules individually), \
                        config, config-export, \
@@ -112,14 +113,9 @@ pub fn ctl_main(arguments: &[String]) -> i32 {
         "exit" => signal_daemon(signal::SIGTERM, |pid| format!("daemon ({pid}) exited")),
         "start" => start_daemon(false),
         "restart" => start_daemon(true),
+        "backends" if arguments.is_empty() => print_report(crate::backends::report()),
         "update-check" if arguments.is_empty() => print_json(&crate::update::check::report()),
-        "safe-boot" => match crate::safe_boot::command(arguments) {
-            Ok(report) => print_json(&report),
-            Err(error) => {
-                eprintln!("{error}");
-                1
-            }
-        },
+        "safe-boot" => print_report(crate::safe_boot::command(arguments)),
         "config" => print_json(&config::effective().report()),
         "config-export" if arguments.is_empty() => {
             config_result(read_config().map(|config| print_json(&config)))
@@ -486,6 +482,16 @@ struct StatusReport<'a> {
     mode_reason: Option<ModeReason>,
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<&'a str>,
+}
+
+fn print_report<T: Serialize>(report: Result<T, impl std::fmt::Display>) -> i32 {
+    match report {
+        Ok(value) => print_json(&value),
+        Err(error) => {
+            eprintln!("{error}");
+            1
+        }
+    }
 }
 
 fn print_json<T: Serialize + ?Sized>(value: &T) -> i32 {

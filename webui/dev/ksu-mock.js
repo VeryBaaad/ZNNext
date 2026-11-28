@@ -75,7 +75,7 @@
 
   var latency = Number(params.get('slow') || 120);
   var failures = (params.get('fail') || '').split(',').filter(Boolean);
-  var readCounts = { status: 0, system: 0, modules: 0, config: 0, logs: 0, history: 0, bugreport: 0 };
+  var readCounts = { status: 0, system: 0, modules: 0, config: 0, logs: 0, history: 0, backends: 0, bugreport: 0 };
   var moduleDir = '/data/adb/modules/zygisknextsu';
   var logcatCommand = "set -o pipefail; /system/bin/logcat -b main -d -v brief znndaemon:I '*:S' | /system/bin/tail -n 100";
   var historyCommand = "set -o pipefail; /system/bin/logcat -b main -d -v time ZNNextLoad:I '*:S' | /system/bin/tail -n 50";
@@ -368,6 +368,13 @@
         return params.get('logs') === 'empty' ? '' : daemonLogs + '\n';
       case 'history':
         return params.get('history') === 'empty' ? '' : loadHistory + '\n';
+      case 'backends':
+        if (operands.length !== 0) throw new Error('usage: znnd --ctl backends');
+        if (params.get('backends') === 'empty') return {};
+        return {
+          'arm64-v8a': { inline: 'dobby', plt: 'lsplt' },
+          'armeabi-v7a': { plt: 'xhook' },
+        };
       case 'bugreport':
         if (!operands[0] || operands.length > 2) throw new Error('invalid bug report arguments');
         return 'mock://Download/ZNNext-bugreport-' + Date.now() + '-' + readCounts.bugreport + '.tar.gz\n';
@@ -556,8 +563,8 @@
   };
 
   console.info(
-    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy|fallback ?safe-boot=active ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|waiting|mixed ?logs=empty ?history=empty|long ' +
+    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy|fallback ?safe-boot=active ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|waiting|mixed ?logs=empty ?history=empty|long ?backends=empty ' +
       '?update=notStaged|ready|disabled|removed|incomplete|notExecutable|verificationFailed|unreadable ' +
-      '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=logs@1,history@1,bugreport@1',
+      '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=logs@1,history@1,backends@1,bugreport@1',
   );
 })();

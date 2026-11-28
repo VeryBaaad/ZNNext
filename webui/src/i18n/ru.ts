@@ -141,6 +141,10 @@ export const ru: Dictionary = {
   "diagnostics.loadingLogs": "Загрузка логов…",
   "diagnostics.retryLogs": "Повторить загрузку",
   "diagnostics.logsFailed": "Не удалось загрузить недавние логи.",
+  "diagnostics.backendsTitle": "Последние выбранные движки хуков по ABI",
+  "diagnostics.backendsEmpty": "Записей о выборе движков нет.",
+  "diagnostics.backendsUnavailable":
+    "Не удалось прочитать записи о выборе движков.",
   "diagnostics.export": "Экспортировать отчёт",
   "diagnostics.exporting": "Экспорт…",
   "diagnostics.exportFailed":

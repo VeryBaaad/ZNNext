@@ -21,6 +21,7 @@
 
 #![deny(unsafe_code)]
 mod arch;
+mod backends;
 mod companion;
 mod config;
 mod config_diff;

@@ -50,8 +50,8 @@ void resolveHookEngines(const std::string& inline_name,
 
   hook::setInlineEngine(inline_engine);
   hook::setPltEngine(plt_engine);
-  LOGI("hook engines: inline=%s plt=%s", hook::inlineEngineName(inline_engine),
-       hook::pltEngineName(plt_engine));
+  LOGI("hook engines: selected %s inline=%s plt=%s", ZNN_ANDROID_ABI,
+       hook::inlineEngineName(inline_engine), hook::pltEngineName(plt_engine));
 }
 
 }  // namespace znn::config

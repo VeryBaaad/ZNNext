@@ -371,8 +371,9 @@ void ensureInlineEngineReady() {
   if (ready) return;
 
   const InlineEngine fallback = defaultInlineEngine();
-  LOGE("%s unavailable in pid %d, falling back to inline=%s for this process",
-       inlineEngineName(g_inline_engine), getpid(), inlineEngineName(fallback));
+  LOGE("hook engines: selected %s inline=%s; %s unavailable in pid %d",
+       ZNN_ANDROID_ABI, inlineEngineName(fallback),
+       inlineEngineName(g_inline_engine), getpid());
   g_inline_engine = fallback;
 }
 
@@ -394,8 +395,9 @@ void ensurePltEngineReady() {
   if (ready) return;
 
   const PltEngine fallback = defaultPltEngine();
-  LOGE("%s unavailable in pid %d, falling back to plt=%s for this process",
-       pltEngineName(g_plt_engine), getpid(), pltEngineName(fallback));
+  LOGE("hook engines: selected %s plt=%s; %s unavailable in pid %d",
+       ZNN_ANDROID_ABI, pltEngineName(fallback), pltEngineName(g_plt_engine),
+       getpid());
   g_plt_engine = fallback;
 }
 
