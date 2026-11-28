@@ -76,23 +76,25 @@ pub struct Declaration {
 }
 
 pub fn parse_declaration(line: &str) -> Option<Declaration> {
-    let tokens: Vec<&str> = line.split_whitespace().collect();
-    if tokens.len() < 2 {
+    if line.contains('\0') {
         return None;
     }
-    let (by_name, value) = if let Some(value) = tokens[0].strip_prefix("path=") {
-        (false, value)
-    } else {
-        (true, tokens[0].strip_prefix("name=")?)
+    let mut fields = line.split_whitespace();
+    let (kind, value) = fields.next()?.split_once('=')?;
+    let by_name = match kind {
+        "name" if !value.is_empty() && !value.contains('/') => true,
+        "path" if Path::new(value).is_absolute() => false,
+        _ => return None,
     };
+    let library = fields.next_back()?;
 
     Some(Declaration {
         target: Target {
             by_name,
             value: value.to_owned(),
         },
-        companion: tokens[1..tokens.len() - 1].contains(&"companion"),
-        library: tokens[tokens.len() - 1].to_owned(),
+        companion: fields.any(|field| field == "companion"),
+        library: library.to_owned(),
     })
 }
 

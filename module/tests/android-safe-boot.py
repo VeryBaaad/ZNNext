@@ -28,11 +28,12 @@ from pathlib import Path
 
 
 def test_safe_boot(serial, binary):
-    def adb(*args, check=True, timeout=30):
+    def adb(*args, check=True, timeout=30, input_text=None):
         return subprocess.run(
             [os.environ.get("ADB", "adb"), "-s", serial, *args],
             check=check,
             text=True,
+            input=input_text,
             stdout=subprocess.PIPE,
             stderr=None if check else subprocess.PIPE,
             timeout=timeout,
@@ -72,6 +73,15 @@ def test_safe_boot(serial, binary):
     scratch = f"/data/local/tmp/znnext-safe-boot-{uuid.uuid4().hex}"
     remote_binary = f"{scratch}/znnd"
     first, second, disabled = "znnext_test_a", "znnext_test_b", "znnext_test_disabled"
+    malformed = "znnext_test_malformed"
+    valid_line = "name=znnext_test_unused fixture.so"
+    invalid_lines = "\n".join((
+        "name= fixture.so",
+        "path=relative fixture.so",
+        "name=dir/fixture fixture.so",
+        "name=unused broken\0filename",
+        "path=/fixture/unused",
+    ))
 
     def expect(*action, active=False, armed=False, enabled=(), paused=()):
         actual = json.loads(shell(remote_binary, "--ctl", "safe-boot", *action))
@@ -99,12 +109,17 @@ def test_safe_boot(serial, binary):
         cleanup.callback(shell, "rm", "-f", remote_binary)
         adb("push", binary, remote_binary)
         shell("chmod", "700", remote_binary)
-        for name in (first, second, disabled):
+        for name, contents in (
+            (first, f"{invalid_lines}\n{valid_line}"),
+            (second, valid_line),
+            (disabled, valid_line),
+            (malformed, invalid_lines),
+        ):
             directory = f"{modules}/{name}"
             mkdir(directory)
             declaration = f"{directory}/zn_modules.txt"
             cleanup.callback(shell, "rm", "-f", declaration)
-            shell(f"echo 'name=znnext_test_unused fixture.so' > {declaration}")
+            adb("shell", "-T", f"cat > {declaration}", input_text=f"{contents}\n")
         marker = f"{modules}/{disabled}/disable"
         cleanup.callback(shell, "rm", "-f", marker)
         shell("touch", marker)
@@ -116,11 +131,12 @@ def test_safe_boot(serial, binary):
         expect("arm", armed=True)
         reboot()
         expect("status", active=True, paused=(first, second))
-        result = adb(
-            "shell", remote_binary, "--ctl", "safe-boot", "enable", disabled, check=False
-        )
-        if result.returncode != 1 or f"unavailable ZN module: {disabled}" not in result.stderr:
-            raise AssertionError(f"Unexpected result enabling a disabled module: {result}")
+        for name in (disabled, malformed):
+            result = adb(
+                "shell", remote_binary, "--ctl", "safe-boot", "enable", name, check=False
+            )
+            if result.returncode != 1 or f"unavailable ZN module: {name}" not in result.stderr:
+                raise AssertionError(f"Unexpected result enabling {name}: {result}")
         expect("status", active=True, paused=(first, second))
         expect("enable", first, active=True, enabled=(first,), paused=(second,))
         expect("status", active=True, enabled=(first,), paused=(second,))
