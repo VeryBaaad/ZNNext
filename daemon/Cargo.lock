@@ -175,7 +175,7 @@ dependencies = [
 
 [[package]]
 name = "daemon"
-version = "2.22.0+1"
+version = "2.22.2+2"
 dependencies = [
  "aya",
  "clap",
