@@ -19,6 +19,8 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
+pub(crate) mod check;
+
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 

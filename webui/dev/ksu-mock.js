@@ -401,6 +401,29 @@
         return moduleReport();
       case 'safe-boot':
         return safeBoot(operands);
+      case 'update-check': {
+        if (operands.length !== 0) throw new Error('usage: znnd --ctl update-check');
+        var update = {
+          status: 'notStaged',
+          hotUpdateEnabled: state.config.hotUpdate.value === 'true',
+          installedVersion: 'v2.22.0.1',
+        };
+        var stage = params.get('update');
+        var details = {
+          incomplete: 'lib64/libzn_loader.so is missing',
+          notExecutable: 'bin/znnd is not executable',
+          verificationFailed: 'signature verification failed',
+          unreadable: 'permission denied reading the staging directory',
+        };
+        if (stage === 'ready' || stage === 'notExecutable') update.stagedVersion = 'v2.22.0.2';
+        if (Object.prototype.hasOwnProperty.call(details, stage)) {
+          update.status = stage;
+          update.detail = details[stage];
+        } else if (stage === 'ready' || stage === 'disabled' || stage === 'removed') {
+          update.status = stage;
+        }
+        return update;
+      }
       case 'config':
         return state.config;
       case 'config-export':
@@ -527,6 +550,7 @@
 
   console.info(
     '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?safe-boot=active ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|waiting|mixed ?logs=empty ?history=empty ' +
+      '?update=notStaged|ready|disabled|removed|incomplete|notExecutable|verificationFailed|unreadable ' +
       '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=logs@1,history@1,bugreport@1',
   );
 })();
