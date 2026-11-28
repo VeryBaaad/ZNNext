@@ -30,6 +30,7 @@ import {
 import { computed, ref, watch } from "vue";
 
 import type { ZnnModule } from "../../api/modules";
+import CopyFailure from "../../components/CopyFailure.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
 import { ChevronForward } from "./icons";
@@ -129,7 +130,13 @@ function open(id: string): void {
             .join(' · ')
         "
         title-color="var(--m-color-error)"
-      />
+      >
+        <template #end>
+          <div v-if="selected" @keydown.enter.stop @keydown.space.stop>
+            <CopyFailure :module="selected" :failure="failure" />
+          </div>
+        </template>
+      </MiuixBasicComponent>
     </template>
   </MiuixBottomSheet>
 </template>

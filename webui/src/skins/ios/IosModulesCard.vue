@@ -24,6 +24,7 @@ import { kList, kListItem } from "konsta/vue";
 import { computed, ref } from "vue";
 
 import type { ZnnModule } from "../../api/modules";
+import CopyFailure from "../../components/CopyFailure.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
 import IosTag from "./IosTag.vue";
@@ -127,6 +128,9 @@ function basename(value: string): string {
               <span class="ios-failure" :title="failure.reason">
                 {{ failure.reason }}
               </span>
+            </template>
+            <template #inner>
+              <CopyFailure :module="module" :failure="failure" />
             </template>
           </k-list-item>
         </template>

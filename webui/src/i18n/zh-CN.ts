@@ -29,6 +29,9 @@ export const zhCN: Dictionary = {
   "theme.light": "浅色",
   "theme.dark": "深色",
 
+  "actions.copy": "复制",
+  "actions.copied": "已复制",
+  "actions.copyFailed": "复制失败",
   "actions.refresh": "刷新",
 
   "refresh.unavailable": "无法加载{section}。",
@@ -62,6 +65,7 @@ export const zhCN: Dictionary = {
 
   "modules.processes": "{n} 个进程",
   "modules.failed": "{n} 条失败记录",
+  "modules.copyFailure": "复制失败记录详情",
   "modules.failedTitle": "加载失败记录",
   "modules.failedBanner": "有 {n} 条加载失败记录，请查看模块列表。",
   "modules.noModules": "无模块",

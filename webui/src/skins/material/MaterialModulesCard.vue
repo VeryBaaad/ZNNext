@@ -21,6 +21,7 @@
  */
 
 import type { ZnnModule } from "../../api/modules";
+import CopyFailure from "../../components/CopyFailure.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
 
@@ -103,6 +104,9 @@ const basename = (value: string): string => {
                   >
                     {{ formatFailureMetadata(failure) }}
                   </small>
+                  <div>
+                    <CopyFailure :module="module" :failure="failure" />
+                  </div>
                 </div>
               </div>
             </template>

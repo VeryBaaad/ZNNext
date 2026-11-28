@@ -124,7 +124,7 @@
       ],
       failed: [
         {
-          name: 'artd',
+          name: '/apex/com.android.art/bin/artd',
           reason: 'memfd_create failed while preparing a module library',
           pid: pid(),
           lastSeenMs: Date.now(),

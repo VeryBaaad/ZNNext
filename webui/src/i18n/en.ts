@@ -27,6 +27,9 @@ export const en: Record<string, string> = {
   "theme.light": "Light",
   "theme.dark": "Dark",
 
+  "actions.copy": "Copy",
+  "actions.copied": "Copied",
+  "actions.copyFailed": "Copy failed",
   "actions.refresh": "Refresh",
 
   "refresh.unavailable": "Couldn’t load {section}.",
@@ -60,6 +63,7 @@ export const en: Record<string, string> = {
 
   "modules.processes": "{n} processes",
   "modules.failed": "Failure records ({n})",
+  "modules.copyFailure": "Copy failure details",
   "modules.failedTitle": "Load failure records",
   "modules.failedBanner":
     "Review load failure records ({n}) in the module list.",

@@ -29,6 +29,9 @@ export const ru: Dictionary = {
   "theme.light": "Светлая",
   "theme.dark": "Тёмная",
 
+  "actions.copy": "Копировать",
+  "actions.copied": "Скопировано",
+  "actions.copyFailed": "Сбой копирования",
   "actions.refresh": "Обновить",
 
   "refresh.unavailable": "Не удалось загрузить {section}.",
@@ -62,6 +65,7 @@ export const ru: Dictionary = {
 
   "modules.processes": "{n} процесс(ов)",
   "modules.failed": "Записи о сбоях ({n})",
+  "modules.copyFailure": "Скопировать сведения об ошибке",
   "modules.failedTitle": "Записи о сбоях загрузки",
   "modules.failedBanner":
     "В списке модулей есть записи о сбоях загрузки ({n}).",

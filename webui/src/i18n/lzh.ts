@@ -29,6 +29,9 @@ export const lzh: Dictionary = {
   "theme.light": "陽",
   "theme.dark": "夕",
 
+  "actions.copy": "謄錄",
+  "actions.copied": "已謄",
+  "actions.copyFailed": "謄錄未成",
   "actions.refresh": "賡續",
 
   "refresh.unavailable": "未能載入{section}。",
@@ -62,6 +65,7 @@ export const lzh: Dictionary = {
 
   "modules.processes": "公務有 {n}",
   "modules.failed": "未成者 {n} 條",
+  "modules.copyFailure": "謄錄失敗之詳",
   "modules.failedTitle": "載入未成之錄",
   "modules.failedBanner": "載入未成之錄凡 {n} 條，請閱模組列表。",
   "modules.noModules": "無司",
