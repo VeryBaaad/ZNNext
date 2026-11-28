@@ -63,7 +63,7 @@ jobs:
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
       - name: Build
-        run: python3 build.py zipRelease zipDebug --abis arm64-v8a,armeabi-v7a,x86_64 --opt perf
+        run: python3 build.py zipRelease zipDebug --abis arm64-v8a,armeabi-v7a,x86_64 --opt perf --split-debug-symbols
       - name: Prepare artifact
         if: success()
         id: prepareArtifact
@@ -72,6 +72,10 @@ jobs:
           debugName=`ls module/build/outputs/release/ZNNext-v*-debug.zip | awk -F '(/|.zip)' '{print $5}'` && echo "debugName=$debugName" >> $GITHUB_OUTPUT
           test -s "module/build/outputs/release/$releaseName.compat.json"
           test -s "module/build/outputs/release/$debugName.compat.json"
+          test -s "module/build/outputs/release/$releaseName.symbols.zip"
+          test -s "module/build/outputs/release/$debugName.symbols.zip"
+          7z t -bso0 "module/build/outputs/release/$releaseName.symbols.zip"
+          7z t -bso0 "module/build/outputs/release/$debugName.symbols.zip"
           7z x -y -oznn-release module/build/outputs/release/ZNNext-v*-release.zip
           7z x -y -oznn-debug module/build/outputs/release/ZNNext-v*-debug.zip
       - name: Post to channel
@@ -107,6 +111,7 @@ jobs:
           files: |
             ${{ steps.prepareArtifact.outputs.releaseName }}.zip
             ${{ steps.prepareArtifact.outputs.releaseName }}.compat.json
+            ${{ steps.prepareArtifact.outputs.releaseName }}.symbols.zip
           fail_on_unmatched_files: true
           make_latest: true
         env:
@@ -123,6 +128,18 @@ jobs:
           name: ${{ steps.prepareArtifact.outputs.debugName }}
           path: "./znn-debug/*"
           compression-level: 9
+      - name: Upload release symbols
+        uses: actions/upload-artifact@v7
+        with:
+          path: module/build/outputs/release/${{ steps.prepareArtifact.outputs.releaseName }}.symbols.zip
+          archive: false
+          if-no-files-found: error
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v7
+        with:
+          path: module/build/outputs/release/${{ steps.prepareArtifact.outputs.debugName }}.symbols.zip
+          archive: false
+          if-no-files-found: error
       - name: Upload compatibility manifests
         uses: actions/upload-artifact@v7
         with:

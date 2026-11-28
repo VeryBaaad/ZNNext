@@ -879,6 +879,11 @@ def parse_arguments(argv):
     parser.add_argument("--skip-webui", action="store_true")
     parser.add_argument("--no-build", action="store_true")
     parser.add_argument(
+        "--split-debug-symbols",
+        action="store_true",
+        help="produce a matching .symbols.zip for offline crash symbolication",
+    )
+    parser.add_argument(
         "--abis",
         default=None,
         help=(
@@ -930,6 +935,7 @@ def main(argv=None):
     )
     env = os.environ.copy()
     env[optimize.ENVIRONMENT_KEY] = settings.to_environment()
+    env["ZNN_SPLIT_DEBUG_SYMBOLS"] = "1" if options.split_debug_symbols else "0"
     env["ZNN_ABIS"] = ",".join(abis)
     if needs_ndk:
         ndk = ndk_dir(options.ndk)

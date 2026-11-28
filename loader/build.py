@@ -172,10 +172,12 @@ def fmt_version(version):
 def build_abi(abi, variant, jobs, ndk, legacy_ndk, prefab_root, ccache, verbose):
     legacy = abi in znn.LEGACY_ANDROID_ABIS
     build_ndk = legacy_ndk if legacy else ndk
+    split_symbols = os.environ.get("ZNN_SPLIT_DEBUG_SYMBOLS") == "1"
     build_dir = ROOT / "loader" / "build" / "cxx" / variant / abi
     output_dir = znn.loader_output(variant) / abi
+    raw_output = build_dir / "unstripped" if split_symbols else output_dir
     cxx_dir = ROOT / "loader" / "build" / "prefab" / variant / abi
-    output_dir.mkdir(parents=True, exist_ok=True)
+    raw_output.mkdir(parents=True, exist_ok=True)
     if not legacy:
         write_cxx_config(prefab_root, abi, cxx_dir)
 
@@ -185,6 +187,8 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, prefab_root, ccache, verbose)
         build_type, optimization = znn.variant_cmake_optimization(variant)
         optimization_flags = znn.variant_cflags(variant, legacy)
         linker_flags = znn.variant_linker_flags(variant, legacy)
+        if split_symbols:
+            linker_flags = linker_flags.removesuffix(" -Wl,--strip-all")
     else:
         build_type, optimization = znn.optimize.cmake_optimization(
             settings, variant, legacy
@@ -192,7 +196,12 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, prefab_root, ccache, verbose)
         optimization_flags = znn.optimize.loader_compile_flags(
             settings, variant, legacy
         )
-        linker_flags = znn.optimize.loader_linker_flags(settings, variant, legacy)
+        link_settings = (
+            znn.optimize.source_symbol_settings(settings) if split_symbols else settings
+        )
+        linker_flags = znn.optimize.loader_linker_flags(link_settings, variant, legacy)
+    if split_symbols:
+        linker_flags += " -Wl,--build-id=sha1"
     base_flags = [
         flag for flag in znn.DEFAULT_CFLAGS
         if not (legacy and flag.startswith("-D__FILE__"))
@@ -228,8 +237,8 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, prefab_root, ccache, verbose)
         f"-DCMAKE_CXX_FLAGS_{build_type.upper()}={optimization}",
         f"-DCMAKE_SHARED_LINKER_FLAGS={linker_flags}",
         f"-DCMAKE_EXE_LINKER_FLAGS={linker_flags}",
-        f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={output_dir}",
-        f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={output_dir}",
+        f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={raw_output}",
+        f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={raw_output}",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
     ]
     if not legacy:
@@ -257,11 +266,23 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, prefab_root, ccache, verbose)
         prefix=f"loader {abi}",
     )
 
-    artifact = output_dir / "libzn_loader.so"
+    artifact = raw_output / "libzn_loader.so"
     if not artifact.is_file():
         raise znn.BuildError(f"loader produced no library at {artifact}")
+    if split_symbols:
+        from native_symbols import split_binary
+
+        if settings.profile == znn.optimize.PROFILE_NONE:
+            strip_mode = "none" if variant == "debug" else "all"
+        else:
+            strip_mode = znn.optimize.strip_mode(settings, variant)
+        destination = output_dir / artifact.name
+        split_binary(artifact, destination, ndk, strip_mode)
+    else:
+        destination = artifact
+        destination.with_name(f"{destination.name}.dbg").unlink(missing_ok=True)
     print(
-        f"loader: built {abi} ({artifact.stat().st_size} bytes)",
+        f"loader: built {abi} ({destination.stat().st_size} bytes)",
         flush=True,
     )
 

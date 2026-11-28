@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import build as znn
 from module.elf_alignment import load_segments_aligned_16k
+from native_symbols import validate_pair
 
 MODULE_DIR = ROOT / "module"
 SOURCE_DIR = MODULE_DIR / "src"
@@ -395,6 +396,26 @@ def write_compatibility_manifest(archive, sevenzip=None):
     return path
 
 
+def write_symbol_archive(output, stage, artifacts):
+    ndk = znn.ndk_dir()
+    build_ids = {}
+    with tempfile.TemporaryDirectory(dir=output.parent) as directory, zipfile.ZipFile(
+        output, "w", compression=zipfile.ZIP_DEFLATED
+    ) as symbols:
+        for source, relative in artifacts:
+            debug = source.with_name(source.name + ".dbg")
+            if not debug.is_file():
+                raise znn.BuildError(
+                    f"missing debug symbols for {relative}: rebuild with --split-debug-symbols"
+                )
+            name = relative.as_posix() + ".dbg"
+            snapshot = Path(directory) / debug.name
+            shutil.copy2(debug, snapshot)
+            build_ids[name] = validate_pair(stage / relative, snapshot, ndk)
+            symbols.write(snapshot, name)
+        symbols.writestr("build-ids.json", json.dumps(build_ids, indent=2) + "\n")
+
+
 def package(variant, no_kpm, sevenzip=None):
     artifacts = required_artifacts(variant)
     stage = STAGE_ROOT / variant
@@ -418,12 +439,22 @@ def package(variant, no_kpm, sevenzip=None):
     archive.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=archive.parent) as directory:
         built = Path(directory) / archive.name
+        symbols = built.with_suffix(".symbols.zip")
+        split = os.environ.get("ZNN_SPLIT_DEBUG_SYMBOLS") == "1"
+        if split:
+            write_symbol_archive(symbols, stage, artifacts)
         build_zip(stage, built, znn.seven_zip(sevenzip))
         manifest = write_compatibility_manifest(built, sevenzip)
         destination = archive.with_name(manifest.name)
         destination.unlink(missing_ok=True)
+        symbol_destination = archive.with_name(symbols.name)
+        symbol_destination.unlink(missing_ok=True)
         built.replace(archive)
+        if split:
+            symbols.replace(symbol_destination)
         manifest.replace(destination)
+    if split:
+        print(f"debug symbols: {symbol_destination.name}", flush=True)
     print(f"compatibility manifest: {destination.name}", flush=True)
     return archive
 

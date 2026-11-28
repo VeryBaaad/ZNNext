@@ -55,11 +55,18 @@ ZNNext поддерживает Android 5 и выше.
 
 > [!TIP]
 > Некоторые функции могут не работать на определенных ядрах Linux; это не влияет на повседневное использование.
->
-> Для архитектур armeabi, x86, riscv64, mips64 и mips требуется самостоятельная сборка:
-> ```
-> build.py zip<Release|Debug> --abis <armeabi,x86,riscv64,mips64,mips>
-> ```
+
+---
+
+### Сборка
+
+Для `armeabi`, `x86`, `riscv64`, `mips64` и `mips` требуется самостоятельная сборка. Например, для `riscv64` выполните следующую команду.
+
+```sh
+python3 build.py zipRelease --abis riscv64
+```
+
+Для отладочной сборки используйте `zipDebug`. Параметр `--split-debug-symbols` создаёт отдельный архив `.symbols.zip`. Результаты сборки сохраняются в `module/build/outputs/release/`.
 
 ---
 

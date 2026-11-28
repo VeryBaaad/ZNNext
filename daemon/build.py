@@ -43,6 +43,11 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, target_dir):
     build_ndk = legacy_ndk if legacy_abi else ndk
     unoptimized = settings.profile == znn.optimize.PROFILE_NONE
     build_std = znn.optimize.rust_build_std_arguments(settings)
+    split_symbols = os.environ.get("ZNN_SPLIT_DEBUG_SYMBOLS") == "1"
+    source_settings = (
+        znn.optimize.source_symbol_settings(settings) if split_symbols else settings
+    )
+    target_flags = znn.optimize.rust_target_flags_key(target)
 
     environment = os.environ.copy()
     environment.pop("RUSTFLAGS", None)
@@ -55,11 +60,11 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, target_dir):
                 flush=True,
             )
         environment.update(
-            znn.optimize.rust_profile_environment(settings, variant, codegen_units)
+            znn.optimize.rust_profile_environment(source_settings, variant, codegen_units)
         )
         environment.update(
             znn.optimize.rust_target_environment(
-                settings,
+                source_settings,
                 variant,
                 target,
                 legacy_abi,
@@ -73,6 +78,10 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, target_dir):
     environment["CARGO_BUILD_JOBS"] = str(jobs)
     environment["ANDROID_NDK_HOME"] = str(build_ndk)
     environment["ANDROID_NDK_ROOT"] = str(build_ndk)
+    if split_symbols and unoptimized:
+        cargo_profile = "DEV" if variant == "debug" else "RELEASE"
+        environment[f"CARGO_PROFILE_{cargo_profile}_STRIP"] = "none"
+        environment[f"CARGO_PROFILE_{cargo_profile}_DEBUG"] = "line-tables-only"
 
     if abi == "riscv64":
         linker = riscv64_linker(build_ndk)
@@ -121,6 +130,10 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, target_dir):
         ]
     if variant == "release":
         command.append("--release")
+    if split_symbols:
+        rustflags = "RUSTFLAGS" if "RUSTFLAGS" in environment else target_flags
+        flags = environment.get(rustflags, "")
+        environment[rustflags] = f"{flags} -C link-arg=-Wl,--build-id=sha1".strip()
 
     znn.run(command, cwd=DAEMON_DIR, env=environment, prefix=f"daemon {abi}")
 
@@ -130,7 +143,14 @@ def build_abi(abi, variant, jobs, ndk, legacy_ndk, target_dir):
         raise znn.BuildError(f"cargo produced no binary at {produced}")
     destination = znn.daemon_output(variant) / abi / "znnd"
     destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(produced, destination)
+    if split_symbols:
+        from native_symbols import split_binary
+
+        strip_mode = "all" if unoptimized else znn.optimize.strip_mode(settings, variant)
+        split_binary(produced, destination, ndk, strip_mode)
+    else:
+        shutil.copy2(produced, destination)
+        destination.with_name(f"{destination.name}.dbg").unlink(missing_ok=True)
     print(
         f"daemon: built {abi} ({destination.stat().st_size} bytes)",
         flush=True,

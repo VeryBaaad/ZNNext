@@ -53,11 +53,18 @@ ZNNext 施於 Android 5 以上。
 
 > [!TIP]
 > 數端或不行於若干之核，然無礙日用。
->
-> armeabi、x86、riscv64、mips64、mips 者，須自撰：
-> ```
-> build.py zip<Release|Debug> --abis <armeabi,x86,riscv64,mips64,mips>
-> ```
+
+---
+
+### 編譯
+
+`armeabi`、`x86`、`riscv64`、`mips64`、`mips` 須自行編譯。以 `--abis` 擇其架構。
+
+```sh
+python3 build.py zipRelease --abis riscv64
+```
+
+欲得調試版，用 `zipDebug`。所成之包在 `module/build/outputs/release/`，加 `--split-debug-symbols` 可兼得 `.symbols.zip`。
 
 ---
 

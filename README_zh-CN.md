@@ -53,11 +53,18 @@ ZNNext 支持 Android 5 及以上
 
 > [!TIP]
 > 一些功能在某些不支持的 Linux 内核上不可用，但不影响日常使用。
->
-> 对于armeabi，x86，riscv64，mips64和mips，你需要自行编译:
-> ```
-> build.py zip<Release|Debug> --abis <armeabi,x86,riscv64,mips64,mips>
-> ```
+
+---
+
+### 编译
+
+`armeabi`、`x86`、`riscv64`、`mips64` 和 `mips` 需自行编译。用 `--abis` 指定目标架构。
+
+```sh
+python3 build.py zipRelease --abis riscv64
+```
+
+调试版使用 `zipDebug`。产物位于 `module/build/outputs/release/`，加上 `--split-debug-symbols` 可同时生成 `.symbols.zip`。
 
 ---
 

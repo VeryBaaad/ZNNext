@@ -53,11 +53,18 @@ Supported ABIs: arm64-v8a, armeabi-v7a, armeabi, x86_64, x86, riscv64, mips64, m
 
 > [!TIP]
 > Some features may not function on certain Linux kernels, this does not affect daily use.
->
-> For armeabi, x86, riscv64, mips64, and mips, you need to compile them yourself:
-> ```
-> build.py zip<Release|Debug> --abis <armeabi,x86,riscv64,mips64,mips>
-> ```
+
+---
+
+### Build
+
+Build `armeabi`, `x86`, `riscv64`, `mips64`, and `mips` from source. Select the target with `--abis`.
+
+```sh
+python3 build.py zipRelease --abis riscv64
+```
+
+Use `zipDebug` for a debug build. Outputs go to `module/build/outputs/release/`. Add `--split-debug-symbols` to generate a matching `.symbols.zip`.
 
 ---
 

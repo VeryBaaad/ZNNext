@@ -211,6 +211,10 @@ def strip_mode(settings, variant):
     return settings.strip
 
 
+def source_symbol_settings(settings):
+    return replace(settings, strip="none", build_id=True, rust_debuginfo="line-tables")
+
+
 def loader_compile_flags(settings, variant, legacy):
     """Compiler flags added on top of the project's baseline warnings."""
     flags = []
@@ -324,12 +328,15 @@ def rust_flags(settings, variant, legacy, allow_immediate_abort=True):
 def rust_target_environment(
     settings, variant, target, legacy=False, allow_immediate_abort=True
 ):
-    key = "CARGO_TARGET_" + target.upper().replace("-", "_") + "_RUSTFLAGS"
     return {
-        key: rust_flags(
+        rust_target_flags_key(target): rust_flags(
             settings, variant, legacy, allow_immediate_abort=allow_immediate_abort
         )
     }
+
+
+def rust_target_flags_key(target):
+    return "CARGO_TARGET_" + target.upper().replace("-", "_") + "_RUSTFLAGS"
 
 
 def rust_profile_environment(settings, variant, codegen_units=None):
