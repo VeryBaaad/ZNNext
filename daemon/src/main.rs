@@ -45,6 +45,7 @@ mod paths;
 mod plan;
 mod procfs;
 mod ptrace_ops;
+mod safe_boot;
 mod state;
 mod state_socket;
 mod sys;

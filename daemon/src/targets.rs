@@ -122,8 +122,15 @@ pub fn read_prop(module_dir: &Path, key: &str) -> String {
     String::new()
 }
 
-pub fn collect(previous: &BTreeMap<String, ModuleInfo>) -> BTreeMap<String, ModuleInfo> {
+fn collect(
+    previous: &BTreeMap<String, ModuleInfo>,
+    allowed: Option<&BTreeSet<String>>,
+) -> BTreeMap<String, ModuleInfo> {
     let mut modules = BTreeMap::new();
+    if allowed.is_some_and(BTreeSet::is_empty) {
+        return modules;
+    }
+    let permits = |id: &str| allowed.is_none_or(|ids| ids.contains(id));
     let entries = match fs::read_dir(paths::MODULES_DIR) {
         Ok(entries) => entries,
         Err(error) => {
@@ -131,7 +138,9 @@ pub fn collect(previous: &BTreeMap<String, ModuleInfo>) -> BTreeMap<String, Modu
                 "cannot list {}: {error}; keeping the previous module table",
                 paths::MODULES_DIR
             );
-            return previous.clone();
+            let mut retained = previous.clone();
+            retained.retain(|id, _| permits(id));
+            return retained;
         }
     };
 
@@ -140,7 +149,7 @@ pub fn collect(previous: &BTreeMap<String, ModuleInfo>) -> BTreeMap<String, Modu
         let Some(id) = file_name.to_str() else {
             continue;
         };
-        if id.starts_with('.') {
+        if id.starts_with('.') || !permits(id) {
             continue;
         }
         let module_dir = PathBuf::from(paths::MODULES_DIR).join(id);
@@ -261,7 +270,13 @@ pub fn libraries_for(modules: &BTreeMap<String, ModuleInfo>, exe: &str) -> Vec<M
 
 impl Daemon {
     pub fn collect_targets(&mut self) {
-        self.modules = collect(&self.modules);
+        self.modules = match crate::safe_boot::allowed_modules() {
+            Ok(allowed) => collect(&self.modules, allowed.as_ref()),
+            Err(error) => {
+                logw!("cannot read safe boot state: {error}; pausing ZNNext modules");
+                BTreeMap::new()
+            }
+        };
         self.targets = flatten(&self.modules);
     }
 

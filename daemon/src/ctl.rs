@@ -56,7 +56,7 @@ const STOP_ATTEMPTS: u32 = 80;
 
 const START_TIMEOUT: Duration = Duration::from_secs(4);
 
-const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-export|config-diff [JSON]|config-import [JSON]|config-reset|config-undo|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
+const USAGE: &str = "usage: znnd --ctl <status|system|modules|safe-boot <status|arm|cancel|enable ID>|config|config-export|config-diff [JSON]|config-import [JSON]|config-reset|config-undo|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
 
 const CONFIG_SET_USAGE: &str = "usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>";
 
@@ -77,7 +77,9 @@ pub fn command() -> ClapCommand {
                 .num_args(1..=3)
                 .conflicts_with(MODULE_DIR_ARGUMENT)
                 .help(
-                    "Control command: status, system, modules, config, config-export, \
+                    "Control command: status, system, modules, safe-boot <status|arm|cancel|enable ID> \
+                       (pause ZNNext module loading for the next boot, then enable modules individually), \
+                       config, config-export, \
                        config-diff [JSON] and config-import [JSON] (default to stdin), \
                        config-reset (restore device defaults), config-undo (undo the last change), \
                        config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> \
@@ -109,6 +111,13 @@ pub fn ctl_main(arguments: &[String]) -> i32 {
         "exit" => signal_daemon(signal::SIGTERM, |pid| format!("daemon ({pid}) exited")),
         "start" => start_daemon(false),
         "restart" => start_daemon(true),
+        "safe-boot" => match crate::safe_boot::command(arguments) {
+            Ok(report) => print_json(&report),
+            Err(error) => {
+                eprintln!("{error}");
+                1
+            }
+        },
         "config" => print_json(&config::effective().report()),
         "config-export" if arguments.is_empty() => {
             config_result(read_config().map(|config| print_json(&config)))

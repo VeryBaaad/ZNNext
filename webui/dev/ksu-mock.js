@@ -224,6 +224,42 @@
     config: config,
     modules: modules,
   };
+  var recoveryActive = params.get('safe-boot') === 'active';
+  var recoveryArmed = false;
+  var recoveryEnabled = new Set();
+  var recoveryModules = modules
+    .filter(module => !module.disabled && module.declarationIssue !== 'noDeclarations')
+    .map(module => module.id)
+    .sort();
+
+  function safeBoot(operands) {
+    var action = operands[0];
+    if (action === 'enable' && operands.length === 2) {
+      if (!recoveryActive) throw new Error('safe boot is not active');
+      if (!recoveryModules.includes(operands[1])) throw new Error('ineligible module: ' + operands[1]);
+      recoveryEnabled.add(operands[1]);
+    } else if (operands.length === 1 && (action === 'arm' || action === 'cancel')) {
+      recoveryArmed = action === 'arm';
+    } else if (action !== 'status' || operands.length !== 1) {
+      throw new Error('usage: znnd --ctl safe-boot <status|arm|cancel|enable ID>');
+    }
+    return {
+      active: recoveryActive,
+      armed: recoveryArmed,
+      enabled: Array.from(recoveryEnabled).sort(),
+      paused: recoveryActive ? recoveryModules.filter(id => !recoveryEnabled.has(id)) : [],
+    };
+  }
+
+  function moduleReport() {
+    if (!state.running) return [];
+    if (!recoveryActive) return state.modules;
+    return state.modules.flatMap(module => {
+      if (recoveryEnabled.has(module.id)) return [module];
+      if (module.disabled || module.declarationIssue) return [{ ...module, processes: [], failed: [] }];
+      return [];
+    });
+  }
 
   function isOptionalConfigKey(kind) {
     return kind === 'inline32' || kind === 'plt32';
@@ -355,7 +391,9 @@
           root: { magisk: null, kernelSU: 'ksud v3.0.0', apatch: null },
         };
       case 'modules':
-        return state.running ? state.modules : [];
+        return moduleReport();
+      case 'safe-boot':
+        return safeBoot(operands);
       case 'config':
         return state.config;
       case 'config-export':
@@ -479,7 +517,7 @@
   };
 
   console.info(
-    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|waiting|mixed ?logs=empty ' +
+    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?safe-boot=active ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|waiting|mixed ?logs=empty ' +
       '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=logs@1,bugreport@1',
   );
 })();
