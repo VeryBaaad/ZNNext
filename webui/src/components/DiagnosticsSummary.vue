@@ -24,8 +24,9 @@ import { computed, ref } from "vue";
 
 import { readDiagnosticLogs, saveDiagnosticReport } from "../api/diagnostics";
 import { isKsuAvailable } from "../api/ksu";
+import { readLoadHistory } from "../api/load-history";
 import { useAppActions } from "../composables/app-actions";
-import { t } from "../i18n";
+import { locale, t } from "../i18n";
 import CopyButton from "./CopyButton.vue";
 
 const available = isKsuAvailable();
@@ -37,6 +38,16 @@ const logsFailed = ref(false);
 const exporting = ref(false);
 const exportFailed = ref(false);
 const savedPath = ref("");
+const history = ref<Awaited<ReturnType<typeof readLoadHistory>>>([]);
+const historyState = ref<"idle" | "loading" | "ready" | "failed">("idle");
+const elapsedFormat = computed(
+  () =>
+    new Intl.NumberFormat(locale.value === "lzh" ? "zh-Hant" : locale.value, {
+      style: "unit",
+      unit: "millisecond",
+      maximumFractionDigits: 3,
+    }),
+);
 
 const text = computed(() =>
   logs.value ? `${summary.value}\n\n${logs.value}` : summary.value,
@@ -55,6 +66,15 @@ const exportFeedback = computed(() => {
   return savedPath.value
     ? t("diagnostics.saved", { path: savedPath.value })
     : "";
+});
+
+const historyFeedback = computed(() => {
+  if (historyState.value === "loading") return t("diagnostics.historyLoading");
+  if (historyState.value === "failed") return t("diagnostics.historyFailed");
+  if (historyState.value === "ready" && !history.value.length) {
+    return t("diagnostics.historyEmpty");
+  }
+  return "";
 });
 
 async function loadLogs(): Promise<void> {
@@ -85,6 +105,22 @@ async function exportReport(): Promise<void> {
     exportFailed.value = true;
   } finally {
     exporting.value = false;
+  }
+}
+
+function onHistoryToggle(event: Event): void {
+  const details = event.currentTarget as HTMLDetailsElement;
+  if (details.open && historyState.value === "idle") void loadHistory();
+}
+
+async function loadHistory(): Promise<void> {
+  if (historyState.value === "loading") return;
+  historyState.value = "loading";
+  try {
+    history.value = await readLoadHistory();
+    historyState.value = "ready";
+  } catch {
+    historyState.value = "failed";
   }
 }
 </script>
@@ -118,6 +154,44 @@ async function exportReport(): Promise<void> {
       </button>
     </div>
     <p class="diagnostics-feedback" role="status">{{ exportFeedback }}</p>
+    <details class="diagnostics-history" @toggle="onHistoryToggle">
+      <summary>{{ t("diagnostics.historyTitle") }}</summary>
+      <div class="diagnostics-actions">
+        <button
+          class="diagnostics-button"
+          type="button"
+          :disabled="historyState === 'loading'"
+          @click="loadHistory"
+        >
+          {{
+            t(historyState === "failed" ? "refresh.retry" : "actions.refresh")
+          }}
+        </button>
+      </div>
+      <p class="diagnostics-feedback" role="status">{{ historyFeedback }}</p>
+      <ol
+        v-if="historyState === 'ready' && history.length"
+        class="diagnostics-history-list"
+        role="list"
+      >
+        <li v-for="(entry, index) in history" :key="index">
+          <time :datetime="entry.time">{{ entry.time }}</time>
+          <code>{{ entry.library }}</code>
+          <div class="diagnostics-history-result">
+            <span>
+              {{
+                t(
+                  entry.loaded
+                    ? "diagnostics.historyLoaded"
+                    : "diagnostics.historyLoadFailed",
+                )
+              }}
+            </span>
+            <span>{{ elapsedFormat.format(entry.elapsedUs / 1000) }}</span>
+          </div>
+        </li>
+      </ol>
+    </details>
   </details>
 </template>
 
@@ -190,5 +264,40 @@ async function exportReport(): Promise<void> {
 
 .diagnostics-feedback:not(:empty) {
   margin-block: 4px 8px;
+}
+
+.diagnostics-history {
+  border-block-start: 1px solid
+    color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.diagnostics-history-list {
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  list-style: none;
+  font-size: 0.8125rem;
+  text-align: start;
+}
+
+.diagnostics-history-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 10px;
+  padding-block: 8px;
+  overflow-wrap: anywhere;
+}
+
+.diagnostics-history-list li + li {
+  border-block-start: 1px solid
+    color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.diagnostics-history-result {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 2;
+  gap: 0 8px;
 }
 </style>

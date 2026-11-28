@@ -138,6 +138,12 @@ export const en: Record<string, string> = {
   "diagnostics.exporting": "Exporting…",
   "diagnostics.exportFailed": "Couldn’t export the report. Try again.",
   "diagnostics.saved": "Report saved to {path}",
+  "diagnostics.historyTitle": "Recent library loads",
+  "diagnostics.historyLoading": "Loading history…",
+  "diagnostics.historyFailed": "Couldn’t read library load history.",
+  "diagnostics.historyEmpty": "No recent library loads.",
+  "diagnostics.historyLoaded": "Loaded",
+  "diagnostics.historyLoadFailed": "Load failed",
 
   "footer.github": "Github",
 };

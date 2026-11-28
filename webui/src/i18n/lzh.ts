@@ -137,6 +137,12 @@ export const lzh: Dictionary = {
   "diagnostics.exporting": "匯出中…",
   "diagnostics.exportFailed": "呈報未能匯出，請重試。",
   "diagnostics.saved": "呈報已存於 {path}",
+  "diagnostics.historyTitle": "庫檔近載之錄",
+  "diagnostics.historyLoading": "閱錄中…",
+  "diagnostics.historyFailed": "未能讀庫檔載入之錄。",
+  "diagnostics.historyEmpty": "未有庫檔近載之錄。",
+  "diagnostics.historyLoaded": "載成",
+  "diagnostics.historyLoadFailed": "載入未成",
 
   "footer.github": "章魚貓",
 };

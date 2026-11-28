@@ -25,6 +25,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <chrono>
+
 #include "api/api.h"
 #include "ipc/channel.h"
 #include "log.h"
@@ -35,6 +37,31 @@
 namespace znn::module {
 namespace {
 
+struct LoadRecord {
+  const std::string& path;
+  std::chrono::steady_clock::time_point start =
+      std::chrono::steady_clock::now();
+  bool loaded = false;
+
+  ~LoadRecord() {
+    const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - start);
+    const char* slash = strrchr(path.c_str(), '/');
+    const char* name = slash ? slash + 1 : path.c_str();
+    for (const unsigned char* ch = reinterpret_cast<const unsigned char*>(name);
+         *ch; ++ch) {
+      if (*ch < 32 || *ch == 127) {
+        name = "?";
+        break;
+      }
+    }
+    __android_log_print(ANDROID_LOG_INFO, "ZNNextLoad", "%s %lld %s",
+                        loaded ? "loaded" : "failed",
+                        static_cast<long long>(elapsed.count()),
+                        *name ? name : "?");
+  }
+};
+
 int openCompanionChannel(const Plan& plan, const PlanModule& module) {
   const int fd = ipc::bindChannel(plan.nonce, module.index);
   if (fd < 0) {
@@ -44,6 +71,7 @@ int openCompanionChannel(const Plan& plan, const PlanModule& module) {
 }
 
 void loadEntry(const Plan& plan, const PlanModule& entry) {
+  LoadRecord record{entry.path};
   const long page_size = sysconf(_SC_PAGESIZE);
   if (page_size > 0) {
     size_t min_align = 0;
@@ -93,6 +121,7 @@ void loadEntry(const Plan& plan, const PlanModule& entry) {
   LOGI("loading module %s (companion=%s, api=%d)", entry.path.c_str(),
        entry.companion ? "yes" : "no", m->target_api_version);
   m->onModuleLoaded(handle, api::apiForVersion(m->target_api_version));
+  record.loaded = true;
 }
 
 }  // namespace

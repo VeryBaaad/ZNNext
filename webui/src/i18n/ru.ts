@@ -142,6 +142,13 @@ export const ru: Dictionary = {
   "diagnostics.exportFailed":
     "Не удалось экспортировать отчёт. Попробуйте ещё раз.",
   "diagnostics.saved": "Отчёт сохранён в {path}",
+  "diagnostics.historyTitle": "Недавние загрузки библиотек",
+  "diagnostics.historyLoading": "Чтение истории…",
+  "diagnostics.historyFailed":
+    "Не удалось прочитать историю загрузок библиотек.",
+  "diagnostics.historyEmpty": "Недавних загрузок библиотек нет.",
+  "diagnostics.historyLoaded": "Загружена",
+  "diagnostics.historyLoadFailed": "Ошибка загрузки",
 
   "footer.github": "Github",
 };

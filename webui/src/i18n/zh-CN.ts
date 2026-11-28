@@ -137,6 +137,12 @@ export const zhCN: Dictionary = {
   "diagnostics.exporting": "正在导出…",
   "diagnostics.exportFailed": "无法导出报告，请重试。",
   "diagnostics.saved": "报告已保存到 {path}",
+  "diagnostics.historyTitle": "近期库加载记录",
+  "diagnostics.historyLoading": "正在读取加载记录…",
+  "diagnostics.historyFailed": "无法读取库加载记录。",
+  "diagnostics.historyEmpty": "暂无近期库加载记录。",
+  "diagnostics.historyLoaded": "加载成功",
+  "diagnostics.historyLoadFailed": "加载失败",
 
   "footer.github": "Github",
 };
