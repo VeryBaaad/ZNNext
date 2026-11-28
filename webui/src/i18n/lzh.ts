@@ -43,8 +43,6 @@ export const lzh: Dictionary = {
   "zn.daemon": "宿衛",
   "zn.modules.title": "天樞諸司 ({n})",
   "zn.modules.empty": "未設諸司",
-  "zn.modules.badge": "有瑕",
-  "zn.issue.banner": "察諸司之有瑕者凡 {n}，宜速考校。",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
   "info.rootImpl": "判官",
@@ -53,8 +51,9 @@ export const lzh: Dictionary = {
   "info.unknown": "迷濛",
 
   "modules.processes": "公務有 {n}",
-  "modules.failed": "折損有 {n}",
-  "modules.failedTitle": "進言受阻",
+  "modules.failed": "未成者 {n} 條",
+  "modules.failedTitle": "載入未成之錄",
+  "modules.failedBanner": "載入未成之錄凡 {n} 條，請閱模組列表。",
   "modules.noModules": "無司",
   "modules.noProcesses": "無事",
 

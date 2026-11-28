@@ -52,7 +52,7 @@ function failed(present: boolean): boolean {
 
 const modules = computed<ZnnModule[]>(() => props.modules ?? []);
 
-const issueCount = computed(() =>
+const failureRecordCount = computed(() =>
   modules.value.reduce(
     (total, module) => total + (module.failed ?? []).length,
     0,
@@ -84,8 +84,8 @@ const EMPTY_CONFIG: HookConfig = {
     <ZnTopBar />
 
     <main class="zn-container">
-      <ZnAlert v-if="showDashboard && issueCount > 0">
-        {{ t("zn.issue.banner", { n: issueCount }) }}
+      <ZnAlert v-if="showDashboard && failureRecordCount > 0">
+        {{ t("modules.failedBanner", { n: failureRecordCount }) }}
       </ZnAlert>
 
       <template v-if="showDashboard">

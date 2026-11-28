@@ -41,9 +41,6 @@ export const en: Record<string, string> = {
   "zn.daemon": "Daemon",
   "zn.modules.title": "ZN Modules ({n})",
   "zn.modules.empty": "No modules loaded",
-  "zn.modules.badge": "Has issues",
-  "zn.issue.banner":
-    "Detected {n} module(s) with problems. Please check the module list.",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
   "info.rootImpl": "Root Implementation",
@@ -52,8 +49,10 @@ export const en: Record<string, string> = {
   "info.unknown": "Unknown",
 
   "modules.processes": "{n} processes",
-  "modules.failed": "{n} failed",
-  "modules.failedTitle": "Injection failures",
+  "modules.failed": "Failure records ({n})",
+  "modules.failedTitle": "Load failure records",
+  "modules.failedBanner":
+    "Review load failure records ({n}) in the module list.",
   "modules.noModules": "No modules",
   "modules.noProcesses": "No processes",
 

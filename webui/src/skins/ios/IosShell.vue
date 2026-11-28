@@ -69,7 +69,7 @@ function unavailable(present: boolean): boolean {
   return props.ksuAvailable && !props.loading && !present;
 }
 
-const issueCount = computed(() =>
+const failureRecordCount = computed(() =>
   (props.modules ?? []).reduce(
     (total, module) => total + (module.failed ?? []).length,
     0,
@@ -101,9 +101,11 @@ const EMPTY_CONFIG: HookConfig = {
 
       <template v-if="showDashboard">
         <div class="ios-content">
-          <IosAlert v-if="issueCount > 0" class="ios-banner">
+          <IosAlert v-if="failureRecordCount > 0" class="ios-banner">
             <IosIcon name="warning" :size="18" />
-            <span>{{ t("zn.issue.banner", { n: issueCount }) }}</span>
+            <span>{{
+              t("modules.failedBanner", { n: failureRecordCount })
+            }}</span>
           </IosAlert>
 
           <IosInfoCard

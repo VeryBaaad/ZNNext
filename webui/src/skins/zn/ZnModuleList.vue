@@ -65,7 +65,7 @@ const basename = (value: string): string => {
         </span>
         <span class="zn-module-tags">
           <ZnTag v-if="failures(module) > 0" tone="warn" small>
-            {{ t("zn.modules.badge") }}
+            {{ t("modules.failed", { n: failures(module) }) }}
           </ZnTag>
           <ZnTag tone="info" small>{{
             t("modules.processes", { n: module.processes.length })

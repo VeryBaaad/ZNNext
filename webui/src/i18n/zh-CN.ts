@@ -43,8 +43,6 @@ export const zhCN: Dictionary = {
   "zn.daemon": "守护进程",
   "zn.modules.title": "ZN 模块 ({n})",
   "zn.modules.empty": "未加载任何模块",
-  "zn.modules.badge": "存在问题",
-  "zn.issue.banner": "检测到 {n} 个存在问题的模块，请检查模块列表。",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
   "info.rootImpl": "Root 实现",
@@ -53,8 +51,9 @@ export const zhCN: Dictionary = {
   "info.unknown": "未知",
 
   "modules.processes": "{n} 个进程",
-  "modules.failed": "{n} 个失败",
-  "modules.failedTitle": "注入失败",
+  "modules.failed": "{n} 条失败记录",
+  "modules.failedTitle": "加载失败记录",
+  "modules.failedBanner": "有 {n} 条加载失败记录，请查看模块列表。",
   "modules.noModules": "无模块",
   "modules.noProcesses": "无进程",
 

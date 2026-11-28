@@ -43,9 +43,6 @@ export const ru: Dictionary = {
   "zn.daemon": "Демон",
   "zn.modules.title": "Модули ZN ({n})",
   "zn.modules.empty": "Модули не загружены",
-  "zn.modules.badge": "Есть проблемы",
-  "zn.issue.banner":
-    "Обнаружено {n} модуля(ей) с проблемами. Проверьте список модулей.",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
   "info.rootImpl": "Реализация root",
@@ -54,8 +51,10 @@ export const ru: Dictionary = {
   "info.unknown": "Неизвестно",
 
   "modules.processes": "{n} процесс(ов)",
-  "modules.failed": "{n} сбой(ов)",
-  "modules.failedTitle": "Ошибки инъекции",
+  "modules.failed": "Записи о сбоях ({n})",
+  "modules.failedTitle": "Записи о сбоях загрузки",
+  "modules.failedBanner":
+    "В списке модулей есть записи о сбоях загрузки ({n}).",
   "modules.noModules": "Нет модулей",
   "modules.noProcesses": "Нет процессов",
 
