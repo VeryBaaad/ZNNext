@@ -218,18 +218,17 @@ pub struct ModuleLibrary {
     pub companion: bool,
 }
 
+pub fn module_library_path(module_dir: &Path, library: &str) -> io::Result<Option<PathBuf>> {
+    let library = fs::canonicalize(module_dir.join(library))?;
+    let module = fs::canonicalize(module_dir)?;
+    Ok((library != module && library.starts_with(module)).then_some(library))
+}
+
 pub fn resolve_library(module_dir: &Path, library: &str) -> Option<String> {
-    let candidate = if library.starts_with('/') {
-        PathBuf::from(library)
-    } else {
-        module_dir.join(library)
-    };
-    let library = fs::canonicalize(candidate).ok()?;
-    let module = fs::canonicalize(module_dir).ok()?;
-    if library == module || !library.starts_with(&module) {
-        return None;
-    }
-    Some(library.to_string_lossy().into_owned())
+    module_library_path(module_dir, library)
+        .ok()
+        .flatten()
+        .map(|path| path.to_string_lossy().into_owned())
 }
 
 pub fn libraries_for(modules: &BTreeMap<String, ModuleInfo>, exe: &str) -> Vec<ModuleLibrary> {

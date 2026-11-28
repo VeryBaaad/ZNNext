@@ -162,6 +162,19 @@
     processes: [],
     failed: [],
   };
+  var missingLibrariesModule = {
+    id: 'missing_libraries_example',
+    name: 'Missing Libraries Example',
+    version: 'v1.7.0',
+    disabled: false,
+    declarationIssue: 'missingLibraries',
+    missingLibraries: [
+      'lib/arm64-v8a/libexample.so',
+      'lib/arm64-v8a/plugins/feature-set/release/libexample_module_with_optional_native_support_and_diagnostics.so',
+    ],
+    processes: [],
+    failed: [],
+  };
   if (modulesOverride === 'none') {
     modules = [];
   } else if (modulesOverride === 'no-version') {
@@ -170,10 +183,16 @@
     modules = [disabledModule];
   } else if (modulesOverride === 'no-declarations') {
     modules = [undeclaredModule];
+  } else if (modulesOverride === 'missing-libraries') {
+    modules = [missingLibrariesModule];
   } else if (modulesOverride === 'mixed') {
     modules = [
       disabledModule,
       undeclaredModule,
+      {
+        ...missingLibrariesModule,
+        processes: [{ pid: 2215, name: 'native_service' }],
+      },
       {
         id: 'idle_example',
         name: 'Idle Example',
@@ -449,7 +468,7 @@
   };
 
   console.info(
-    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|mixed ?logs=empty ' +
+    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|mixed ?logs=empty ' +
       '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=logs@1,bugreport@1',
   );
 })();

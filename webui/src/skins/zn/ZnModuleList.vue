@@ -24,6 +24,7 @@ import { ref } from "vue";
 
 import { moduleStatusKey, type ZnnModule } from "../../api/modules";
 import CopyFailure from "../../components/CopyFailure.vue";
+import MissingLibraryList from "../../components/MissingLibraryList.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
 import ZnTag from "./ZnTag.vue";
@@ -93,6 +94,10 @@ const basename = (value: string): string => {
           <span>{{ t("info.version") }}</span>
           <span class="zn-field-value">{{ module.version }}</span>
         </div>
+        <MissingLibraryList
+          v-if="module.missingLibraries?.length"
+          :libraries="module.missingLibraries"
+        />
         <div
           v-if="!moduleStatusKey(module) && module.processes.length === 0"
           class="zn-empty-line"

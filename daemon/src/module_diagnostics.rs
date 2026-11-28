@@ -19,16 +19,17 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::{fs, io, path::Path};
 
 use serde_json::{Value, json, value::RawValue};
 
-use crate::targets::{declarations, read_prop};
+use crate::targets::{declarations, module_library_path, read_prop};
 
 enum ModuleIssue {
     Disabled,
     NoDeclarations,
+    MissingLibraries(Vec<String>),
 }
 
 impl ModuleIssue {
@@ -36,8 +37,41 @@ impl ModuleIssue {
         match self {
             Self::Disabled => module["disabled"] = Value::Bool(true),
             Self::NoDeclarations => module["declarationIssue"] = json!("noDeclarations"),
+            Self::MissingLibraries(paths) => {
+                module["declarationIssue"] = json!("missingLibraries");
+                module["missingLibraries"] = json!(paths);
+            }
         }
     }
+}
+
+fn library_missing(dir: &Path, library: &str) -> bool {
+    let file =
+        module_library_path(dir, library).and_then(|path| path.map(fs::metadata).transpose());
+    match file {
+        Ok(Some(metadata)) => !metadata.is_file(),
+        Ok(None) => true,
+        Err(error) => matches!(
+            error.kind(),
+            io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+        ),
+    }
+}
+
+fn module_issue(dir: &Path) -> Option<ModuleIssue> {
+    if dir.join("disable").exists() {
+        return Some(ModuleIssue::Disabled);
+    }
+    let entries = declarations(dir).ok()?;
+    if entries.is_empty() {
+        return Some(ModuleIssue::NoDeclarations);
+    }
+    let libraries: BTreeSet<_> = entries.into_iter().map(|entry| entry.library).collect();
+    let missing: Vec<_> = libraries
+        .into_iter()
+        .filter(|path| library_missing(dir, path))
+        .collect();
+    (!missing.is_empty()).then_some(ModuleIssue::MissingLibraries(missing))
 }
 
 pub fn include_diagnostics(live: &RawValue, root: &Path) -> io::Result<Option<Vec<Value>>> {
@@ -54,14 +88,9 @@ pub fn include_diagnostics(live: &RawValue, root: &Path) -> io::Result<Option<Ve
         {
             continue;
         }
-        let issue = if dir.join("disable").exists() {
-            ModuleIssue::Disabled
-        } else if declarations(&dir).is_ok_and(|entries| entries.is_empty()) {
-            ModuleIssue::NoDeclarations
-        } else {
-            continue;
-        };
-        issues.insert(id, (dir, issue));
+        if let Some(issue) = module_issue(&dir) {
+            issues.insert(id, (dir, issue));
+        }
     }
     if issues.is_empty() {
         return Ok(None);

@@ -38,17 +38,24 @@ export interface ZnnModule {
   name: string;
   version: string;
   disabled?: boolean;
-  declarationIssue?: "noDeclarations";
+  declarationIssue?: "noDeclarations" | "missingLibraries";
+  missingLibraries?: string[];
   processes: InjectedProcess[];
   failed?: FailedProcess[];
 }
 
 export function moduleStatusKey(
   module: ZnnModule,
-): "modules.disabled" | "modules.noDeclarations" | undefined {
+):
+  | "modules.disabled"
+  | "modules.noDeclarations"
+  | "modules.missingLibraries"
+  | undefined {
   if (module.disabled === true) return "modules.disabled";
   if (module.declarationIssue === "noDeclarations")
     return "modules.noDeclarations";
+  if (module.declarationIssue === "missingLibraries")
+    return "modules.missingLibraries";
 }
 
 function normaliseProcesses(raw: unknown): InjectedProcess[] {
@@ -92,14 +99,24 @@ function normaliseModule(raw: unknown): ZnnModule | null {
   const module = raw as Record<string, unknown>;
   if (typeof module.id !== "string" || typeof module.name !== "string")
     return null;
+  const issue = module.declarationIssue;
   return {
     id: module.id,
     name: module.name,
     version: typeof module.version === "string" ? module.version.trim() : "",
     disabled: module.disabled === true,
     declarationIssue:
-      module.declarationIssue === "noDeclarations"
-        ? "noDeclarations"
+      issue === "noDeclarations" || issue === "missingLibraries"
+        ? issue
+        : undefined,
+    missingLibraries:
+      module.disabled !== true &&
+      issue === "missingLibraries" &&
+      Array.isArray(module.missingLibraries)
+        ? module.missingLibraries.filter(
+            (path): path is string =>
+              typeof path === "string" && path.length > 0,
+          )
         : undefined,
     processes: normaliseProcesses(module.processes),
     failed: normaliseFailed(module.failed),

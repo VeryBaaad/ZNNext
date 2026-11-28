@@ -31,6 +31,7 @@ import { computed, ref, watch } from "vue";
 
 import { moduleStatusKey, type ZnnModule } from "../../api/modules";
 import CopyFailure from "../../components/CopyFailure.vue";
+import MissingLibraryList from "../../components/MissingLibraryList.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
 import { ChevronForward } from "./icons";
@@ -109,6 +110,9 @@ function open(id: string): void {
       :title="t('info.version')"
       :summary="selected.version"
     />
+    <MiuixBasicComponent v-if="selected?.missingLibraries?.length">
+      <MissingLibraryList :libraries="selected.missingLibraries" />
+    </MiuixBasicComponent>
     <MiuixBasicComponent
       v-if="
         selected &&

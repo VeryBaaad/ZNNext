@@ -25,6 +25,7 @@ import { computed, ref } from "vue";
 
 import { moduleStatusKey, type ZnnModule } from "../../api/modules";
 import CopyFailure from "../../components/CopyFailure.vue";
+import MissingLibraryList from "../../components/MissingLibraryList.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
 import IosTag from "./IosTag.vue";
@@ -119,6 +120,14 @@ function basename(value: string): string {
               <span class="ios-value" :title="module.version">{{
                 module.version
               }}</span>
+            </template>
+          </k-list-item>
+          <k-list-item
+            v-if="module.missingLibraries?.length"
+            class="ios-child-item"
+          >
+            <template #inner>
+              <MissingLibraryList :libraries="module.missingLibraries" />
             </template>
           </k-list-item>
           <k-list-item

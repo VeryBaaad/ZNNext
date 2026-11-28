@@ -22,6 +22,7 @@
 
 import { moduleStatusKey, type ZnnModule } from "../../api/modules";
 import CopyFailure from "../../components/CopyFailure.vue";
+import MissingLibraryList from "../../components/MissingLibraryList.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
 
@@ -81,6 +82,9 @@ const basename = (value: string): string => {
               <span class="proc-name" :title="module.version">{{
                 module.version
               }}</span>
+            </div>
+            <div v-if="module.missingLibraries?.length" class="proc-row">
+              <MissingLibraryList :libraries="module.missingLibraries" />
             </div>
             <div
               v-if="!moduleStatusKey(module) && module.processes.length === 0"
