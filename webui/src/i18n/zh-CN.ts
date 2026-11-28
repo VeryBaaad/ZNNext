@@ -61,6 +61,7 @@ export const zhCN: Dictionary = {
   "info.rootImpl": "Root 实现",
   "info.rootImpl.none": "未检测到",
   "info.mode": "当前模式",
+  "info.pageSize": "内存页大小",
   "info.unknown": "未知",
 
   "modules.processes": "{n} 个进程",

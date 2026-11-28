@@ -27,7 +27,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::sys::fs as raw_fs;
-use crate::sys::prop;
+use crate::sys::{page, prop};
 
 /// Upper bound on how long a helper may take to answer; past it the probe is
 /// abandoned so a misbehaving helper cannot hold up the daemon.
@@ -45,6 +45,7 @@ pub struct RootImpl {
 pub struct SystemInfo {
     pub kernel: String,
     pub sdk: i32,
+    pub page_size: Option<u64>,
     pub abi: String,
     pub abilist: String,
     pub root: RootImpl,
@@ -111,6 +112,7 @@ pub fn collect() -> SystemInfo {
         sdk: prop::system_property("ro.build.version.sdk")
             .and_then(|value| value.parse().ok())
             .unwrap_or(0),
+        page_size: page::measured_size(),
         abi: prop::system_property("ro.product.cpu.abi").unwrap_or_default(),
         abilist: prop::system_property("ro.product.cpu.abilist").unwrap_or_default(),
         root: RootImpl::default(),

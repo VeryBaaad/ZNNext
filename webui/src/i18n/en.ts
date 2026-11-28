@@ -59,6 +59,7 @@ export const en: Record<string, string> = {
   "info.rootImpl": "Root Implementation",
   "info.rootImpl.none": "None detected",
   "info.mode": "Current Mode",
+  "info.pageSize": "Memory page size",
   "info.unknown": "Unknown",
 
   "modules.processes": "{n} processes",

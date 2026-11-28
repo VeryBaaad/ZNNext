@@ -19,7 +19,11 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-import { cleanVersion, type RootImplementation } from "../api/system";
+import {
+  cleanVersion,
+  formatPageSize,
+  type RootImplementation,
+} from "../api/system";
 import type { AppData } from "../composables/use-app-data";
 
 const knownAbis = new Set([
@@ -70,6 +74,7 @@ export function formatDiagnosticSummary(data: AppData): string {
     `Configured mode: ${configured && [...activeModes, "auto"].includes(configured) ? configured : unknown}`,
     `Android SDK: ${Number.isSafeInteger(sdk) && sdk > 0 ? sdk : unknown}`,
     `Kernel: ${system?.kernel.match(/^\d+\.\d+(?:\.\d+)?/)?.[0] ?? unknown}`,
+    `Memory page size: ${formatPageSize(system?.pageSize) ?? unknown}`,
     `ABI: ${system && knownAbis.has(system.abi) ? system.abi : unknown}`,
     `Root: ${rootSummary(system?.root)}`,
     `ZN modules: ${modules?.length ?? unknown}`,

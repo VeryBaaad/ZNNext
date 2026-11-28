@@ -49,6 +49,8 @@ pub struct StateReport<'a> {
 pub struct SystemReport<'a> {
     kernel: &'a str,
     sdk: i32,
+    #[serde(rename = "pageSize", skip_serializing_if = "Option::is_none")]
+    page_size: Option<u64>,
     abi: &'a str,
     abilist: &'a str,
     root: RootReport<'a>,
@@ -59,6 +61,7 @@ impl SystemReport<'_> {
         SystemReport {
             kernel: "",
             sdk: 0,
+            page_size: None,
             abi: "",
             abilist: "",
             root: RootReport {
@@ -179,6 +182,7 @@ impl Daemon {
             system: SystemReport {
                 kernel: &self.system.kernel,
                 sdk: self.system.sdk,
+                page_size: self.system.page_size,
                 abi: &self.system.abi,
                 abilist: &self.system.abilist,
                 root: RootReport {

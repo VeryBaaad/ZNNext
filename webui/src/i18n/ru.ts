@@ -61,6 +61,7 @@ export const ru: Dictionary = {
   "info.rootImpl": "Реализация root",
   "info.rootImpl.none": "Не обнаружено",
   "info.mode": "Текущий режим",
+  "info.pageSize": "Размер страницы памяти",
   "info.unknown": "Неизвестно",
 
   "modules.processes": "{n} процесс(ов)",

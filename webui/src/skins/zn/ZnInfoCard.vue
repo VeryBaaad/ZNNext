@@ -23,7 +23,7 @@
 import { computed } from "vue";
 
 import type { DaemonStatus } from "../../api/daemon";
-import type { SystemInfo } from "../../api/system";
+import { formatPageSize, type SystemInfo } from "../../api/system";
 import { t } from "../../i18n";
 import ZnCard from "./ZnCard.vue";
 
@@ -65,6 +65,10 @@ const rows = computed<InfoRow[]>(() => [
     value: props.system.sdk > 0 ? String(props.system.sdk) : t("info.unknown"),
   },
   { label: "ABI", value: abiText.value },
+  {
+    label: t("info.pageSize"),
+    value: formatPageSize(props.system.pageSize) ?? t("info.unknown"),
+  },
   { label: t("info.mode"), value: modeText.value },
 ]);
 </script>

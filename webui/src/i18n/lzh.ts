@@ -61,6 +61,7 @@ export const lzh: Dictionary = {
   "info.rootImpl": "判官",
   "info.rootImpl.none": "未見神明",
   "info.mode": "今法",
+  "info.pageSize": "記憶體頁之大小",
   "info.unknown": "迷濛",
 
   "modules.processes": "公務有 {n}",

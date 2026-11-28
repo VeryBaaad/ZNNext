@@ -21,12 +21,16 @@
 
 use nix::unistd::{SysconfVar, sysconf};
 
-pub fn size() -> u64 {
+pub fn measured_size() -> Option<u64> {
     sysconf(SysconfVar::PAGE_SIZE)
         .ok()
         .flatten()
+        .and_then(|value| u64::try_from(value).ok())
         .filter(|value| *value > 0)
-        .map_or(4096, |value| value as u64)
+}
+
+pub fn size() -> u64 {
+    measured_size().unwrap_or(4096)
 }
 
 pub fn round_up(value: usize) -> usize {

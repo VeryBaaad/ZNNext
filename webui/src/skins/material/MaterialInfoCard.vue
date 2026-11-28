@@ -23,7 +23,11 @@
 import { computed } from "vue";
 
 import type { DaemonStatus } from "../../api/daemon";
-import { cleanVersion, type SystemInfo } from "../../api/system";
+import {
+  cleanVersion,
+  formatPageSize,
+  type SystemInfo,
+} from "../../api/system";
 import { t } from "../../i18n";
 
 interface RootEntry {
@@ -79,6 +83,10 @@ const rows = computed<InfoRow[]>(() => {
     { label: "Kernel", value: props.system.kernel || t("info.unknown") },
     { label: "Android SDK", value: sdk },
     { label: "ABI", value: abiText.value },
+    {
+      label: t("info.pageSize"),
+      value: formatPageSize(props.system.pageSize) ?? t("info.unknown"),
+    },
     { label: t("info.mode"), value: modeText.value },
   ];
 });

@@ -30,6 +30,7 @@ export interface RootImplementation {
 export interface SystemInfo {
   kernel: string;
   sdk: number;
+  pageSize?: number;
   abi: string;
   abilist: string;
   root: RootImplementation;
@@ -56,6 +57,12 @@ export async function getSystemInfo(): Promise<SystemInfo> {
   return {
     kernel: asString(info.kernel),
     sdk: typeof info.sdk === "number" ? info.sdk : 0,
+    pageSize:
+      typeof info.pageSize === "number" &&
+      Number.isSafeInteger(info.pageSize) &&
+      info.pageSize > 0
+        ? info.pageSize
+        : undefined,
     abi: asString(info.abi),
     abilist: asString(info.abilist),
     root: {
@@ -64,6 +71,11 @@ export async function getSystemInfo(): Promise<SystemInfo> {
       apatch: asRootString(root.apatch),
     },
   };
+}
+
+export function formatPageSize(bytes: number | undefined): string | null {
+  if (bytes === undefined) return null;
+  return bytes % 1024 === 0 ? `${bytes / 1024} KiB` : `${bytes} B`;
 }
 
 export function cleanVersion(raw: string | null): string | null {

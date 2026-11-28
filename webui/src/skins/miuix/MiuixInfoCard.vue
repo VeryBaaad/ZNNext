@@ -25,7 +25,11 @@ import type { ExtendedIcon } from "miuix-vue/icons";
 import { computed } from "vue";
 
 import type { DaemonStatus } from "../../api/daemon";
-import { cleanVersion, type SystemInfo } from "../../api/system";
+import {
+  cleanVersion,
+  formatPageSize,
+  type SystemInfo,
+} from "../../api/system";
 import { t } from "../../i18n";
 import { GridView, HorizontalSplit, Info, Layers, Lock } from "./icons";
 
@@ -94,6 +98,12 @@ const rows = computed<InfoRow[]>(() => {
     },
     { key: "sdk", icon: GridView, label: "Android SDK", value: sdk },
     { key: "abi", icon: HorizontalSplit, label: "ABI", value: abiText.value },
+    {
+      key: "pageSize",
+      icon: GridView,
+      label: t("info.pageSize"),
+      value: formatPageSize(props.system.pageSize) ?? t("info.unknown"),
+    },
     { key: "mode", icon: Info, label: t("info.mode"), value: modeText.value },
   ];
 });

@@ -174,6 +174,7 @@
         return {
           kernel: '5.15.148-android13-8-g2b4c1f0a1b2c-ab1234567',
           sdk: 34,
+          pageSize: statusOverride === 'legacy' ? undefined : Number(params.get('pagesize') ?? 4096),
           abi: 'arm64-v8a',
           abilist: 'arm64-v8a,armeabi-v7a,armeabi',
           root: { magisk: null, kernelSU: 'ksud v3.0.0', apatch: null },
@@ -283,7 +284,7 @@
   };
 
   console.info(
-    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?modules=none|no-version ' +
+    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?pagesize=16384 ?modules=none|no-version ' +
       '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=status@2,modules@2',
   );
 })();
