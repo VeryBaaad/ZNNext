@@ -25,14 +25,14 @@ fail() {
   exit 1
 }
 
-if [ "$#" -ne 3 ]; then
-  printf 'Usage: %s SERIAL EXPECTED_PAGE_SIZE ZNND_BINARY\n' "$0" >&2
+if [ "$#" -lt 3 ]; then
+  printf 'Usage: %s SERIAL EXPECTED_PAGE_SIZE ZNND_BINARY [ZNND_BINARY ...]\n' "$0" >&2
   exit 2
 fi
 
 serial=$1
 expected_page_size=$2
-binary=$3
+shift 2
 adb_command=${ADB:-adb}
 
 [ -n "$serial" ] || fail 'An ADB device serial is required.'
@@ -40,11 +40,9 @@ case $expected_page_size in
   4096 | 16384) ;;
   *) fail 'The expected page size must be 4096 or 16384 bytes.' ;;
 esac
-[ -f "$binary" ] && [ -r "$binary" ] || fail "Cannot read znnd binary: $binary"
-case $binary in
-  /*) ;;
-  *) binary=$PWD/$binary ;;
-esac
+for binary; do
+  [ -f "$binary" ] && [ -r "$binary" ] || fail "Cannot read znnd binary: $binary"
+done
 
 adb_device() {
   "$adb_command" -s "$serial" "$@"
@@ -85,15 +83,20 @@ esac
 remote_dir=$temp_dir
 remote_binary=$remote_dir/znnd
 
-adb_device push "$binary" "$remote_binary" >/dev/null || fail "Could not push znnd to $serial."
-adb_device shell chmod 700 "$remote_binary" || fail "Could not make znnd executable on $serial."
-version=$(adb_device shell "$remote_binary" --version) || fail "znnd --version failed on $serial."
-version=${version%"$carriage_return"}
-case $version in
-  *'
-'*) fail "Invalid znnd version on $serial: $version" ;;
-esac
-printf '%s\n' "$version" | LC_ALL=C grep -Eq '^znnd v?[0-9]+([.][0-9]+){2,3}([-+][0-9A-Za-z][0-9A-Za-z.+-]*)?$' ||
-  fail "Invalid znnd version on $serial: $version"
-
-printf '%s: %s-byte page size, %s\n' "$serial" "$page_size" "$version"
+for binary; do
+  case $binary in
+    /*) local_binary=$binary ;;
+    *) local_binary=$PWD/$binary ;;
+  esac
+  adb_device push "$local_binary" "$remote_binary" >/dev/null || fail "Could not push $binary to $serial."
+  adb_device shell chmod 700 "$remote_binary" || fail "Could not make $binary executable on $serial."
+  version=$(adb_device shell "$remote_binary" --version) || fail "$binary --version failed on $serial."
+  version=${version%"$carriage_return"}
+  case $version in
+    *'
+'*) fail "Invalid version from $binary on $serial: $version" ;;
+  esac
+  printf '%s\n' "$version" | LC_ALL=C grep -Eq '^znnd v?[0-9]+([.][0-9]+){2,3}([-+][0-9A-Za-z][0-9A-Za-z.+-]*)?$' ||
+    fail "Invalid version from $binary on $serial: $version"
+  printf '%s: %s-byte page size, %s (%s)\n' "$serial" "$page_size" "$version" "$binary"
+done
