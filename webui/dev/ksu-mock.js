@@ -90,6 +90,7 @@
     'disable-zn': 'disableZn',
     'hot-update': 'hotUpdate',
   };
+  var configuredKeys = new Set();
 
   var config = {
     inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'frida-gum', 'rv64hook', 'hookzz', 'urhook', 'whale', 'baaadhook', 'yukiihook', 'sandhook', 'srxinlinehook', 'disable'] },
@@ -183,6 +184,17 @@
         return state.running ? state.modules : [];
       case 'config':
         return state.config;
+      case 'config-export': {
+        if (operands.length !== 0) {
+          throw new Error('usage: znnd --ctl config-export');
+        }
+        var exported = {};
+        Object.keys(CONFIG_KEYS).forEach(function (kind) {
+          if ((kind === 'inline32' || kind === 'plt32') && !configuredKeys.has(kind)) return;
+          exported[kind] = state.config[CONFIG_KEYS[kind]].value;
+        });
+        return exported;
+      }
       case 'config-set': {
         var kind = operands[0];
         var value = operands[1];
@@ -197,6 +209,7 @@
           throw new Error('invalid ' + kind + ' value "' + value + '" for this device');
         }
         entry.value = value;
+        configuredKeys.add(kind);
         if (kind === 'mode' && state.running) {
           switch (value) {
             case 'proc':

@@ -20,6 +20,7 @@
  */
 
 use std::fs;
+use std::io;
 
 use serde::Serialize;
 
@@ -46,11 +47,16 @@ pub const DISABLE_ZN_FALSE: &str = "false";
 pub const HOT_UPDATE_TRUE: &str = "true";
 pub const HOT_UPDATE_FALSE: &str = "false";
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct HookConfig {
+    #[serde(rename = "inline")]
     pub inline_hook: String,
+    #[serde(rename = "inline32", skip_serializing_if = "Option::is_none")]
     pub inline_hook32: Option<String>,
+    #[serde(rename = "plt")]
     pub plt_hook: String,
+    #[serde(rename = "plt32", skip_serializing_if = "Option::is_none")]
     pub plt_hook32: Option<String>,
     pub mode: String,
     pub debugdata: String,
@@ -306,6 +312,18 @@ fn sibling_engine(stored: Option<&str>, options: &[&str], primary: &str) -> Stri
 }
 
 pub fn effective() -> HookConfig {
+    effective_from(read_file().ok())
+}
+
+pub fn for_export() -> io::Result<HookConfig> {
+    match read_file() {
+        Ok(stored) => Ok(effective_from(Some(stored))),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(effective_from(None)),
+        Err(error) => Err(error),
+    }
+}
+
+fn effective_from(stored: Option<StoredConfig>) -> HookConfig {
     let inline_options = inline_hook_options();
     let plt_options = plt_hook_options();
     let mode_options = tracking_mode_options();
@@ -331,7 +349,7 @@ pub fn effective() -> HookConfig {
         hot_update: HOT_UPDATE_FALSE.to_owned(),
     };
 
-    let Some(stored) = read_file() else {
+    let Some(stored) = stored else {
         return config;
     };
     if option_in(&inline_options, &stored.inline_hook) {
@@ -393,8 +411,8 @@ struct StoredConfig {
     hot_update: String,
 }
 
-fn read_file() -> Option<StoredConfig> {
-    let contents = fs::read_to_string(paths::CONFIG_FILE).ok()?;
+fn read_file() -> io::Result<StoredConfig> {
+    let contents = fs::read_to_string(paths::CONFIG_FILE)?;
     let mut stored = StoredConfig {
         inline_hook: String::new(),
         inline_hook32: String::new(),
@@ -429,7 +447,7 @@ fn read_file() -> Option<StoredConfig> {
             _ => {}
         }
     }
-    Some(stored)
+    Ok(stored)
 }
 
 #[cfg(test)]
