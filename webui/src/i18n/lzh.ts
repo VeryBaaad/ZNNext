@@ -31,6 +31,16 @@ export const lzh: Dictionary = {
 
   "actions.refresh": "賡續",
 
+  "refresh.updated": "已於 {time} 賡續",
+  "refresh.unavailable": "未能載入{section}。",
+  "refresh.stale": "未能賡續{section}，仍示 {time} 之舊錄。",
+  "refresh.retry": "復試",
+  "refresh.retrySection": "復試載入{section}",
+  "refresh.section.status": "氣象",
+  "refresh.section.system": "機要",
+  "refresh.section.modules": "諸司名錄",
+  "refresh.section.config": "規制",
+
   "status.active": "已啟",
   "status.inactive": "蟄伏",
 

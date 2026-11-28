@@ -102,6 +102,7 @@ function pickLocale(next: Locale): void {
       <div class="flex items-center gap-1">
         <k-link
           component="button"
+          role="button"
           icon-only
           :link-props="{
             type: 'button',

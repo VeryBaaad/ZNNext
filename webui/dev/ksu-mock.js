@@ -75,6 +75,7 @@
 
   var latency = Number(params.get('slow') || 120);
   var failures = (params.get('fail') || '').split(',').filter(Boolean);
+  var readCounts = { status: 0, system: 0, modules: 0, config: 0 };
   var pid = function () {
     return 300 + Math.floor(Math.random() * 9000);
   };
@@ -229,7 +230,12 @@
         var ctl = argc.indexOf('--ctl');
         var cmd = ctl >= 0 ? argc[ctl + 1] : '';
         var operands = ctl >= 0 ? argc.slice(ctl + 2) : [];
-        if (failures.indexOf(cmd) >= 0) {
+        var scheduledFailure = false;
+        if (Object.prototype.hasOwnProperty.call(readCounts, cmd)) {
+          readCounts[cmd] += 1;
+          scheduledFailure = failures.indexOf(cmd + '@' + readCounts[cmd]) >= 0;
+        }
+        if (failures.indexOf(cmd) >= 0 || scheduledFailure) {
           window[callbackName](1, '', 'stub: forced failure for "' + cmd + '"');
           return;
         }
@@ -255,6 +261,6 @@
 
   console.info(
     '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive ?modules=none ' +
-      '?ui=material|miuix|zn ?theme=light|dark|auto ?locale=zh-CN|en|ru ?slow=MS ?fail=config,modules',
+      '?ui=material|miuix|zn ?theme=light|dark|auto ?locale=zh-CN|en|ru ?slow=MS ?fail=config,modules@2',
   );
 })();

@@ -26,20 +26,14 @@ import { computed, ref } from "vue";
 import type { ZnnModule } from "../../api/modules";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
-import IosIcon from "./IosIcon.vue";
 import IosTag from "./IosTag.vue";
 
-const props = defineProps<{
-  modules: ZnnModule[] | null;
-  error?: boolean;
-}>();
+const props = defineProps<{ modules: ZnnModule[] }>();
 
 const expanded = ref(new Set<string>());
 
-const modules = computed<ZnnModule[]>(() => props.modules ?? []);
-
 const title = computed(() =>
-  t("zn.modules.title", { n: modules.value.length }),
+  t("zn.modules.title", { n: props.modules.length }),
 );
 
 function toggle(id: string): void {
@@ -63,10 +57,13 @@ function basename(value: string): string {
   <section class="ios-section">
     <h2 class="ios-section-title">{{ title }}</h2>
 
-    <k-list v-if="!props.error" inset strong class="ios-list">
-      <k-list-item v-if="modules.length === 0" :title="t('zn.modules.empty')" />
+    <k-list inset strong class="ios-list">
+      <k-list-item
+        v-if="props.modules.length === 0"
+        :title="t('zn.modules.empty')"
+      />
 
-      <template v-for="module in modules" :key="module.id">
+      <template v-for="module in props.modules" :key="module.id">
         <k-list-item
           class="ios-module-item"
           :class="{ 'ios-expanded': expanded.has(module.id) }"
@@ -122,14 +119,6 @@ function basename(value: string): string {
           </k-list-item>
         </template>
       </template>
-    </k-list>
-
-    <k-list v-else inset strong class="ios-list">
-      <k-list-item :title="t('error.title')">
-        <template #after>
-          <IosIcon class="text-red-500" name="warning" :size="20" />
-        </template>
-      </k-list-item>
     </k-list>
   </section>
 </template>

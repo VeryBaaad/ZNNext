@@ -25,6 +25,7 @@ import { computed } from "vue";
 import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import { cleanVersion, type RootImplementation } from "../../api/system";
+import RefreshSection from "../../components/RefreshSection.vue";
 import { useAppActions } from "../../composables/app-actions";
 import { t } from "../../i18n";
 import ZnCard from "./ZnCard.vue";
@@ -38,7 +39,6 @@ const props = defineProps<{
   root: RootImplementation | null;
   modules: ZnnModule[] | null;
   refreshing: boolean;
-  error?: boolean;
 }>();
 
 const actions = useAppActions();
@@ -64,7 +64,7 @@ const daemonLabel = computed(() => {
 </script>
 
 <template>
-  <ZnCard :title="t('card.status')" :error="props.error">
+  <ZnCard :title="t('card.status')">
     <template #extra>
       <button
         class="zn-icon-button"
@@ -78,25 +78,29 @@ const daemonLabel = computed(() => {
       </button>
     </template>
 
-    <div class="zn-rows">
-      <div class="zn-row">
-        <span class="zn-field-label">{{ t("info.rootImpl") }}</span>
-        <ZnTag :tone="props.root ? 'ok' : 'warn'">{{ rootLabel }}</ZnTag>
-      </div>
+    <RefreshSection section="status">
+      <div v-if="props.status" class="zn-rows">
+        <div v-if="props.root" class="zn-row">
+          <span class="zn-field-label">{{ t("info.rootImpl") }}</span>
+          <ZnTag tone="ok">{{ rootLabel }}</ZnTag>
+        </div>
 
-      <div class="zn-row">
-        <span class="zn-field-label">{{ t("zn.daemon") }}</span>
-        <ZnTag :tone="props.status?.running ? 'ok' : 'warn'">{{
-          daemonLabel
-        }}</ZnTag>
+        <div class="zn-row">
+          <span class="zn-field-label">{{ t("zn.daemon") }}</span>
+          <ZnTag :tone="props.status.running ? 'ok' : 'warn'">{{
+            daemonLabel
+          }}</ZnTag>
+        </div>
       </div>
-    </div>
+    </RefreshSection>
 
-    <ZnCollapse
-      v-if="props.modules"
-      :title="t('zn.modules.title', { n: props.modules.length })"
-    >
-      <ZnModuleList :modules="props.modules" />
-    </ZnCollapse>
+    <RefreshSection section="modules">
+      <ZnCollapse
+        v-if="props.modules"
+        :title="t('zn.modules.title', { n: props.modules.length })"
+      >
+        <ZnModuleList :modules="props.modules" />
+      </ZnCollapse>
+    </RefreshSection>
   </ZnCard>
 </template>

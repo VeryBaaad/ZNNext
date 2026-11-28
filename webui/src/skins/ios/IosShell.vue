@@ -29,12 +29,12 @@ import type { HookConfig } from "../../api/config";
 import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import type { SystemInfo } from "../../api/system";
+import RefreshSection from "../../components/RefreshSection.vue";
 import { t } from "../../i18n";
 import { themeScheme } from "../../theme";
 import IosAlert from "./IosAlert.vue";
 import IosConfigCard from "./IosConfigCard.vue";
 import IosEmptyCard from "./IosEmptyCard.vue";
-import IosErrorCard from "./IosErrorCard.vue";
 import IosFooter from "./IosFooter.vue";
 import IosIcon from "./IosIcon.vue";
 import IosInfoCard from "./IosInfoCard.vue";
@@ -53,45 +53,12 @@ const props = defineProps<{
 
 const isDark = computed(() => themeScheme.value === "dark");
 
-const failed = computed(
-  () =>
-    props.ksuAvailable &&
-    !props.loading &&
-    !props.status &&
-    !props.system &&
-    !props.modules &&
-    !props.config,
-);
-
-const showDashboard = computed(() => props.ksuAvailable && !failed.value);
-
-function unavailable(present: boolean): boolean {
-  return props.ksuAvailable && !props.loading && !present;
-}
-
 const failureRecordCount = computed(() =>
   (props.modules ?? []).reduce(
     (total, module) => total + (module.failed ?? []).length,
     0,
   ),
 );
-
-const EMPTY_SYSTEM: SystemInfo = {
-  kernel: "",
-  sdk: 0,
-  abi: "",
-  abilist: "",
-  root: { magisk: null, kernelSU: null, apatch: null },
-};
-
-const EMPTY_CONFIG: HookConfig = {
-  inlineHook: { value: "", options: [] },
-  pltHook: { value: "", options: [] },
-  mode: { value: "", options: [] },
-  disableZn: { value: "", options: [] },
-  debugdata: { value: "", options: [] },
-  hotUpdate: { value: "", options: [] },
-};
 </script>
 
 <template>
@@ -99,46 +66,40 @@ const EMPTY_CONFIG: HookConfig = {
     <k-page>
       <IosNavbar :refreshing="props.loading" />
 
-      <template v-if="showDashboard">
-        <div class="ios-content">
-          <IosAlert v-if="failureRecordCount > 0" class="ios-banner">
-            <IosIcon name="warning" :size="18" />
-            <span>{{
-              t("modules.failedBanner", { n: failureRecordCount })
-            }}</span>
-          </IosAlert>
+      <div v-if="props.ksuAvailable" class="ios-content">
+        <IosAlert v-if="failureRecordCount > 0" class="ios-banner">
+          <IosIcon name="warning" :size="18" />
+          <span>{{
+            t("modules.failedBanner", { n: failureRecordCount })
+          }}</span>
+        </IosAlert>
 
+        <RefreshSection section="system">
           <IosInfoCard
-            v-if="props.system || unavailable(!!props.system)"
-            :system="props.system ?? EMPTY_SYSTEM"
+            v-if="props.system"
+            :system="props.system"
             :status="props.status"
-            :error="unavailable(!!props.system)"
           />
+        </RefreshSection>
 
+        <RefreshSection section="status">
           <IosStatusCard
+            v-if="props.status"
             :status="props.status"
             :root="props.system?.root ?? null"
-            :error="unavailable(!!props.status)"
           />
+        </RefreshSection>
 
-          <IosConfigCard
-            v-if="props.config || unavailable(!!props.config)"
-            :config="props.config ?? EMPTY_CONFIG"
-            :error="unavailable(!!props.config)"
-          />
+        <RefreshSection section="config">
+          <IosConfigCard v-if="props.config" :config="props.config" />
+        </RefreshSection>
 
-          <IosModulesCard
-            v-if="props.modules || unavailable(!!props.modules)"
-            :modules="props.modules"
-            :error="unavailable(!!props.modules)"
-          />
-        </div>
-      </template>
+        <RefreshSection section="modules">
+          <IosModulesCard v-if="props.modules" :modules="props.modules" />
+        </RefreshSection>
+      </div>
 
-      <template v-else>
-        <IosErrorCard v-if="props.ksuAvailable" />
-        <IosEmptyCard v-else />
-      </template>
+      <IosEmptyCard v-else />
 
       <IosFooter />
     </k-page>

@@ -22,16 +22,16 @@
 
 import "./elements";
 
-import { computed, watch } from "vue";
+import { watch } from "vue";
 
 import type { HookConfig } from "../../api/config";
 import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import type { SystemInfo } from "../../api/system";
+import RefreshSection from "../../components/RefreshSection.vue";
 import { themeScheme } from "../../theme";
 import MaterialConfigCard from "./MaterialConfigCard.vue";
 import MaterialEmptyCard from "./MaterialEmptyCard.vue";
-import MaterialErrorCard from "./MaterialErrorCard.vue";
 import MaterialFooter from "./MaterialFooter.vue";
 import MaterialInfoCard from "./MaterialInfoCard.vue";
 import MaterialModulesCard from "./MaterialModulesCard.vue";
@@ -66,26 +66,6 @@ watch(
   },
   { immediate: true },
 );
-
-const empty = computed(
-  () =>
-    !props.ksuAvailable ||
-    (!props.loading &&
-      !props.status &&
-      !props.system &&
-      !props.modules &&
-      !props.config),
-);
-
-const failed = computed(
-  () =>
-    props.ksuAvailable &&
-    !props.loading &&
-    !props.status &&
-    !props.system &&
-    !props.modules &&
-    !props.config,
-);
 </script>
 
 <template>
@@ -95,16 +75,25 @@ const failed = computed(
   />
 
   <main class="znn-content">
-    <MaterialStatusCard v-if="props.status" :status="props.status" />
-    <MaterialInfoCard
-      v-if="props.system"
-      :system="props.system"
-      :status="props.status"
-    />
-    <MaterialConfigCard v-if="props.config" :config="props.config" />
-    <MaterialModulesCard v-if="props.modules" :modules="props.modules" />
-    <MaterialErrorCard v-if="failed" />
-    <MaterialEmptyCard v-else-if="empty" />
+    <template v-if="props.ksuAvailable">
+      <RefreshSection section="status">
+        <MaterialStatusCard v-if="props.status" :status="props.status" />
+      </RefreshSection>
+      <RefreshSection section="system">
+        <MaterialInfoCard
+          v-if="props.system"
+          :system="props.system"
+          :status="props.status"
+        />
+      </RefreshSection>
+      <RefreshSection section="config">
+        <MaterialConfigCard v-if="props.config" :config="props.config" />
+      </RefreshSection>
+      <RefreshSection section="modules">
+        <MaterialModulesCard v-if="props.modules" :modules="props.modules" />
+      </RefreshSection>
+    </template>
+    <MaterialEmptyCard v-else />
   </main>
 
   <MaterialFooter />

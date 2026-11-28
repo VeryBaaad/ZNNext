@@ -20,19 +20,14 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-import ZnIcon from "./ZnIcon.vue";
-
-const props = withDefaults(defineProps<{ title: string; error?: boolean }>(), {
-  error: false,
-});
+const props = defineProps<{ title: string }>();
 </script>
 
 <template>
-  <section class="zn-card" :class="{ 'is-error': props.error }">
+  <section class="zn-card">
     <header class="zn-card-header">
       <div class="zn-card-header-main">{{ props.title }}</div>
       <div class="zn-card-header-extra">
-        <ZnIcon v-if="props.error" name="warning" :size="20" />
         <slot name="extra" />
       </div>
     </header>

@@ -22,9 +22,12 @@
 import { inject, provide, type InjectionKey } from "vue";
 
 import type { HookKind } from "../api/config";
+import type { AppData } from "./use-app-data";
 
 export interface AppActions {
   refresh: () => void;
+  sections: AppData["sections"];
+  retrySection: AppData["retrySection"];
   applyHookConfig: (kind: HookKind, value: string) => Promise<void>;
 }
 

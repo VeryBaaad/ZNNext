@@ -31,6 +31,16 @@ export const ru: Dictionary = {
 
   "actions.refresh": "Обновить",
 
+  "refresh.updated": "Обновлено в {time}",
+  "refresh.unavailable": "Не удалось загрузить {section}.",
+  "refresh.stale": "Не удалось обновить {section}. Показаны данные на {time}.",
+  "refresh.retry": "Повторить",
+  "refresh.retrySection": "Повторно загрузить {section}",
+  "refresh.section.status": "статус",
+  "refresh.section.system": "сведения о системе",
+  "refresh.section.modules": "список модулей",
+  "refresh.section.config": "настройки",
+
   "status.active": "Активно",
   "status.inactive": "Не активно",
 

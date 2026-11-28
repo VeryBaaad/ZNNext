@@ -29,6 +29,16 @@ export const en: Record<string, string> = {
 
   "actions.refresh": "Refresh",
 
+  "refresh.updated": "Updated {time}",
+  "refresh.unavailable": "Couldn’t load {section}.",
+  "refresh.stale": "Couldn’t refresh {section}. Showing data from {time}.",
+  "refresh.retry": "Retry",
+  "refresh.retrySection": "Retry loading {section}",
+  "refresh.section.status": "status",
+  "refresh.section.system": "device information",
+  "refresh.section.modules": "the module list",
+  "refresh.section.config": "settings",
+
   "status.active": "Active",
   "status.inactive": "Inactive",
 

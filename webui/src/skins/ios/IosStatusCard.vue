@@ -26,13 +26,11 @@ import { computed } from "vue";
 import type { DaemonStatus } from "../../api/daemon";
 import { cleanVersion, type RootImplementation } from "../../api/system";
 import { t } from "../../i18n";
-import IosIcon from "./IosIcon.vue";
 import IosTag from "./IosTag.vue";
 
 const props = defineProps<{
-  status: DaemonStatus | null;
+  status: DaemonStatus;
   root: RootImplementation | null;
-  error?: boolean;
 }>();
 
 const rootLabel = computed(() => {
@@ -48,7 +46,7 @@ const rootLabel = computed(() => {
 });
 
 const daemonLabel = computed(() => {
-  if (!props.status?.running) return t("zn.stopped");
+  if (!props.status.running) return t("zn.stopped");
   return props.status.pid
     ? `${t("zn.running")} (${props.status.pid})`
     : t("zn.running");
@@ -59,26 +57,18 @@ const daemonLabel = computed(() => {
   <section class="ios-section">
     <h2 class="ios-section-title">{{ t("card.status") }}</h2>
 
-    <k-list v-if="!props.error" inset strong class="ios-list">
-      <k-list-item :title="t('info.rootImpl')">
+    <k-list inset strong class="ios-list">
+      <k-list-item v-if="props.root" :title="t('info.rootImpl')">
         <template #after>
-          <IosTag :tone="props.root ? 'ok' : 'warn'">{{ rootLabel }}</IosTag>
+          <IosTag tone="ok">{{ rootLabel }}</IosTag>
         </template>
       </k-list-item>
 
       <k-list-item :title="t('zn.daemon')">
         <template #after>
-          <IosTag :tone="props.status?.running ? 'ok' : 'warn'">
+          <IosTag :tone="props.status.running ? 'ok' : 'warn'">
             {{ daemonLabel }}
           </IosTag>
-        </template>
-      </k-list-item>
-    </k-list>
-
-    <k-list v-else inset strong class="ios-list">
-      <k-list-item :title="t('error.title')">
-        <template #after>
-          <IosIcon class="text-red-500" name="warning" :size="20" />
         </template>
       </k-list-item>
     </k-list>

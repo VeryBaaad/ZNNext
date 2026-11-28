@@ -28,18 +28,18 @@ import {
   MiuixSnackbarHost,
   setThemeMode as setMiuixThemeMode,
 } from "miuix-vue";
-import { computed, onBeforeUnmount, watch } from "vue";
+import { onBeforeUnmount, watch } from "vue";
 
 import type { HookConfig } from "../../api/config";
 import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import type { SystemInfo } from "../../api/system";
+import RefreshSection from "../../components/RefreshSection.vue";
 import { materialSeed, materialSpec } from "../../color/material-color";
 import { themeScheme } from "../../theme";
 import MiuixAppBar from "./MiuixAppBar.vue";
 import MiuixConfigCard from "./MiuixConfigCard.vue";
 import MiuixEmptyCard from "./MiuixEmptyCard.vue";
-import MiuixErrorCard from "./MiuixErrorCard.vue";
 import MiuixFooter from "./MiuixFooter.vue";
 import MiuixInfoCard from "./MiuixInfoCard.vue";
 import MiuixLargeTitle from "./MiuixLargeTitle.vue";
@@ -55,26 +55,6 @@ const props = defineProps<{
   modules: ZnnModule[] | null;
   config: HookConfig | null;
 }>();
-
-const empty = computed(
-  () =>
-    !props.ksuAvailable ||
-    (!props.loading &&
-      !props.status &&
-      !props.system &&
-      !props.modules &&
-      !props.config),
-);
-
-const failed = computed(
-  () =>
-    props.ksuAvailable &&
-    !props.loading &&
-    !props.status &&
-    !props.system &&
-    !props.modules &&
-    !props.config,
-);
 
 /**
  * miuix-vue owns the `m-theme-dark` class and re-asserts its own default the
@@ -113,16 +93,25 @@ onBeforeUnmount(clearMiuixMonet);
       <MiuixLargeTitle />
 
       <main class="znn-content">
-        <MiuixStatusCard v-if="props.status" :status="props.status" />
-        <MiuixInfoCard
-          v-if="props.system"
-          :system="props.system"
-          :status="props.status"
-        />
-        <MiuixConfigCard v-if="props.config" :config="props.config" />
-        <MiuixModulesCard v-if="props.modules" :modules="props.modules" />
-        <MiuixErrorCard v-if="failed" />
-        <MiuixEmptyCard v-else-if="empty" />
+        <template v-if="props.ksuAvailable">
+          <RefreshSection section="status">
+            <MiuixStatusCard v-if="props.status" :status="props.status" />
+          </RefreshSection>
+          <RefreshSection section="system">
+            <MiuixInfoCard
+              v-if="props.system"
+              :system="props.system"
+              :status="props.status"
+            />
+          </RefreshSection>
+          <RefreshSection section="config">
+            <MiuixConfigCard v-if="props.config" :config="props.config" />
+          </RefreshSection>
+          <RefreshSection section="modules">
+            <MiuixModulesCard v-if="props.modules" :modules="props.modules" />
+          </RefreshSection>
+        </template>
+        <MiuixEmptyCard v-else />
       </main>
 
       <MiuixFooter />

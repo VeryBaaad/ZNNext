@@ -44,7 +44,9 @@ const {
   system,
   modules,
   config,
+  sections,
   load,
+  retrySection,
   applyHookConfig,
 } = useAppData();
 
@@ -52,7 +54,9 @@ provideAppActions({
   refresh: () => {
     void load();
   },
-  applyHookConfig: (kind, value) => applyHookConfig(kind, value),
+  sections,
+  retrySection,
+  applyHookConfig,
 });
 
 const SHELLS: Record<UiMode, Component> = {

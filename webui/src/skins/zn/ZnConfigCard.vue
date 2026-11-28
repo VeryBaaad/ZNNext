@@ -46,7 +46,7 @@ interface ConfigRow {
   toggle?: boolean;
 }
 
-const props = defineProps<{ config: HookConfig; error?: boolean }>();
+const props = defineProps<{ config: HookConfig }>();
 
 const actions = useAppActions();
 
@@ -96,8 +96,8 @@ async function select(row: ConfigRow, value: string): Promise<void> {
 </script>
 
 <template>
-  <ZnCard :title="t('card.settings')" :error="props.error">
-    <div v-if="!props.error" class="zn-rows">
+  <ZnCard :title="t('card.settings')">
+    <div class="zn-rows">
       <div v-for="row in rows" :key="row.kind" class="zn-row">
         <span class="zn-field-label">{{ row.label }}</span>
         <ZnSwitch

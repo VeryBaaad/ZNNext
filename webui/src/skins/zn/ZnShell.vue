@@ -28,6 +28,7 @@ import type { HookConfig } from "../../api/config";
 import type { DaemonStatus } from "../../api/daemon";
 import type { ZnnModule } from "../../api/modules";
 import type { SystemInfo } from "../../api/system";
+import RefreshSection from "../../components/RefreshSection.vue";
 import { t } from "../../i18n";
 import ZnAlert from "./ZnAlert.vue";
 import ZnConfigCard from "./ZnConfigCard.vue";
@@ -46,37 +47,12 @@ const props = defineProps<{
   config: HookConfig | null;
 }>();
 
-function failed(present: boolean): boolean {
-  return props.ksuAvailable && !props.loading && !present;
-}
-
-const modules = computed<ZnnModule[]>(() => props.modules ?? []);
-
 const failureRecordCount = computed(() =>
-  modules.value.reduce(
+  (props.modules ?? []).reduce(
     (total, module) => total + (module.failed ?? []).length,
     0,
   ),
 );
-
-const showDashboard = computed(() => props.ksuAvailable);
-
-const EMPTY_SYSTEM: SystemInfo = {
-  kernel: "",
-  sdk: 0,
-  abi: "",
-  abilist: "",
-  root: { magisk: null, kernelSU: null, apatch: null },
-};
-
-const EMPTY_CONFIG: HookConfig = {
-  inlineHook: { value: "", options: [] },
-  pltHook: { value: "", options: [] },
-  mode: { value: "", options: [] },
-  disableZn: { value: "", options: [] },
-  debugdata: { value: "", options: [] },
-  hotUpdate: { value: "", options: [] },
-};
 </script>
 
 <template>
@@ -84,31 +60,29 @@ const EMPTY_CONFIG: HookConfig = {
     <ZnTopBar />
 
     <main class="zn-container">
-      <ZnAlert v-if="showDashboard && failureRecordCount > 0">
+      <ZnAlert v-if="props.ksuAvailable && failureRecordCount > 0">
         {{ t("modules.failedBanner", { n: failureRecordCount }) }}
       </ZnAlert>
 
-      <template v-if="showDashboard">
-        <ZnInfoCard
-          v-if="props.system || failed(!!props.system)"
-          :system="props.system ?? EMPTY_SYSTEM"
-          :status="props.status"
-          :error="failed(!!props.system)"
-        />
+      <template v-if="props.ksuAvailable">
+        <RefreshSection section="system">
+          <ZnInfoCard
+            v-if="props.system"
+            :system="props.system"
+            :status="props.status"
+          />
+        </RefreshSection>
 
         <ZnStatusCard
           :status="props.status"
           :root="props.system?.root ?? null"
           :modules="props.modules"
           :refreshing="props.loading"
-          :error="failed(!!props.status)"
         />
 
-        <ZnConfigCard
-          v-if="props.config || failed(!!props.config)"
-          :config="props.config ?? EMPTY_CONFIG"
-          :error="failed(!!props.config)"
-        />
+        <RefreshSection section="config">
+          <ZnConfigCard v-if="props.config" :config="props.config" />
+        </RefreshSection>
       </template>
 
       <ZnEmptyCard v-else />

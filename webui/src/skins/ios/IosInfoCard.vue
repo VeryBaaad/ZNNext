@@ -27,12 +27,10 @@ import { MODULE_NAME, VER_NAME } from "../../app-info";
 import type { DaemonStatus } from "../../api/daemon";
 import type { SystemInfo } from "../../api/system";
 import { t } from "../../i18n";
-import IosIcon from "./IosIcon.vue";
 
 const props = defineProps<{
   system: SystemInfo;
   status: DaemonStatus | null;
-  error?: boolean;
 }>();
 
 interface InfoRow {
@@ -77,18 +75,10 @@ const rows = computed<InfoRow[]>(() => [
   <section class="ios-section">
     <h2 class="ios-section-title">{{ t("card.basic") }}</h2>
 
-    <k-list v-if="!props.error" inset strong class="ios-list">
+    <k-list inset strong class="ios-list">
       <k-list-item v-for="row in rows" :key="row.label" :title="row.label">
         <template #after>
           <span class="ios-value" :title="row.value">{{ row.value }}</span>
-        </template>
-      </k-list-item>
-    </k-list>
-
-    <k-list v-else inset strong class="ios-list">
-      <k-list-item :title="t('error.title')">
-        <template #after>
-          <IosIcon class="text-red-500" name="warning" :size="20" />
         </template>
       </k-list-item>
     </k-list>

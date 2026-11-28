@@ -129,12 +129,16 @@ html[data-znn-ui="ios"] body {
   padding-bottom: 8px;
 }
 
-.ios-section {
+.ios-content > .refresh-section {
+  margin-top: 8px;
+}
+
+.ios-content > .refresh-section + .refresh-section {
   margin-top: 22px;
 }
 
-.ios-section:first-of-type {
-  margin-top: 8px;
+.znn-ios .ios-content .refresh-feedback {
+  margin-inline: 24px;
 }
 
 .ios-section-title {
@@ -300,10 +304,6 @@ html[data-znn-ui="ios"] body {
 
 .dark .znn-ios .ios-placeholder.k-block {
   color: rgba(235, 235, 245, 0.6);
-}
-
-.znn-ios .ios-placeholder-error.k-block {
-  color: #ff3b30;
 }
 
 .ios-spin {

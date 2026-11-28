@@ -19,7 +19,7 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-import { ref, type Ref } from "vue";
+import { reactive, ref, type Ref } from "vue";
 
 import {
   getHookConfig,
@@ -32,6 +32,32 @@ import { isKsuAvailable } from "../api/ksu";
 import { getModules, type ZnnModule } from "../api/modules";
 import { getSystemInfo, type SystemInfo } from "../api/system";
 
+const DATA_SECTIONS = ["status", "system", "modules", "config"] as const;
+
+export type DataSection = (typeof DATA_SECTIONS)[number];
+
+interface SectionData {
+  status: DaemonStatus;
+  system: SystemInfo;
+  modules: ZnnModule[];
+  config: HookConfig;
+}
+
+interface SectionState {
+  loading: boolean;
+  failed: boolean;
+  lastSuccess: number | null;
+}
+
+const readers: {
+  [Section in DataSection]: () => Promise<SectionData[Section]>;
+} = {
+  status: getDaemonStatus,
+  system: getSystemInfo,
+  modules: getModules,
+  config: getHookConfig,
+};
+
 export interface AppData {
   ksuAvailable: boolean;
   status: Ref<DaemonStatus | null>;
@@ -39,7 +65,9 @@ export interface AppData {
   modules: Ref<ZnnModule[] | null>;
   config: Ref<HookConfig | null>;
   loading: Ref<boolean>;
+  sections: Record<DataSection, SectionState>;
   load: () => Promise<void>;
+  retrySection: (section: DataSection) => Promise<void>;
   applyHookConfig: (kind: HookKind, value: string) => Promise<void>;
 }
 
@@ -49,54 +77,90 @@ export function useAppData(): AppData {
   const system = ref<SystemInfo | null>(null);
   const modules = ref<ZnnModule[] | null>(null);
   const config = ref<HookConfig | null>(null);
+  const data: { [Section in DataSection]: Ref<SectionData[Section] | null> } = {
+    status,
+    system,
+    modules,
+    config,
+  };
+  const initialState: SectionState = {
+    loading: ksuAvailable,
+    failed: false,
+    lastSuccess: null,
+  };
+  const sections = reactive({
+    status: { ...initialState },
+    system: { ...initialState },
+    modules: { ...initialState },
+    config: { ...initialState },
+  });
   const loading = ref(ksuAvailable);
-  let configGeneration = 0;
-  let inFlight = false;
+  const requests = new Map<DataSection, Promise<void>>();
+  let refreshing = false;
+  let configWrite = Promise.resolve();
 
-  async function load(): Promise<void> {
-    if (!ksuAvailable || inFlight) return;
-    inFlight = true;
-    loading.value = true;
-    const generation = configGeneration;
-    try {
-      const [nextStatus, nextSystem, nextModules, nextConfig] =
-        await Promise.all([
-          getDaemonStatus().catch((e) => {
-            console.warn("[znn] status:", e);
-            return null;
-          }),
-          getSystemInfo().catch((e) => {
-            console.warn("[znn] system:", e);
-            return null;
-          }),
-          getModules().catch((e) => {
-            console.warn("[znn] modules:", e);
-            return null;
-          }),
-          getHookConfig().catch((e) => {
-            console.warn("[znn] config:", e);
-            return null;
-          }),
-        ]);
-      if (nextStatus !== null) status.value = nextStatus;
-      if (nextSystem !== null) system.value = nextSystem;
-      if (nextModules !== null) modules.value = nextModules;
-      if (generation === configGeneration && nextConfig !== null)
-        config.value = nextConfig;
-    } finally {
-      loading.value = false;
-      inFlight = false;
+  async function readSection<Section extends DataSection>(
+    section: Section,
+  ): Promise<void> {
+    const state = sections[section];
+    for (;;) {
+      const write = configWrite;
+      if (section === "config") {
+        await write;
+        if (write !== configWrite) continue;
+      }
+
+      try {
+        const value = await readers[section]();
+        if (section === "config" && write !== configWrite) continue;
+        data[section].value = value;
+        state.lastSuccess = Date.now();
+        state.failed = false;
+      } catch (error) {
+        if (section === "config" && write !== configWrite) continue;
+        console.warn(`[znn] ${section}:`, error);
+        state.failed = true;
+      }
+      return;
     }
   }
 
-  async function applyHookConfig(kind: HookKind, value: string): Promise<void> {
-    configGeneration += 1;
+  function retrySection(section: DataSection): Promise<void> {
+    if (!ksuAvailable) return Promise.resolve();
+    const pending = requests.get(section);
+    if (pending) return pending;
+
+    const request = Promise.resolve()
+      .then(() => readSection(section))
+      .finally(() => {
+        requests.delete(section);
+        sections[section].loading = false;
+      });
+    requests.set(section, request);
+    sections[section].loading = true;
+    return request;
+  }
+
+  async function load(): Promise<void> {
+    if (!ksuAvailable || refreshing) return;
+    refreshing = true;
+    loading.value = true;
     try {
-      const nextConfig = await setHookConfig(kind, value);
-      config.value = nextConfig;
+      await Promise.all(DATA_SECTIONS.map(retrySection));
     } finally {
-      configGeneration += 1;
+      loading.value = false;
+      refreshing = false;
     }
+  }
+
+  function applyHookConfig(kind: HookKind, value: string): Promise<void> {
+    const update = configWrite.then(async () => {
+      config.value = await setHookConfig(kind, value);
+      sections.config.lastSuccess = Date.now();
+      sections.config.failed = false;
+    });
+    configWrite = update.catch(() => {});
+    return update;
   }
 
   return {
@@ -106,7 +170,9 @@ export function useAppData(): AppData {
     modules,
     config,
     loading,
+    sections,
     load,
+    retrySection,
     applyHookConfig,
   };
 }

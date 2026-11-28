@@ -46,7 +46,7 @@ interface ConfigRow {
   toggle?: boolean;
 }
 
-const props = defineProps<{ config: HookConfig; error?: boolean }>();
+const props = defineProps<{ config: HookConfig }>();
 
 const actions = useAppActions();
 
@@ -89,7 +89,7 @@ function closePicker(): void {
 }
 
 function openPicker(row: ConfigRow): void {
-  if (busy.value || props.error) return;
+  if (busy.value) return;
   failure.value = "";
   pickerRow.value = row;
 }
@@ -134,7 +134,7 @@ function onToggle(row: ConfigRow, event: Event): void {
   <section class="ios-section">
     <h2 class="ios-section-title">{{ t("card.settings") }}</h2>
 
-    <k-list v-if="!props.error" inset strong class="ios-list">
+    <k-list inset strong class="ios-list">
       <template v-for="row in rows" :key="row.kind">
         <k-list-item v-if="row.toggle" :title="row.label">
           <template #after>
@@ -167,14 +167,6 @@ function onToggle(row: ConfigRow, event: Event): void {
           </template>
         </k-list-item>
       </template>
-    </k-list>
-
-    <k-list v-else inset strong class="ios-list">
-      <k-list-item :title="t('error.title')">
-        <template #after>
-          <IosIcon class="text-red-500" name="warning" :size="20" />
-        </template>
-      </k-list-item>
     </k-list>
 
     <IosAlert v-if="failure" class="ios-alert-inline">

@@ -31,6 +31,16 @@ export const zhCN: Dictionary = {
 
   "actions.refresh": "刷新",
 
+  "refresh.updated": "更新于 {time}",
+  "refresh.unavailable": "无法加载{section}。",
+  "refresh.stale": "无法刷新{section}，当前显示 {time} 的数据。",
+  "refresh.retry": "重试",
+  "refresh.retrySection": "重新加载{section}",
+  "refresh.section.status": "状态",
+  "refresh.section.system": "设备信息",
+  "refresh.section.modules": "模块列表",
+  "refresh.section.config": "设置",
+
   "status.active": "已激活",
   "status.inactive": "未激活",
 

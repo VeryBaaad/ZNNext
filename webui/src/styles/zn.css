@@ -22,7 +22,6 @@
 html[data-znn-ui="zn"] {
   --zn-page: #ffffff;
   --zn-card: #fafafc;
-  --zn-card-error: #fef2f2;
   --zn-hairline: #efeff5;
   --zn-text: #333639;
   --zn-text-strong: #1f2225;
@@ -53,7 +52,6 @@ html[data-znn-ui="zn"] {
 html[data-znn-ui="zn"][data-znn-scheme="dark"] {
   --zn-page: #101014;
   --zn-card: #050503;
-  --zn-card-error: #010d0d;
   --zn-hairline: rgba(255, 255, 255, 0.09);
   --zn-text: rgba(255, 255, 255, 0.82);
   --zn-text-strong: rgba(255, 255, 255, 0.9);
@@ -191,10 +189,6 @@ html[data-znn-ui="zn"] body {
   border-radius: 14px;
 }
 
-.zn-card.is-error {
-  background: var(--zn-card-error);
-}
-
 .zn-card-header {
   display: flex;
   align-items: center;
@@ -223,6 +217,14 @@ html[data-znn-ui="zn"] body {
 
 .zn-card-body {
   padding: 0 16px 12px;
+}
+
+.zn-card-body > .refresh-section + .refresh-section {
+  margin-top: 8px;
+}
+
+.znn-zn .zn-card-body .refresh-feedback {
+  margin-inline: 0;
 }
 
 .zn-divider {

@@ -31,7 +31,6 @@ import ZnCard from "./ZnCard.vue";
 const props = defineProps<{
   system: SystemInfo;
   status: DaemonStatus | null;
-  error?: boolean;
 }>();
 
 interface InfoRow {
@@ -73,13 +72,11 @@ const rows = computed<InfoRow[]>(() => [
 </script>
 
 <template>
-  <ZnCard :title="t('card.basic')" :error="props.error">
-    <template v-if="!props.error">
-      <template v-for="row in rows" :key="row.label">
-        <div class="zn-divider" role="separator"></div>
-        <div class="zn-field-label">{{ row.label }}</div>
-        <div class="zn-field-value">{{ row.value }}</div>
-      </template>
+  <ZnCard :title="t('card.basic')">
+    <template v-for="row in rows" :key="row.label">
+      <div class="zn-divider" role="separator"></div>
+      <div class="zn-field-label">{{ row.label }}</div>
+      <div class="zn-field-value">{{ row.value }}</div>
     </template>
   </ZnCard>
 </template>
