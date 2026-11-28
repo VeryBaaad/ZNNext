@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 import argparse
 import hashlib
+import json
 import os
 import re
 import shutil
 import string
 import sys
+import tempfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -271,16 +274,18 @@ def sign_stage(stage):
             raise znn.BuildError(f"signer produced no valid {name}")
 
 
+def sha256(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def write_checksums(stage):
     files = sorted(path for path in stage.rglob("*") if path.is_file())
     for path in files:
-        digest = hashlib.sha256()
-        with path.open("rb") as stream:
-            for block in iter(lambda: stream.read(1024 * 1024), b""):
-                digest.update(block)
-        path.with_name(path.name + ".sha256").write_text(
-            digest.hexdigest(), encoding="ascii"
-        )
+        path.with_name(path.name + ".sha256").write_text(sha256(path), encoding="ascii")
     print(f"checksums: wrote {len(files)} sha256 files", flush=True)
 
 
@@ -290,18 +295,13 @@ def xz_options(settings):
     return [f"-mx={settings.xz_level}", "-mm=XZ"]
 
 
-def build_zip(stage, variant, sevenzip_path):
+def build_zip(stage, archive, sevenzip_path):
     settings = znn.optimize.from_environment()
     threshold = (
         znn.XZ_MIN_ENTRY_SIZE
         if settings.profile == znn.optimize.PROFILE_NONE
         else settings.xz_threshold
     )
-    archive = znn.zip_path(variant)
-    archive.parent.mkdir(parents=True, exist_ok=True)
-    if archive.exists():
-        archive.unlink()
-
     files = sorted(
         path.relative_to(stage).as_posix() for path in stage.rglob("*") if path.is_file()
     )
@@ -342,7 +342,29 @@ def build_zip(stage, variant, sevenzip_path):
         f"({len(xz)} xz + {len(deflated)} deflate entries)",
         flush=True,
     )
-    return archive
+
+
+def write_compatibility_manifest(archive):
+    try:
+        with zipfile.ZipFile(archive) as package_zip:
+            entries = set(package_zip.namelist())
+    except zipfile.BadZipFile as error:
+        raise znn.BuildError(f"invalid output ZIP {archive.name}: {error}") from error
+    manifest = {
+        "archive": archive.name,
+        "sha256": sha256(archive),
+        "packagedAbis": [
+            abi
+            for abi in znn.ANDROID_ABIS
+            if f"bin/{abi}/znnd" in entries and f"lib/{abi}/libzn_loader.so" in entries
+        ],
+        "minSdk": znn.ANDROID_MIN_SDK,
+        "webui": "webroot/index.html" in entries,
+        "kpm": "znn.kpm" in entries,
+    }
+    path = archive.with_suffix(".compat.json")
+    write_text(path, json.dumps(manifest, indent=2) + "\n")
+    return path
 
 
 def package(variant, no_kpm, sevenzip=None):
@@ -364,7 +386,18 @@ def package(variant, no_kpm, sevenzip=None):
     copy_kpm(stage, variant, no_kpm)
     sign_stage(stage)
     write_checksums(stage)
-    return build_zip(stage, variant, znn.seven_zip(sevenzip))
+    archive = znn.zip_path(variant)
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=archive.parent) as directory:
+        built = Path(directory) / archive.name
+        build_zip(stage, built, znn.seven_zip(sevenzip))
+        manifest = write_compatibility_manifest(built)
+        destination = archive.with_name(manifest.name)
+        destination.unlink(missing_ok=True)
+        built.replace(archive)
+        manifest.replace(destination)
+    print(f"compatibility manifest: {destination.name}", flush=True)
+    return archive
 
 
 def push(variant):

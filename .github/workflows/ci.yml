@@ -70,6 +70,8 @@ jobs:
         run: |
           releaseName=`ls module/build/outputs/release/ZNNext-v*-release.zip | awk -F '(/|.zip)' '{print $5}'` && echo "releaseName=$releaseName" >> $GITHUB_OUTPUT
           debugName=`ls module/build/outputs/release/ZNNext-v*-debug.zip | awk -F '(/|.zip)' '{print $5}'` && echo "debugName=$debugName" >> $GITHUB_OUTPUT
+          test -s "module/build/outputs/release/$releaseName.compat.json"
+          test -s "module/build/outputs/release/$debugName.compat.json"
           7z x -y -oznn-release module/build/outputs/release/ZNNext-v*-release.zip
           7z x -y -oznn-debug module/build/outputs/release/ZNNext-v*-debug.zip
       - name: Post to channel
@@ -102,7 +104,10 @@ jobs:
         with:
           body_path: ${{ runner.temp }}/changelog.md
           working_directory: module/build/outputs/release
-          files: ${{ steps.prepareArtifact.outputs.releaseName }}.zip
+          files: |
+            ${{ steps.prepareArtifact.outputs.releaseName }}.zip
+            ${{ steps.prepareArtifact.outputs.releaseName }}.compat.json
+          fail_on_unmatched_files: true
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -118,6 +123,14 @@ jobs:
           name: ${{ steps.prepareArtifact.outputs.debugName }}
           path: "./znn-debug/*"
           compression-level: 9
+      - name: Upload compatibility manifests
+        uses: actions/upload-artifact@v7
+        with:
+          name: compatibility-manifests
+          path: |
+            module/build/outputs/release/${{ steps.prepareArtifact.outputs.releaseName }}.compat.json
+            module/build/outputs/release/${{ steps.prepareArtifact.outputs.debugName }}.compat.json
+          if-no-files-found: error
       - name: Sync update branch
         if: github.ref_type == 'tag'
         env:
