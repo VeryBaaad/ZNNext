@@ -39,11 +39,14 @@ const mode = computed(() => {
 </script>
 
 <template>
-  <m3e-card class="status-card" variant="filled">
+  <m3e-card
+    class="status-card"
+    :class="{ 'is-inactive': !props.status.running }"
+    variant="filled"
+  >
     <div slot="content" class="status-body">
       <m3e-icon
         class="status-icon"
-        :class="props.status.running ? 'is-active' : 'is-inactive'"
         :name="props.status.running ? 'check_circle' : 'error'"
         :filled="true"
       ></m3e-icon>

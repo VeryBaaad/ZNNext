@@ -6,6 +6,7 @@
   "description": "ZNNext module WebUI (KernelSU / Magisk / APatch)",
   "scripts": {
     "dev": "vite",
+    "mock:miuix-inactive": "vite --open \"/?ui=miuix&status=inactive&locale=zh-CN\"",
     "build": "vue-tsc --noEmit && vite build",
     "type-check": "vue-tsc --noEmit",
     "preview": "vite preview"

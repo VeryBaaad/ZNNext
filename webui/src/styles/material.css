@@ -190,6 +190,11 @@ html[data-znn-ui="material"] .status-card {
   --m3e-filled-card-text-color: var(--md-sys-color-on-secondary-container);
 }
 
+html[data-znn-ui="material"] .status-card.is-inactive {
+  --m3e-filled-card-container-color: var(--md-sys-color-error-container);
+  --m3e-filled-card-text-color: var(--md-sys-color-on-error-container);
+}
+
 html[data-znn-ui="material"] .status-body {
   display: flex;
   align-items: center;
@@ -199,10 +204,6 @@ html[data-znn-ui="material"] .status-body {
 html[data-znn-ui="material"] .status-icon {
   flex: none;
   --m3e-icon-size: 26px;
-}
-
-html[data-znn-ui="material"] .status-icon.is-inactive {
-  color: var(--md-sys-color-error);
 }
 
 html[data-znn-ui="material"] .status-text {
