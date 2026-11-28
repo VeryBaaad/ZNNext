@@ -45,6 +45,7 @@ pub const VERSION: &str = env!("ZNN_VERSION");
 
 const SHUTDOWN_RELEASE_BUDGET_MS: u64 = 800;
 const PROC_IDLE_SLEEP_MS: u64 = 25;
+const STATE_POLL_INTERVAL_MS: u64 = 15;
 const HOT_UPDATE_START_PROBES: u32 = 20;
 const HOT_UPDATE_RETRY_MS: u64 = 15_000;
 
@@ -99,11 +100,11 @@ pub struct Daemon {
     pub last_rescan_ms: Option<u64>,
     pub last_zygisk_check_ms: u64,
     pub last_sweep_ms: u64,
-    pub last_state_write_ms: u64,
+    pub last_prop_update_ms: u64,
 }
 
 impl Daemon {
-    pub fn new(module_dir: PathBuf) -> Self {
+    pub fn new(module_dir: PathBuf, handoff: Option<&[u8]>) -> Self {
         // Log before anything that can fail or block: a daemon that dies or
         // stalls during startup must not do so silently.
         logi!("ZNNext {VERSION} starting");
@@ -140,7 +141,7 @@ impl Daemon {
             last_rescan_ms: None,
             last_zygisk_check_ms: 0,
             last_sweep_ms: 0,
-            last_state_write_ms: 0,
+            last_prop_update_ms: 0,
         };
 
         daemon.system = system::collect();
@@ -152,7 +153,9 @@ impl Daemon {
         signal::set_handler(signal::SIGTERM, on_sigterm);
 
         daemon.collect_targets();
-        daemon.restore_processes();
+        if let Some(bytes) = handoff {
+            daemon.restore_state(bytes);
+        }
         logi!("collected {} zn modules", daemon.targets.len());
 
         let kernel_early = requested_mode == config::MODE_KERNEL
@@ -166,13 +169,14 @@ impl Daemon {
     }
 
     pub fn run(&mut self) -> ! {
-        self.write_state_snapshot();
-        self.last_state_write_ms = procfs::now_ms();
+        self.open_state_socket();
+        self.apply_prop_text();
+        let mut last_query_poll_ms = 0;
+        self.last_prop_update_ms = procfs::now_ms();
 
         loop {
             if SHUTDOWN.swap(false, Ordering::SeqCst) {
                 logi!("shutting down: releasing the tracees we are holding");
-                self.write_state_snapshot();
                 let deadline = procfs::now_ms() + SHUTDOWN_RELEASE_BUDGET_MS;
                 while !self.release_tracees() {
                     if procfs::now_ms() >= deadline {
@@ -242,6 +246,10 @@ impl Daemon {
             self.recheck_pending();
 
             let now = procfs::now_ms();
+            if now - last_query_poll_ms >= STATE_POLL_INTERVAL_MS {
+                self.serve_state();
+                last_query_poll_ms = now;
+            }
             if self
                 .last_rescan_ms
                 .is_none_or(|last_rescan| now - last_rescan >= 5000)
@@ -262,11 +270,12 @@ impl Daemon {
                 self.maybe_hot_update();
             }
             if self.state.dirty
-                && (now - self.last_state_write_ms >= 2000 || self.last_state_write_ms == 0)
+                && (now - self.last_prop_update_ms >= 2000 || self.last_prop_update_ms == 0)
             {
-                self.write_state_snapshot();
+                self.open_state_socket();
+                self.apply_prop_text();
                 self.state.dirty = false;
-                self.last_state_write_ms = now;
+                self.last_prop_update_ms = now;
             }
 
             thread::sleep(match self.mode {
@@ -318,10 +327,17 @@ impl Daemon {
             return;
         }
 
-        self.hot_update_checked = Some((fingerprint, u64::MAX));
-
         let executable = crate::update::executable(&pending);
-        let pid = match process::spawn_detached(&executable, &pending.dir) {
+        let state = match serde_json::to_vec(&self.state_report()) {
+            Ok(state) => state,
+            Err(error) => {
+                logw!("hot update: cannot prepare daemon state: {error}");
+                self.hot_update_checked = Some((fingerprint, now + HOT_UPDATE_RETRY_MS));
+                return;
+            }
+        };
+        self.hot_update_checked = Some((fingerprint, u64::MAX));
+        let pid = match process::spawn_detached(&executable, &pending.dir, Some(&state)) {
             Ok(pid) => pid,
             Err(error) => {
                 logw!("hot update: cannot start {}: {error}", executable.display());

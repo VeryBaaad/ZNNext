@@ -160,11 +160,23 @@ pub fn is_daemon_alive(pid: Pid) -> bool {
     if pid <= 1
         || pid == std::process::id() as Pid
         || !is_znndaemon_process(pid)
-        || process_gone(pid)
+        || basename(&read_exe_path(pid)) != "znnd"
     {
         return false;
     }
-    !command_line(pid).iter().any(|argument| argument == "--ctl")
+    let Ok(status) = fs::read_to_string(format!("/proc/{pid}/status")) else {
+        return false;
+    };
+    let effective_uid = status
+        .lines()
+        .find_map(|line| line.strip_prefix("Uid:"))
+        .and_then(|uids| uids.split_whitespace().nth(1));
+    let arguments = command_line(pid);
+    effective_uid == Some("0")
+        && !arguments.is_empty()
+        && !arguments
+            .iter()
+            .any(|arg| arg == "--ctl" || arg.starts_with("--ctl="))
 }
 
 /// The pid that currently traces `pid`, when that tracer is not us. This is the
@@ -235,13 +247,7 @@ fn clock_ticks_per_second() -> u64 {
         .map_or(100, |ticks| ticks as u64)
 }
 
-/// Locate the running daemon, preferring the pid the daemon published in its
-/// state snapshot. Several daemons can outlive a userspace restart, so the
-/// oldest one (the lowest pid) wins when no pid was recorded.
-pub fn find_daemon_pid(recorded: Option<Pid>) -> Option<Pid> {
-    if recorded.is_some_and(is_daemon_alive) {
-        return recorded;
-    }
+pub fn find_daemon_pid() -> Option<Pid> {
     let mut found: Option<Pid> = None;
     for entry in fs::read_dir("/proc").ok()?.flatten() {
         let name = entry.file_name();

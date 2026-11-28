@@ -59,11 +59,12 @@ pub struct ModuleInfo {
     pub failed: Vec<ModuleFailure>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct ModuleFailure {
     pub name: String,
     pub reason: String,
     pub pid: Pid,
+    #[serde(rename = "lastSeenMs", skip_serializing_if = "Option::is_none")]
     pub last_seen_ms: Option<u64>,
 }
 

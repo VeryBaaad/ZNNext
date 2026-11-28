@@ -31,6 +31,7 @@ use std::time::{Duration, Instant};
 
 use nix::poll::{PollFd, PollFlags, poll};
 
+use crate::daemon::Daemon;
 use crate::log::{loge, logi};
 use crate::plan;
 use crate::procfs;
@@ -43,13 +44,18 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const RETRY_INTERVAL: Duration = Duration::from_millis(10);
 const PROOF_TIMEOUT: Duration = Duration::from_secs(2);
 
-pub fn spawn(library: &str, nonce: u32, index: u32, token: [u8; 16]) {
-    match sys::process::fork() {
-        Ok(Forked::Child) => run_helper(library, nonce, index, token),
-        Ok(Forked::Parent(pid)) => {
-            logi!("companion for {library} (module {index}) started as pid {pid}");
+impl Daemon {
+    pub fn spawn_companion(&mut self, library: &str, nonce: u32, index: u32, token: [u8; 16]) {
+        match sys::process::fork() {
+            Ok(Forked::Child) => {
+                drop(self.state.server.take());
+                run_helper(library, nonce, index, token)
+            }
+            Ok(Forked::Parent(pid)) => {
+                logi!("companion for {library} (module {index}) started as pid {pid}");
+            }
+            Err(error) => loge!("companion for {library}: cannot fork: {error}"),
         }
-        Err(error) => loge!("companion for {library}: cannot fork: {error}"),
     }
 }
 

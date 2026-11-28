@@ -21,12 +21,17 @@
 
 use std::ffi::CString;
 use std::io;
+use std::os::fd::OwnedFd;
+use std::os::unix::process::CommandExt;
 use std::path::Path;
+use std::process::{Command, Stdio};
 
 use nix::sys::signal::kill as nix_kill;
 use nix::unistd::{self, ForkResult, Pid as NixPid};
 
 use super::signal;
+use crate::handoff;
+use crate::log::logw;
 
 pub type Pid = libc::pid_t;
 
@@ -46,42 +51,36 @@ pub fn fork() -> io::Result<Forked> {
     }
 }
 
-/// Start `executable` in a session of its own with stdio on /dev/null, so the
-/// daemon outlives the control client that asked for it. The returned pid is
-/// the daemon's: `execv` keeps it.
-pub fn spawn_detached(executable: &Path, argument: &Path) -> io::Result<Pid> {
-    match fork()? {
-        Forked::Parent(pid) => Ok(pid),
-        Forked::Child => {
-            // SAFETY: the child only performs async-signal-safe calls before
-            // exec, and leaves through `_exit` when exec cannot happen.
-            unsafe {
-                libc::setsid();
-                let devnull = libc::open(c"/dev/null".as_ptr(), libc::O_RDWR);
-                if devnull >= 0 {
-                    libc::dup2(devnull, libc::STDIN_FILENO);
-                    libc::dup2(devnull, libc::STDOUT_FILENO);
-                    libc::dup2(devnull, libc::STDERR_FILENO);
-                    if devnull > libc::STDERR_FILENO {
-                        libc::close(devnull);
-                    }
-                }
-                let Some(path) = path_cstring(executable) else {
-                    exit_now(1)
-                };
-                let Some(argument) = path_cstring(argument) else {
-                    exit_now(1)
-                };
-                let argv = [path.as_ptr(), argument.as_ptr(), std::ptr::null()];
-                libc::execv(path.as_ptr(), argv.as_ptr());
-            }
-            exit_now(1)
-        }
+pub fn spawn_detached(executable: &Path, argument: &Path, state: Option<&[u8]>) -> io::Result<Pid> {
+    let mut command = Command::new(executable);
+    command
+        .arg(argument)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .env_remove(handoff::ENV);
+    unsafe {
+        command.pre_exec(|| unistd::setsid().map(|_| ()).map_err(io::Error::from));
     }
-}
 
-fn path_cstring(path: &Path) -> Option<CString> {
-    CString::new(path.as_os_str().as_encoded_bytes()).ok()
+    let sender = if let Some(payload) = state {
+        let (sender, receiver) = handoff::channel(payload)?;
+        command
+            .env(handoff::ENV, "1")
+            .stdin(Stdio::from(OwnedFd::from(receiver)));
+        Some((sender, payload))
+    } else {
+        None
+    };
+
+    let child = command.spawn()?;
+    drop(command);
+    if let Some((sender, payload)) = sender
+        && let Err(error) = handoff::send(sender, payload)
+    {
+        logw!("cannot send daemon state handoff: {error}");
+    }
+    Ok(child.id() as Pid)
 }
 
 pub fn exit_now(code: i32) -> ! {

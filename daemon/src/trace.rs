@@ -23,7 +23,6 @@ use std::fs;
 use std::path::Path;
 
 use crate::arch::{Arch, Regs};
-use crate::companion;
 use crate::config;
 use crate::daemon::Daemon;
 use crate::elf::{self, ElfHeader};
@@ -744,7 +743,7 @@ impl Daemon {
         }
 
         for module in plan.companions() {
-            companion::spawn(&module.path, plan.nonce, module.index, plan.token);
+            self.spawn_companion(&module.path, plan.nonce, module.index, plan.token);
         }
 
         logi!(

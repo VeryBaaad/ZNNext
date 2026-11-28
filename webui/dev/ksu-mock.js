@@ -147,8 +147,21 @@
   function snapshot(cmd, operands) {
     switch (cmd) {
       case 'status':
-        return { running: state.running, pid: state.running ? 4242 : 0, mode: state.mode };
+        return {
+          running: state.running,
+          pid: state.running ? 4242 : 0,
+          mode: state.running ? state.mode : 'unknown',
+        };
       case 'system':
+        if (!state.running) {
+          return {
+            kernel: '',
+            sdk: 0,
+            abi: '',
+            abilist: '',
+            root: { magisk: '', kernelSU: '', apatch: '' },
+          };
+        }
         return {
           kernel: '5.15.148-android13-8-g2b4c1f0a1b2c-ab1234567',
           sdk: 34,
@@ -157,7 +170,7 @@
           root: { magisk: null, kernelSU: 'ksud v3.0.0', apatch: null },
         };
       case 'modules':
-        return state.modules;
+        return state.running ? state.modules : [];
       case 'config':
         return state.config;
       case 'config-set': {

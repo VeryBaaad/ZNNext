@@ -19,11 +19,11 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
+use std::{fs, io};
 
 use clap::builder::ValueParser;
 use clap::{Arg, ArgMatches, Command as ClapCommand};
@@ -37,6 +37,7 @@ use crate::daemon::VERSION;
 use crate::paths;
 use crate::procfs;
 use crate::state::SystemReport;
+use crate::state_socket;
 use crate::sys::Pid;
 use crate::sys::process;
 use crate::sys::signal;
@@ -53,8 +54,7 @@ const MODULE_DIR_ARGUMENT: &str = "module-dir";
 const STOP_INTERVAL: Duration = Duration::from_millis(25);
 const STOP_ATTEMPTS: u32 = 80;
 
-/// How long `--ctl start` waits for the daemon it forked to be observable.
-const START_ATTEMPTS: u32 = 20;
+const START_TIMEOUT: Duration = Duration::from_secs(4);
 
 const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
 
@@ -110,9 +110,7 @@ pub fn ctl_main(arguments: &[String]) -> i32 {
         "config" => print_json(&config::effective().report()),
         "config-set" => config_set(arguments),
         "apply-zn" => apply_zn(arguments),
-        "status" => status(state_snapshot().as_ref()),
-        "system" => system(state_snapshot().as_ref()),
-        "modules" => modules(state_snapshot().as_ref()),
+        "status" | "system" | "modules" => query_state(command),
         _ => usage(),
     }
 }
@@ -139,8 +137,6 @@ fn modules(snapshot: Option<&StateSnapshot>) -> i32 {
 #[derive(Debug, Deserialize)]
 struct StateSnapshot {
     #[serde(default, deserialize_with = "lenient")]
-    pid: Option<Pid>,
-    #[serde(default, deserialize_with = "lenient")]
     mode: Option<String>,
     #[serde(default)]
     system: Option<Box<RawValue>>,
@@ -165,28 +161,46 @@ where
     })
 }
 
-fn state_snapshot() -> Option<StateSnapshot> {
-    let contents = fs::read_to_string(paths::STATE_FILE).ok()?;
-    serde_json::from_str(&contents).ok()
+fn live_state(pid: Pid) -> io::Result<StateSnapshot> {
+    serde_json::from_slice(&state_socket::read(pid)?).map_err(Into::into)
 }
 
-/// The running daemon: the pid the daemon published wins, and the scan only
-/// covers the case of a state file that is missing or stale.
-fn daemon_pid() -> Option<Pid> {
-    procfs::find_daemon_pid(state_snapshot().and_then(|state| state.pid))
+fn query_state(command: &str) -> i32 {
+    let pid = procfs::find_daemon_pid();
+    let snapshot = match pid {
+        Some(pid) => match live_state(pid) {
+            Ok(snapshot) => Some(snapshot),
+            Err(_) if command == "status" => {
+                return status(procfs::is_daemon_alive(pid).then_some(pid), None);
+            }
+            Err(error) if procfs::is_daemon_alive(pid) => {
+                eprintln!("cannot query daemon ({pid}): {error}");
+                return 1;
+            }
+            Err(_) => None,
+        },
+        None => None,
+    };
+    match command {
+        "status" => status(pid, snapshot.as_ref()),
+        "system" => system(snapshot.as_ref()),
+        "modules" => modules(snapshot.as_ref()),
+        _ => usage(),
+    }
 }
 
 /// Bring the daemon up from this process, which is how the WebUI recovers after
 /// a userspace restart that skipped the module's boot scripts. The child gets
 /// its own session and stdio on /dev/null, so it outlives the caller.
 fn start_daemon(restart: bool) -> i32 {
-    if let Some(pid) = daemon_pid() {
+    let mut previous_state = None;
+    if let Some(pid) = procfs::find_daemon_pid() {
         if !restart {
-            return print_json(&StatusReport {
-                running: true,
-                pid,
-                mode: "unknown",
-            });
+            return status(Some(pid), live_state(pid).ok().as_ref());
+        }
+        match state_socket::read(pid) {
+            Ok(bytes) => previous_state = Some(bytes),
+            Err(error) => eprintln!("previous daemon state unavailable: {error}"),
         }
         if let Err(error) = stop_daemon(pid) {
             eprintln!("{error}");
@@ -203,21 +217,16 @@ fn start_daemon(restart: bool) -> i32 {
         eprintln!("cannot resolve the module directory");
         return 1;
     }
-    match process::spawn_detached(&executable, &module_dir) {
+    match process::spawn_detached(&executable, &module_dir, previous_state.as_deref()) {
         Ok(pid) => {
-            // A daemon that cannot come up (bad loader, no /proc access, ...)
-            // must be reported instead of being announced as running.
-            for _ in 0..START_ATTEMPTS {
-                if procfs::is_daemon_alive(pid) {
-                    return print_json(&StatusReport {
-                        running: true,
-                        pid,
-                        mode: "unknown",
-                    });
+            let deadline = Instant::now() + START_TIMEOUT;
+            while Instant::now() < deadline && !procfs::process_gone(pid) {
+                if let Ok(snapshot) = live_state(pid) {
+                    return status(Some(pid), Some(&snapshot));
                 }
                 thread::sleep(STOP_INTERVAL);
             }
-            eprintln!("daemon ({pid}) did not stay up");
+            eprintln!("daemon ({pid}) did not answer a status query during startup");
             1
         }
         Err(error) => {
@@ -251,7 +260,7 @@ pub fn module_dir_of_self() -> PathBuf {
 }
 
 fn signal_daemon(requested: i32, message: fn(Pid) -> String) -> i32 {
-    let Some(pid) = daemon_pid() else {
+    let Some(pid) = procfs::find_daemon_pid() else {
         println!("daemon is not running");
         return 1;
     };
@@ -300,7 +309,7 @@ fn config_set(arguments: &[String]) -> i32 {
         }
     }
 
-    if let Some(pid) = daemon_pid() {
+    if let Some(pid) = procfs::find_daemon_pid() {
         let _ = process::kill(pid, signal::SIGHUP);
     }
 
@@ -324,7 +333,7 @@ fn apply_zn(arguments: &[String]) -> i32 {
     if ok { 0 } else { 1 }
 }
 
-fn status(snapshot: Option<&StateSnapshot>) -> i32 {
+fn status(pid: Option<Pid>, snapshot: Option<&StateSnapshot>) -> i32 {
     let recorded_mode = snapshot
         .and_then(|state| state.mode.as_deref())
         .filter(|mode| {
@@ -333,7 +342,7 @@ fn status(snapshot: Option<&StateSnapshot>) -> i32 {
                 || *mode == config::MODE_PROC
                 || *mode == config::MODE_LATE
         });
-    let pid = daemon_pid().unwrap_or(0);
+    let pid = pid.unwrap_or(0);
     let running = pid > 0;
     let mode = match recorded_mode {
         Some(mode) if running => mode,

@@ -20,7 +20,6 @@
  */
 
 pub const STATE_DIR: &str = "/data/adb/zygisknextsu";
-pub const STATE_FILE: &str = "/data/adb/zygisknextsu/znn_state.json";
 pub const CONFIG_FILE: &str = "/data/adb/zygisknextsu/config";
 pub const MODULES_DIR: &str = "/data/adb/modules";
 pub const MODULES_UPDATE_DIR: &str = "/data/adb/modules_update";

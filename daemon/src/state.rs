@@ -26,14 +26,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::config;
 use crate::daemon::{Daemon, MODULE_ID, Tracking, VERSION};
-use crate::fileio;
 use crate::log::{loge, logi, logw};
-use crate::paths;
 use crate::procfs;
+use crate::state_socket::Server;
 use crate::sys::Pid;
 use crate::sys::fs as raw_fs;
 use crate::system::{self, RootImpl};
-use crate::targets::{self, ModuleInfo};
+use crate::targets::{self, ModuleFailure, ModuleInfo};
 
 #[derive(Debug, Serialize)]
 pub struct StateReport<'a> {
@@ -85,22 +84,13 @@ struct ModuleReport<'a> {
     name: &'a str,
     version: &'a str,
     processes: Vec<ProcessReport<'a>>,
-    failed: Vec<FailedReport<'a>>,
+    failed: &'a [ModuleFailure],
 }
 
 #[derive(Debug, Serialize)]
 struct ProcessReport<'a> {
     pid: u32,
     name: &'a str,
-}
-
-#[derive(Debug, Serialize)]
-struct FailedReport<'a> {
-    name: &'a str,
-    reason: &'a str,
-    pid: u32,
-    #[serde(rename = "lastSeenMs", skip_serializing_if = "Option::is_none")]
-    last_seen_ms: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -115,6 +105,8 @@ struct SnapshotModule {
     id: String,
     #[serde(default)]
     processes: Vec<SnapshotProcess>,
+    #[serde(default)]
+    failed: Vec<ModuleFailure>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -128,21 +120,24 @@ struct SnapshotProcess {
 #[derive(Debug, Default)]
 pub struct StateWriter {
     pub dirty: bool,
+    pub server: Option<Server>,
     pub status_reason: String,
     last_prop_text: String,
 }
 
 impl Daemon {
-    pub fn restore_processes(&mut self) {
-        let Some(recorded_modules) = read_snapshot_modules() else {
+    pub fn restore_state(&mut self, bytes: &[u8]) {
+        let Ok(snapshot) = serde_json::from_slice::<Snapshot>(bytes) else {
+            logw!("cannot decode state from previous daemon");
             return;
         };
         let mut records = 0;
         let mut modules_restored = 0;
-        for recorded in recorded_modules {
+        for recorded in snapshot.modules {
             let Some(module) = self.modules.get_mut(&recorded.id) else {
                 continue;
             };
+            module.failed = recorded.failed;
             let before = module.processes.len();
             for recorded_process in recorded.processes {
                 let Ok(pid) = Pid::try_from(recorded_process.pid) else {
@@ -197,21 +192,24 @@ impl Daemon {
         }
     }
 
-    pub fn write_state_snapshot(&mut self) {
-        let report = self.state_report();
-        let json = match serde_json::to_string(&report) {
-            Ok(json) => json,
-            Err(error) => {
-                loge!("cannot encode the state snapshot: {error}");
-                return;
+    pub fn open_state_socket(&mut self) {
+        if self.state.server.is_none() {
+            match Server::bind() {
+                Ok(server) => self.state.server = Some(server),
+                Err(error) => logw!("cannot open daemon state socket: {error}"),
             }
-        };
-        let on_disk = fs::read_to_string(paths::STATE_FILE).ok();
-        if on_disk.as_deref() != Some(json.as_str()) {
-            let _ = fs::create_dir_all(paths::STATE_DIR);
-            let _ = fileio::replace_file(paths::STATE_FILE.as_ref(), json.as_bytes());
         }
-        self.apply_prop_text();
+    }
+
+    pub fn serve_state(&mut self) {
+        if let Some(mut server) = self.state.server.take() {
+            if let Err(error) =
+                server.poll(|| serde_json::to_vec(&self.state_report()).map_err(Into::into))
+            {
+                loge!("cannot serve daemon state: {error}");
+            }
+            self.state.server = Some(server);
+        }
     }
 
     pub fn apply_prop_text(&mut self) {
@@ -302,20 +300,6 @@ impl Daemon {
     }
 }
 
-fn read_snapshot_modules() -> Option<Vec<SnapshotModule>> {
-    let contents = fs::read_to_string(paths::STATE_FILE).ok()?;
-    match serde_json::from_str::<Snapshot>(&contents) {
-        Ok(snapshot) => Some(snapshot.modules),
-        Err(error) => {
-            logw!(
-                "cannot parse {}: {error}; the injected processes are not restored",
-                paths::STATE_FILE
-            );
-            None
-        }
-    }
-}
-
 fn module_report(module: &ModuleInfo) -> ModuleReport<'_> {
     ModuleReport {
         id: &module.id,
@@ -329,16 +313,7 @@ fn module_report(module: &ModuleInfo) -> ModuleReport<'_> {
                 name,
             })
             .collect(),
-        failed: module
-            .failed
-            .iter()
-            .map(|failure| FailedReport {
-                name: &failure.name,
-                reason: &failure.reason,
-                pid: failure.pid as u32,
-                last_seen_ms: failure.last_seen_ms,
-            })
-            .collect(),
+        failed: &module.failed,
     }
 }
 

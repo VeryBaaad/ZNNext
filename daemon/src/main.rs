@@ -27,6 +27,7 @@ mod ctl;
 mod daemon;
 mod elf;
 mod fileio;
+mod handoff;
 mod kernel;
 mod kernel_bpf;
 mod kernel_connector;
@@ -43,6 +44,7 @@ mod plan;
 mod procfs;
 mod ptrace_ops;
 mod state;
+mod state_socket;
 mod sys;
 mod system;
 mod targets;
@@ -57,6 +59,14 @@ fn main() {
         std::process::exit(ctl::ctl_main(&arguments));
     }
 
+    let handoff = match handoff::receive() {
+        Ok(state) => state,
+        Err(error) => {
+            crate::log::logw!("starting without previous daemon state: {error}");
+            None
+        }
+    };
+
     let module_dir = ctl::module_dir(&matches).unwrap_or_else(ctl::module_dir_of_self);
 
     if let Err(error) = machikado::verify_module(&module_dir) {
@@ -67,7 +77,7 @@ fn main() {
 
     let deadline = std::time::Instant::now() + std::time::Duration::from_millis(3000);
     let mut reported = false;
-    while let Some(pid) = procfs::find_daemon_pid(None) {
+    while let Some(pid) = procfs::find_daemon_pid() {
         if !reported {
             crate::log::logi!("waiting for the previous daemon ({pid}) to exit");
             reported = true;
@@ -81,5 +91,5 @@ fn main() {
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
 
-    daemon::Daemon::new(module_dir).run();
+    daemon::Daemon::new(module_dir, handoff.as_deref()).run();
 }
