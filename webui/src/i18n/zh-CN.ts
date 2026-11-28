@@ -65,6 +65,7 @@ export const zhCN: Dictionary = {
   "info.unknown": "未知",
 
   "modules.disabled": "已停用",
+  "modules.noDeclarations": "无可识别的声明",
   "modules.processes": "{n} 个进程",
   "modules.failed": "{n} 条失败记录",
   "modules.copyFailure": "复制失败记录详情",

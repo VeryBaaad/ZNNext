@@ -38,8 +38,17 @@ export interface ZnnModule {
   name: string;
   version: string;
   disabled?: boolean;
+  declarationIssue?: "noDeclarations";
   processes: InjectedProcess[];
   failed?: FailedProcess[];
+}
+
+export function moduleStatusKey(
+  module: ZnnModule,
+): "modules.disabled" | "modules.noDeclarations" | undefined {
+  if (module.disabled === true) return "modules.disabled";
+  if (module.declarationIssue === "noDeclarations")
+    return "modules.noDeclarations";
 }
 
 function normaliseProcesses(raw: unknown): InjectedProcess[] {
@@ -88,6 +97,10 @@ function normaliseModule(raw: unknown): ZnnModule | null {
     name: module.name,
     version: typeof module.version === "string" ? module.version.trim() : "",
     disabled: module.disabled === true,
+    declarationIssue:
+      module.declarationIssue === "noDeclarations"
+        ? "noDeclarations"
+        : undefined,
     processes: normaliseProcesses(module.processes),
     failed: normaliseFailed(module.failed),
   };

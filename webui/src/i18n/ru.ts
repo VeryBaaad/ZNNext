@@ -65,6 +65,7 @@ export const ru: Dictionary = {
   "info.unknown": "Неизвестно",
 
   "modules.disabled": "Отключён",
+  "modules.noDeclarations": "Нет распознанных объявлений",
   "modules.processes": "{n} процесс(ов)",
   "modules.failed": "Записи о сбоях ({n})",
   "modules.copyFailure": "Скопировать сведения об ошибке",

@@ -63,6 +63,7 @@ export const en: Record<string, string> = {
   "info.unknown": "Unknown",
 
   "modules.disabled": "Disabled",
+  "modules.noDeclarations": "No recognized declarations",
   "modules.processes": "{n} processes",
   "modules.failed": "Failure records ({n})",
   "modules.copyFailure": "Copy failure details",

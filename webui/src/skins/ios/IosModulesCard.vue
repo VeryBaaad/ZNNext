@@ -23,7 +23,7 @@
 import { kList, kListItem } from "konsta/vue";
 import { computed, ref } from "vue";
 
-import type { ZnnModule } from "../../api/modules";
+import { moduleStatusKey, type ZnnModule } from "../../api/modules";
 import CopyFailure from "../../components/CopyFailure.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
@@ -49,7 +49,7 @@ function failures(module: ZnnModule): number {
 }
 
 function tagsSlot(module: ZnnModule): "after" | "subtitle" {
-  return module.disabled === true ? "subtitle" : "after";
+  return moduleStatusKey(module) ? "subtitle" : "after";
 }
 
 function basename(value: string): string {
@@ -86,16 +86,20 @@ function basename(value: string): string {
           <template #[tagsSlot(module)]>
             <div
               class="ios-module-tags"
-              :class="{ 'is-disabled': module.disabled === true }"
+              :class="{ 'has-module-status': moduleStatusKey(module) }"
             >
-              <IosTag v-if="module.disabled === true" tone="muted">
-                {{ t("modules.disabled") }}
+              <IosTag
+                v-if="moduleStatusKey(module)"
+                class="ios-module-status"
+                tone="muted"
+              >
+                {{ t(moduleStatusKey(module)!) }}
               </IosTag>
               <IosTag v-if="failures(module) > 0" tone="warn">
                 {{ t("modules.failed", { n: failures(module) }) }}
               </IosTag>
               <IosTag
-                v-if="module.disabled !== true || module.processes.length > 0"
+                v-if="!moduleStatusKey(module) || module.processes.length > 0"
                 tone="info"
               >
                 {{ t("modules.processes", { n: module.processes.length }) }}
@@ -127,7 +131,7 @@ function basename(value: string): string {
           />
           <k-list-item
             v-if="
-              module.disabled !== true &&
+              !moduleStatusKey(module) &&
               module.processes.length === 0 &&
               failures(module) === 0
             "
@@ -163,11 +167,21 @@ function basename(value: string): string {
   display: contents;
 }
 
-.ios-module-tags.is-disabled {
+.ios-module-tags.has-module-status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
   margin-block-start: 2px;
+}
+
+.ios-module-status {
+  max-width: 100%;
+  min-height: 26px;
+  height: auto;
+  padding-block: 3px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 </style>

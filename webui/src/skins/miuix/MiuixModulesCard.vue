@@ -29,7 +29,7 @@ import {
 } from "miuix-vue";
 import { computed, ref, watch } from "vue";
 
-import type { ZnnModule } from "../../api/modules";
+import { moduleStatusKey, type ZnnModule } from "../../api/modules";
 import CopyFailure from "../../components/CopyFailure.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
@@ -63,8 +63,9 @@ const basename = (value: string): string => {
 
 function summary(module: ZnnModule): string {
   const parts = [];
-  if (module.disabled === true) parts.push(t("modules.disabled"));
-  if (module.disabled !== true || module.processes.length > 0) {
+  const status = moduleStatusKey(module);
+  if (status) parts.push(t(status));
+  if (!status || module.processes.length > 0) {
     parts.push(t("modules.processes", { n: module.processes.length }));
   }
   const failed = (module.failed ?? []).length;
@@ -110,7 +111,8 @@ function open(id: string): void {
     />
     <MiuixBasicComponent
       v-if="
-        selected?.disabled !== true &&
+        selected &&
+        !moduleStatusKey(selected) &&
         processes.length === 0 &&
         failures.length === 0
       "

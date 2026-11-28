@@ -22,7 +22,7 @@
 
 import { ref } from "vue";
 
-import type { ZnnModule } from "../../api/modules";
+import { moduleStatusKey, type ZnnModule } from "../../api/modules";
 import CopyFailure from "../../components/CopyFailure.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
@@ -58,7 +58,7 @@ const basename = (value: string): string => {
     <div v-for="module in props.modules" :key="module.id" class="zn-module">
       <button
         class="zn-module-trigger"
-        :class="{ 'is-disabled': module.disabled === true }"
+        :class="{ 'has-module-status': moduleStatusKey(module) }"
         type="button"
         :aria-expanded="expanded.has(module.id)"
         @click="toggle(module.id)"
@@ -67,14 +67,19 @@ const basename = (value: string): string => {
           {{ module.name }}
         </span>
         <span class="zn-module-tags">
-          <ZnTag v-if="module.disabled === true" tone="info" small>
-            {{ t("modules.disabled") }}
+          <ZnTag
+            v-if="moduleStatusKey(module)"
+            class="zn-module-status"
+            tone="info"
+            small
+          >
+            {{ t(moduleStatusKey(module)!) }}
           </ZnTag>
           <ZnTag v-if="failures(module) > 0" tone="warn" small>
             {{ t("modules.failed", { n: failures(module) }) }}
           </ZnTag>
           <ZnTag
-            v-if="module.disabled !== true || module.processes.length > 0"
+            v-if="!moduleStatusKey(module) || module.processes.length > 0"
             tone="info"
             small
           >
@@ -89,7 +94,7 @@ const basename = (value: string): string => {
           <span class="zn-field-value">{{ module.version }}</span>
         </div>
         <div
-          v-if="module.disabled !== true && module.processes.length === 0"
+          v-if="!moduleStatusKey(module) && module.processes.length === 0"
           class="zn-empty-line"
         >
           {{ t("modules.noProcesses") }}
@@ -136,12 +141,22 @@ const basename = (value: string): string => {
 </template>
 
 <style scoped>
-.zn-module-trigger.is-disabled,
-.zn-module-trigger.is-disabled .zn-module-tags {
+.zn-module-trigger.has-module-status,
+.zn-module-trigger.has-module-status .zn-module-tags {
   flex-wrap: wrap;
 }
 
-.zn-module-trigger.is-disabled .zn-module-tags {
+.zn-module-trigger.has-module-status .zn-module-tags {
   max-width: 100%;
+}
+
+.zn-module-status {
+  max-width: 100%;
+  min-height: 24px;
+  height: auto;
+  padding-block: 3px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 </style>

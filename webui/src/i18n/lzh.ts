@@ -65,6 +65,7 @@ export const lzh: Dictionary = {
   "info.unknown": "迷濛",
 
   "modules.disabled": "已停",
+  "modules.noDeclarations": "無可辨之聲明",
   "modules.processes": "公務有 {n}",
   "modules.failed": "未成者 {n} 條",
   "modules.copyFailure": "謄錄失敗之詳",

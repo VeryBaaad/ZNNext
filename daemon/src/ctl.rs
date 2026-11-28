@@ -143,11 +143,11 @@ fn modules(snapshot: Option<&StateSnapshot>) -> i32 {
     let Some(live) = snapshot.and_then(|state| state.modules.as_deref()) else {
         return print_json(&Vec::<Value>::new());
     };
-    match crate::disabled_modules::include_disabled(live, Path::new(paths::MODULES_DIR)) {
+    match crate::module_diagnostics::include_diagnostics(live, Path::new(paths::MODULES_DIR)) {
         Ok(Some(modules)) => print_json(&modules),
         Ok(None) => print_json(live),
         Err(error) => {
-            eprintln!("cannot include disabled modules: {error}");
+            eprintln!("cannot read module diagnostics: {error}");
             print_json(live)
         }
     }

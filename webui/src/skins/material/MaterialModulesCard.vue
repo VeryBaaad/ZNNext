@@ -20,7 +20,7 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-import type { ZnnModule } from "../../api/modules";
+import { moduleStatusKey, type ZnnModule } from "../../api/modules";
 import CopyFailure from "../../components/CopyFailure.vue";
 import { t } from "../../i18n";
 import { formatFailureMetadata } from "../../util/failure-metadata";
@@ -52,7 +52,7 @@ const basename = (value: string): string => {
         >
           <span
             class="module-line"
-            :class="{ 'is-disabled': module.disabled === true }"
+            :class="{ 'has-module-status': moduleStatusKey(module) }"
           >
             <span class="module-name" :title="`${module.name} (${module.id})`">
               {{ module.name }} ({{ module.id }})
@@ -61,13 +61,13 @@ const basename = (value: string): string => {
               class="module-count"
               :class="{ 'has-failed': (module.failed ?? []).length > 0 }"
             >
-              <template v-if="module.disabled === true">
-                {{ t("modules.disabled") }}
+              <template v-if="moduleStatusKey(module)">
+                {{ t(moduleStatusKey(module)!) }}
               </template>
               <template
-                v-if="module.disabled !== true || module.processes.length > 0"
+                v-if="!moduleStatusKey(module) || module.processes.length > 0"
               >
-                <template v-if="module.disabled === true"> · </template>
+                <template v-if="moduleStatusKey(module)"> · </template>
                 {{ t("modules.processes", { n: module.processes.length }) }}
               </template>
               <template v-if="(module.failed ?? []).length > 0">
@@ -83,7 +83,7 @@ const basename = (value: string): string => {
               }}</span>
             </div>
             <div
-              v-if="module.disabled !== true && module.processes.length === 0"
+              v-if="!moduleStatusKey(module) && module.processes.length === 0"
               class="proc-empty"
             >
               —
@@ -134,18 +134,18 @@ const basename = (value: string): string => {
 </template>
 
 <style scoped>
-.module-line.is-disabled {
+.module-line.has-module-status {
   flex-wrap: wrap;
   row-gap: 2px;
 }
 
-.module-line.is-disabled .module-name,
-.module-line.is-disabled .module-count {
+.module-line.has-module-status .module-name,
+.module-line.has-module-status .module-count {
   flex: none;
   max-width: 100%;
 }
 
-.module-line.is-disabled .module-count {
+.module-line.has-module-status .module-count {
   overflow-wrap: anywhere;
   white-space: normal;
 }
