@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import build as znn
+from module.elf_alignment import load_segments_aligned_16k
 
 MODULE_DIR = ROOT / "module"
 SOURCE_DIR = MODULE_DIR / "src"
@@ -344,20 +345,47 @@ def build_zip(stage, archive, sevenzip_path):
     )
 
 
-def write_compatibility_manifest(archive):
+def archive_load_alignment(archive, abis, sevenzip):
+    members = {
+        abi: (f"bin/{abi}/znnd", f"lib/{abi}/libzn_loader.so") for abi in abis
+    }
+    if not members:
+        return {}
+    with tempfile.TemporaryDirectory() as directory:
+        paths = [name for pair in members.values() for name in pair]
+        znn.run(
+            [
+                znn.seven_zip(sevenzip), "x", "-tzip", "-y", "-bso0", "-bsp0",
+                archive.resolve(), *paths,
+            ],
+            cwd=directory,
+            prefix="alignment",
+        )
+        return {
+            abi: {
+                Path(name).name: load_segments_aligned_16k(Path(directory) / name)
+                for name in pair
+            }
+            for abi, pair in members.items()
+        }
+
+
+def write_compatibility_manifest(archive, sevenzip=None):
     try:
         with zipfile.ZipFile(archive) as package_zip:
             entries = set(package_zip.namelist())
     except zipfile.BadZipFile as error:
         raise znn.BuildError(f"invalid output ZIP {archive.name}: {error}") from error
+    abis = [
+        abi
+        for abi in znn.ANDROID_ABIS
+        if f"bin/{abi}/znnd" in entries and f"lib/{abi}/libzn_loader.so" in entries
+    ]
     manifest = {
         "archive": archive.name,
         "sha256": sha256(archive),
-        "packagedAbis": [
-            abi
-            for abi in znn.ANDROID_ABIS
-            if f"bin/{abi}/znnd" in entries and f"lib/{abi}/libzn_loader.so" in entries
-        ],
+        "packagedAbis": abis,
+        "elfLoadAligned16KiB": archive_load_alignment(archive, abis, sevenzip),
         "minSdk": znn.ANDROID_MIN_SDK,
         "webui": "webroot/index.html" in entries,
         "kpm": "znn.kpm" in entries,
@@ -391,7 +419,7 @@ def package(variant, no_kpm, sevenzip=None):
     with tempfile.TemporaryDirectory(dir=archive.parent) as directory:
         built = Path(directory) / archive.name
         build_zip(stage, built, znn.seven_zip(sevenzip))
-        manifest = write_compatibility_manifest(built)
+        manifest = write_compatibility_manifest(built, sevenzip)
         destination = archive.with_name(manifest.name)
         destination.unlink(missing_ok=True)
         built.replace(archive)
