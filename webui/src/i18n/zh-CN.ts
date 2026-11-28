@@ -61,6 +61,11 @@ export const zhCN: Dictionary = {
   "info.rootImpl": "Root 实现",
   "info.rootImpl.none": "未检测到",
   "info.mode": "当前模式",
+  "info.modeReason.kernelUnavailable": "内核事件不可用。",
+  "info.modeReason.ptraceUnavailable": "ptrace 不可用。",
+  "info.modeReason.otherLoaderActive": "另一个加载器正在运行。",
+  "info.modeReason.switchDeferred": "模式切换已推迟。",
+  "info.modeReason.restartRequired": "切换模式需要重启 znnd。",
   "info.pageSize": "内存页大小",
   "info.unknown": "未知",
 
@@ -87,8 +92,6 @@ export const zhCN: Dictionary = {
   "config.mode.proc": "proc mode",
   "config.mode.late": "late mode",
   "config.modeSavedCurrent": "已保存。znnd 当前上报的跟踪模式为 {mode}。",
-  "config.modeSavedPtraceRestart":
-    "已保存。znnd 当前上报的跟踪模式为 {mode}。切换到 ptrace 需要重启 znnd。",
   "config.modeSavedStopped": "已保存。znnd 将在下次启动时读取此设置。",
   "config.modeSavedUnconfirmed": "已保存。无法确认当前跟踪模式。",
   "config.disableZn": "接管 ZygiskNext",

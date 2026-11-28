@@ -21,27 +21,61 @@
 
 import { apiBinary, execJson } from "./ksu";
 
+const activeModes = ["kernel", "proc", "ptrace", "late"] as const;
+const modeReasons = [
+  "kernelUnavailable",
+  "ptraceUnavailable",
+  "otherLoaderActive",
+  "switchDeferred",
+  "restartRequired",
+] as const;
+
 export interface DaemonStatus {
   running: boolean;
   pid: number;
   mode?: string;
+  requestedMode?: (typeof activeModes)[number] | "auto";
+  modeReason?: (typeof modeReasons)[number];
   version?: string;
+}
+
+export function isActiveMode(
+  mode: unknown,
+): mode is (typeof activeModes)[number] {
+  return activeModes.some((activeMode) => activeMode === mode);
 }
 
 export async function getDaemonStatus(): Promise<DaemonStatus> {
   const raw = await execJson<{
     running?: unknown;
     pid?: number;
-    mode?: string;
+    mode?: unknown;
+    requestedMode?: unknown;
+    modeReason?: unknown;
     version?: unknown;
   }>(`${apiBinary()} --ctl status`);
-  const running = raw?.running;
-  if (typeof running !== "boolean" && running !== "true" && running !== "false")
+  const reportedRunning = raw?.running;
+  if (
+    typeof reportedRunning !== "boolean" &&
+    reportedRunning !== "true" &&
+    reportedRunning !== "false"
+  )
     throw new Error("unexpected daemon status response");
+  const running = reportedRunning === true || reportedRunning === "true";
+  const mode = typeof raw.mode === "string" ? raw.mode : undefined;
+  const active = running && isActiveMode(mode);
+  const requested = raw.requestedMode;
   return {
     pid: typeof raw.pid === "number" ? raw.pid : 0,
-    mode: typeof raw.mode === "string" ? raw.mode : undefined,
+    mode,
+    requestedMode:
+      active && (requested === "auto" || isActiveMode(requested))
+        ? requested
+        : undefined,
+    modeReason: active
+      ? modeReasons.find((reason) => reason === raw.modeReason)
+      : undefined,
     version: typeof raw.version === "string" ? raw.version : undefined,
-    running: running === true || running === "true",
+    running,
   };
 }

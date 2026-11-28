@@ -30,6 +30,7 @@ import {
   formatPageSize,
   type SystemInfo,
 } from "../../api/system";
+import { activeModeLabel, modeReasonText } from "../../config-model";
 import { t } from "../../i18n";
 import { GridView, HorizontalSplit, Info, Layers, Lock } from "./icons";
 
@@ -43,6 +44,7 @@ interface InfoRow {
   icon: ExtendedIcon;
   label: string;
   value: string;
+  note?: string;
 }
 
 const props = defineProps<{
@@ -58,15 +60,6 @@ const rootImplText = computed(() => {
   ].filter((entry) => entry.version !== null);
   if (entries.length === 0) return t("info.rootImpl.none");
   return entries.map((entry) => `${entry.name} (${entry.version})`).join(", ");
-});
-
-const modeText = computed(() => {
-  if (!props.status?.running) return t("info.unknown");
-  if (props.status.mode === "kernel") return t("config.mode.kernel");
-  if (props.status.mode === "proc") return t("config.mode.proc");
-  if (props.status.mode === "ptrace") return t("config.mode.ptrace");
-  if (props.status.mode === "late") return t("config.mode.late");
-  return t("info.unknown");
 });
 
 const abiText = computed(() => {
@@ -104,7 +97,13 @@ const rows = computed<InfoRow[]>(() => {
       label: t("info.pageSize"),
       value: formatPageSize(props.system.pageSize) ?? t("info.unknown"),
     },
-    { key: "mode", icon: Info, label: t("info.mode"), value: modeText.value },
+    {
+      key: "mode",
+      icon: Info,
+      label: t("info.mode"),
+      value: activeModeLabel(props.status) ?? t("info.unknown"),
+      note: modeReasonText(props.status),
+    },
   ];
 });
 </script>
@@ -124,6 +123,14 @@ const rows = computed<InfoRow[]>(() => {
             color="var(--m-color-on-surface-variant-summary)"
           >
             {{ row.value }}
+          </MiuixText>
+          <MiuixText
+            v-if="row.note"
+            class="miuix-info-value mode-reason"
+            type="footnote1"
+            color="var(--m-color-on-surface-variant-summary)"
+          >
+            {{ row.note }}
           </MiuixText>
         </div>
       </div>

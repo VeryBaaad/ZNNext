@@ -33,7 +33,7 @@ use serde_json::Value;
 use serde_json::value::RawValue;
 
 use crate::config;
-use crate::daemon::VERSION;
+use crate::daemon::{ModeReason, VERSION};
 use crate::paths;
 use crate::procfs;
 use crate::state::SystemReport;
@@ -182,6 +182,10 @@ fn modules(snapshot: Option<&StateSnapshot>) -> i32 {
 struct StateSnapshot {
     #[serde(default, deserialize_with = "lenient")]
     mode: Option<String>,
+    #[serde(default, rename = "requestedMode", deserialize_with = "lenient")]
+    requested_mode: Option<String>,
+    #[serde(default, rename = "modeReason")]
+    mode_reason: Option<Box<RawValue>>,
     #[serde(default, deserialize_with = "lenient")]
     version: Option<String>,
     #[serde(default)]
@@ -445,10 +449,28 @@ fn status(pid: Option<Pid>, snapshot: Option<&StateSnapshot>) -> i32 {
     let version = snapshot
         .and_then(|state| state.version.as_deref())
         .filter(|_| running);
+    let live = snapshot.filter(|_| running && recorded_mode.is_some());
+    let requested_mode = live
+        .and_then(|state| state.requested_mode.as_deref())
+        .filter(|mode| {
+            matches!(
+                *mode,
+                config::MODE_AUTO
+                    | config::MODE_KERNEL
+                    | config::MODE_PROC
+                    | config::MODE_LATE
+                    | config::MODE_PTRACE
+            )
+        });
+    let mode_reason = live
+        .and_then(|state| state.mode_reason.as_deref())
+        .and_then(|reason| serde_json::from_str(reason.get()).ok());
     print_json(&StatusReport {
         running,
         pid: if running { pid } else { 0 },
         mode,
+        requested_mode,
+        mode_reason,
         version,
     })
 }
@@ -458,6 +480,10 @@ struct StatusReport<'a> {
     running: bool,
     pid: Pid,
     mode: &'a str,
+    #[serde(rename = "requestedMode", skip_serializing_if = "Option::is_none")]
+    requested_mode: Option<&'a str>,
+    #[serde(rename = "modeReason", skip_serializing_if = "Option::is_none")]
+    mode_reason: Option<ModeReason>,
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<&'a str>,
 }

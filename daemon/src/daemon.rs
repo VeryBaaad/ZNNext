@@ -60,6 +60,16 @@ pub enum Tracking {
     Late,
 }
 
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ModeReason {
+    KernelUnavailable,
+    PtraceUnavailable,
+    OtherLoaderActive,
+    SwitchDeferred,
+    RestartRequired,
+}
+
 impl Tracking {
     pub fn as_str(self) -> &'static str {
         match self {
@@ -84,6 +94,7 @@ pub struct Daemon {
     pub kernel: Option<crate::kernel::KernelTracker>,
     pub mode: Tracking,
     pub requested_mode: String,
+    pub mode_reason: Option<ModeReason>,
     pub hot_update: bool,
     pub hot_update_checked: Option<(String, u64)>,
     pub tracees: HashMap<Pid, Tracee>,
@@ -125,6 +136,7 @@ impl Daemon {
             kernel: None,
             mode: Tracking::Ptrace,
             requested_mode: requested_mode.clone(),
+            mode_reason: None,
             hot_update,
             hot_update_checked: None,
             tracees: HashMap::new(),
@@ -235,6 +247,7 @@ impl Daemon {
                                 "another Zygisk-family loader is running; yielded init and switched to late mode (deferring to it)"
                             );
                             self.mode = Tracking::Late;
+                            self.mode_reason = Some(ModeReason::OtherLoaderActive);
                             self.state.dirty = true;
                         }
                     }

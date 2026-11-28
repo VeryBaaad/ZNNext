@@ -108,13 +108,14 @@
   };
   var configuredKeys = new Set();
   var previousConfig = null;
+  var statusOverride = params.get('status');
 
   var config = {
     inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'frida-gum', 'rv64hook', 'hookzz', 'urhook', 'whale', 'baaadhook', 'yukiihook', 'sandhook', 'srxinlinehook', 'disable'] },
     inlineHook32: { value: 'dobby', options: ['dobby', 'shadowhook', 'frida-gum', 'hookzz', 'whale', 'baaadhook', 'sandhook', 'disable'] },
     pltHook: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'plthook', 'urhook', 'baaadhook', 'yukiplt', 'profilo', 'srxhook', 'disable'] },
     pltHook32: { value: 'lsplt', options: ['lsplt', 'plti', 'bytehook', 'xhook', 'plthook', 'baaadhook', 'yukiplt', 'profilo', 'disable'] },
-    mode: { value: 'proc', options: ['auto', 'kernel', 'ptrace', 'proc', 'late'] },
+    mode: { value: statusOverride === 'fallback' ? 'kernel' : 'proc', options: ['auto', 'kernel', 'ptrace', 'proc', 'late'] },
     debugdata: { value: 'lzma', options: ['lzma', 'xz', 'libarchive'] },
     disableZn: { value: 'true', options: ['true', 'false'] },
     hotUpdate: { value: 'false', options: ['true', 'false'] },
@@ -225,7 +226,6 @@
     ];
   }
 
-  var statusOverride = params.get('status');
   var state = {
     running: statusOverride !== 'inactive',
     mode: 'proc',
@@ -295,7 +295,7 @@
         break;
       case 'auto':
       case 'kernel':
-        state.mode = 'kernel';
+        state.mode = statusOverride === 'fallback' ? 'proc' : 'kernel';
         break;
       case 'ptrace':
         if (state.mode === 'kernel') state.mode = 'proc';
@@ -379,6 +379,10 @@
         };
         if (state.running && statusOverride !== 'legacy') {
           status.version = 'v2.22.0.1-128-a1b2c3d-release';
+          status.requestedMode = state.config.mode.value;
+          if (statusOverride === 'fallback' && ['auto', 'kernel', 'late'].includes(status.requestedMode)) {
+            status.modeReason = 'kernelUnavailable';
+          }
         }
         return status;
       }
@@ -552,7 +556,7 @@
   };
 
   console.info(
-    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?safe-boot=active ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|waiting|mixed ?logs=empty ?history=empty|long ' +
+    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy|fallback ?safe-boot=active ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|waiting|mixed ?logs=empty ?history=empty|long ' +
       '?update=notStaged|ready|disabled|removed|incomplete|notExecutable|verificationFailed|unreadable ' +
       '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=logs@1,history@1,bugreport@1',
   );

@@ -61,6 +61,11 @@ export const lzh: Dictionary = {
   "info.rootImpl": "判官",
   "info.rootImpl.none": "未見神明",
   "info.mode": "今法",
+  "info.modeReason.kernelUnavailable": "核心之變不可察。",
+  "info.modeReason.ptraceUnavailable": "ptrace 不可用。",
+  "info.modeReason.otherLoaderActive": "別有載器在行。",
+  "info.modeReason.switchDeferred": "更法暫緩。",
+  "info.modeReason.restartRequired": "更法須重啟 znnd。",
   "info.pageSize": "記憶體頁之大小",
   "info.unknown": "迷濛",
 
@@ -87,8 +92,6 @@ export const lzh: Dictionary = {
   "config.mode.proc": "案牘之法",
   "config.mode.late": "遲滯之法",
   "config.modeSavedCurrent": "已識。znnd 所報今法為 {mode}。",
-  "config.modeSavedPtraceRestart":
-    "已識。znnd 所報今法為 {mode}。欲易為 ptrace，須重啟 znnd。",
   "config.modeSavedStopped": "已識。znnd 次啟時讀此規制。",
   "config.modeSavedUnconfirmed": "已識。今法未能核實。",
   "config.disableZn": "總攬生化源",

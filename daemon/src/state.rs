@@ -25,7 +25,7 @@ use std::fs;
 use serde::{Deserialize, Serialize};
 
 use crate::config;
-use crate::daemon::{Daemon, MODULE_ID, Tracking, VERSION};
+use crate::daemon::{Daemon, MODULE_ID, ModeReason, Tracking, VERSION};
 use crate::log::{loge, logi, logw};
 use crate::procfs;
 use crate::state_socket::Server;
@@ -39,6 +39,10 @@ pub struct StateReport<'a> {
     running: bool,
     pid: u32,
     mode: &'a str,
+    #[serde(rename = "requestedMode")]
+    requested_mode: &'a str,
+    #[serde(rename = "modeReason", skip_serializing_if = "Option::is_none")]
+    mode_reason: Option<ModeReason>,
     version: &'a str,
     system: SystemReport<'a>,
     config: config::HookConfigReport,
@@ -180,6 +184,8 @@ impl Daemon {
             running: true,
             pid: std::process::id(),
             mode: self.mode.as_str(),
+            requested_mode: &self.requested_mode,
+            mode_reason: self.mode_reason,
             version: VERSION,
             system: SystemReport {
                 kernel: &self.system.kernel,

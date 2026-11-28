@@ -24,6 +24,7 @@ import { computed } from "vue";
 
 import type { DaemonStatus } from "../../api/daemon";
 import { formatPageSize, type SystemInfo } from "../../api/system";
+import { activeModeLabel, modeReasonText } from "../../config-model";
 import { t } from "../../i18n";
 import ZnCard from "./ZnCard.vue";
 
@@ -35,6 +36,7 @@ const props = defineProps<{
 interface InfoRow {
   label: string;
   value: string;
+  note?: string;
 }
 
 const abiText = computed(() => {
@@ -48,16 +50,6 @@ const abiText = computed(() => {
   return parts.join(", ");
 });
 
-const modeText = computed(() => {
-  if (!props.status?.running) return t("info.unknown");
-  const mode = props.status?.mode;
-  if (mode === "kernel") return t("config.mode.kernel");
-  if (mode === "proc") return t("config.mode.proc");
-  if (mode === "ptrace") return t("config.mode.ptrace");
-  if (mode === "late") return t("config.mode.late");
-  return t("info.unknown");
-});
-
 const rows = computed<InfoRow[]>(() => [
   { label: "Kernel", value: props.system.kernel || t("info.unknown") },
   {
@@ -69,7 +61,11 @@ const rows = computed<InfoRow[]>(() => [
     label: t("info.pageSize"),
     value: formatPageSize(props.system.pageSize) ?? t("info.unknown"),
   },
-  { label: t("info.mode"), value: modeText.value },
+  {
+    label: t("info.mode"),
+    value: activeModeLabel(props.status) ?? t("info.unknown"),
+    note: modeReasonText(props.status),
+  },
 ]);
 </script>
 
@@ -79,6 +75,17 @@ const rows = computed<InfoRow[]>(() => [
       <div class="zn-divider" role="separator"></div>
       <div class="zn-field-label">{{ row.label }}</div>
       <div class="zn-field-value">{{ row.value }}</div>
+      <div v-if="row.note" class="zn-field-value mode-reason">
+        {{ row.note }}
+      </div>
     </template>
   </ZnCard>
 </template>
+
+<style scoped>
+.mode-reason {
+  margin-block-start: 2px;
+  color: var(--zn-text-muted);
+  font-size: 0.85em;
+}
+</style>

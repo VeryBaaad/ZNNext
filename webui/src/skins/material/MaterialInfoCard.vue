@@ -28,6 +28,7 @@ import {
   formatPageSize,
   type SystemInfo,
 } from "../../api/system";
+import { activeModeLabel, modeReasonText } from "../../config-model";
 import { t } from "../../i18n";
 
 interface RootEntry {
@@ -38,6 +39,7 @@ interface RootEntry {
 interface InfoRow {
   label: string;
   value: string;
+  note?: string;
 }
 
 const props = defineProps<{
@@ -53,15 +55,6 @@ const rootImplText = computed(() => {
   ].filter((entry) => entry.version !== null);
   if (entries.length === 0) return t("info.rootImpl.none");
   return entries.map((entry) => `${entry.name} (${entry.version})`).join(", ");
-});
-
-const modeText = computed(() => {
-  if (!props.status?.running) return t("info.unknown");
-  if (props.status.mode === "kernel") return t("config.mode.kernel");
-  if (props.status.mode === "proc") return t("config.mode.proc");
-  if (props.status.mode === "ptrace") return t("config.mode.ptrace");
-  if (props.status.mode === "late") return t("config.mode.late");
-  return t("info.unknown");
 });
 
 const abiText = computed(() => {
@@ -87,7 +80,11 @@ const rows = computed<InfoRow[]>(() => {
       label: t("info.pageSize"),
       value: formatPageSize(props.system.pageSize) ?? t("info.unknown"),
     },
-    { label: t("info.mode"), value: modeText.value },
+    {
+      label: t("info.mode"),
+      value: activeModeLabel(props.status) ?? t("info.unknown"),
+      note: modeReasonText(props.status),
+    },
   ];
 });
 </script>
@@ -98,7 +95,17 @@ const rows = computed<InfoRow[]>(() => {
       <div v-for="row in rows" :key="row.label" class="info-row">
         <span class="info-label">{{ row.label }}</span>
         <span class="info-value">{{ row.value }}</span>
+        <span v-if="row.note" class="mode-reason">{{ row.note }}</span>
       </div>
     </div>
   </m3e-card>
 </template>
+
+<style scoped>
+.mode-reason {
+  font-size: var(--md-sys-typescale-body-small-font-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  color: var(--md-sys-color-on-surface-variant);
+  overflow-wrap: anywhere;
+}
+</style>

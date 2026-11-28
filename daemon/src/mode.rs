@@ -28,7 +28,7 @@ use std::time::Duration;
 
 use crate::arch::Arch;
 use crate::config;
-use crate::daemon::{Daemon, Tracking};
+use crate::daemon::{Daemon, ModeReason, Tracking};
 use crate::elf;
 use crate::log::{logi, logw};
 use crate::maps;
@@ -74,6 +74,7 @@ struct StoppedTarget {
 impl Daemon {
     pub fn select_mode(&mut self) {
         self.requested_mode = config::effective().mode;
+        self.mode_reason = None;
         if self.requested_mode == config::MODE_PROC {
             logi!("tracking mode forced to proc (poll /proc); init is never traced");
             self.mode = Tracking::Proc;
@@ -84,6 +85,7 @@ impl Daemon {
             self.mode = if self.seize_init() {
                 Tracking::Ptrace
             } else {
+                self.mode_reason = Some(ModeReason::PtraceUnavailable);
                 Tracking::Proc
             };
             return;
@@ -95,6 +97,7 @@ impl Daemon {
                     "tracking mode forced to late: kernel events are only an accelerator, init is never traced"
                 );
             } else {
+                self.mode_reason = Some(ModeReason::KernelUnavailable);
                 logi!("tracking mode forced to late (poll /proc); init is never traced");
             }
             self.mode = Tracking::Late;
@@ -107,16 +110,21 @@ impl Daemon {
                 return;
             }
             logw!("kernel tracking is unavailable on this kernel; using proc (poll /proc)");
+            self.mode_reason = Some(ModeReason::KernelUnavailable);
             self.mode = Tracking::Proc;
             return;
         }
 
-        if !monitor_present() && self.seize_init() {
-            self.stop_kernel_tracker();
-            self.mode = Tracking::Ptrace;
-            return;
+        if !monitor_present() {
+            if self.seize_init() {
+                self.stop_kernel_tracker();
+                self.mode = Tracking::Ptrace;
+                return;
+            }
+            self.mode_reason = Some(ModeReason::PtraceUnavailable);
         }
         if monitor_present() {
+            self.mode_reason = Some(ModeReason::OtherLoaderActive);
             self.start_kernel_tracker();
             logi!(
                 "another Zygisk-family loader is running; using late mode (never trace init, defer to it)"
@@ -128,6 +136,7 @@ impl Daemon {
             self.mode = Tracking::Kernel;
             return;
         }
+        self.mode_reason = Some(ModeReason::KernelUnavailable);
         self.mode = Tracking::Proc;
     }
 
@@ -137,13 +146,16 @@ impl Daemon {
             return;
         }
         self.requested_mode = wanted.clone();
+        self.mode_reason = None;
 
         if wanted == config::MODE_LATE {
             if self.mode == Tracking::Ptrace && !self.hand_over_init() {
+                self.mode_reason = Some(ModeReason::SwitchDeferred);
                 logw!("tracking mode late needs init to be handed over; staying in ptrace mode");
                 return;
             }
             if !self.start_kernel_tracker() {
+                self.mode_reason = Some(ModeReason::KernelUnavailable);
                 logw!("kernel tracking is unavailable on this kernel; late mode polls /proc");
             }
             self.mode = Tracking::Late;
@@ -160,6 +172,7 @@ impl Daemon {
             }
             if self.start_kernel_tracker() {
                 if self.mode == Tracking::Ptrace && !self.hand_over_init() {
+                    self.mode_reason = Some(ModeReason::SwitchDeferred);
                     self.stop_kernel_tracker();
                     logw!(
                         "tracking mode kernel needs init to be handed over; staying in ptrace mode"
@@ -172,6 +185,7 @@ impl Daemon {
                 return;
             }
             logw!("kernel tracking is unavailable on this kernel; falling back");
+            self.mode_reason = Some(ModeReason::KernelUnavailable);
         }
 
         if self.mode == Tracking::Late && wanted == config::MODE_PROC {
@@ -184,6 +198,9 @@ impl Daemon {
             return;
         }
 
+        if wanted == config::MODE_PTRACE && self.mode != Tracking::Ptrace {
+            self.mode_reason = Some(ModeReason::RestartRequired);
+        }
         if self.mode == Tracking::Kernel {
             self.stop_kernel_tracker();
             self.mode = Tracking::Proc;
@@ -196,6 +213,7 @@ impl Daemon {
 
         if wanted == config::MODE_PROC && self.mode == Tracking::Ptrace {
             if !self.hand_over_init() {
+                self.mode_reason = Some(ModeReason::SwitchDeferred);
                 logw!("tracking mode proc needs init to be handed over; staying in ptrace mode");
                 return;
             }

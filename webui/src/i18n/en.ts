@@ -59,6 +59,11 @@ export const en: Record<string, string> = {
   "info.rootImpl": "Root Implementation",
   "info.rootImpl.none": "None detected",
   "info.mode": "Current Mode",
+  "info.modeReason.kernelUnavailable": "Kernel events are unavailable.",
+  "info.modeReason.ptraceUnavailable": "ptrace is unavailable.",
+  "info.modeReason.otherLoaderActive": "Another loader is active.",
+  "info.modeReason.switchDeferred": "The mode change is deferred.",
+  "info.modeReason.restartRequired": "The mode change requires a znnd restart.",
   "info.pageSize": "Memory page size",
   "info.unknown": "Unknown",
 
@@ -86,8 +91,6 @@ export const en: Record<string, string> = {
   "config.mode.proc": "proc mode",
   "config.mode.late": "late mode",
   "config.modeSavedCurrent": "Saved. znnd currently reports {mode}.",
-  "config.modeSavedPtraceRestart":
-    "Saved. znnd currently reports {mode}. Switching to ptrace requires restarting znnd.",
   "config.modeSavedStopped":
     "Saved. znnd will read this setting the next time it starts.",
   "config.modeSavedUnconfirmed":

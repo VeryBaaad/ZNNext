@@ -61,6 +61,12 @@ export const ru: Dictionary = {
   "info.rootImpl": "Реализация root",
   "info.rootImpl.none": "Не обнаружено",
   "info.mode": "Текущий режим",
+  "info.modeReason.kernelUnavailable": "События ядра недоступны.",
+  "info.modeReason.ptraceUnavailable": "ptrace недоступен.",
+  "info.modeReason.otherLoaderActive": "Работает другой загрузчик.",
+  "info.modeReason.switchDeferred": "Смена режима отложена.",
+  "info.modeReason.restartRequired":
+    "Для смены режима нужно перезапустить znnd.",
   "info.pageSize": "Размер страницы памяти",
   "info.unknown": "Неизвестно",
 
@@ -89,8 +95,6 @@ export const ru: Dictionary = {
   "config.mode.late": "late mode",
   "config.modeSavedCurrent":
     "Сохранено. Текущий режим по данным znnd — {mode}.",
-  "config.modeSavedPtraceRestart":
-    "Сохранено. Текущий режим по данным znnd — {mode}. Для перехода в режим ptrace нужно перезапустить znnd.",
   "config.modeSavedStopped":
     "Сохранено. znnd прочитает эту настройку при следующем запуске.",
   "config.modeSavedUnconfirmed":

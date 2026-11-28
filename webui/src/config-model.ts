@@ -20,7 +20,7 @@
  */
 
 import type { HookConfig, HookEngineEntry, HookKind } from "./api/config";
-import type { DaemonStatus } from "./api/daemon";
+import { isActiveMode, type DaemonStatus } from "./api/daemon";
 import { t } from "./i18n";
 
 export const ENGINE_LABELS: Record<string, string> = {
@@ -102,19 +102,35 @@ export function hookOptionLabel(kind: HookKind, id: string): string {
   return ENGINE_LABELS[id] ?? id;
 }
 
+export function activeModeLabel(
+  status: DaemonStatus | null,
+): string | undefined {
+  return status?.running && isActiveMode(status.mode)
+    ? hookOptionLabel("mode", status.mode)
+    : undefined;
+}
+
+export function modeReasonText(
+  status: DaemonStatus | null,
+): string | undefined {
+  return status?.running && status.modeReason
+    ? t(`info.modeReason.${status.modeReason}`)
+    : undefined;
+}
+
 export function modeSaveMessage(
   requested: string,
   status: DaemonStatus | null,
 ): string {
   if (status && !status.running) return t("config.modeSavedStopped");
-  const mode = status?.mode;
-  if (!mode || !["kernel", "proc", "late", "ptrace"].includes(mode))
+  const mode = activeModeLabel(status);
+  const reportedRequest = status?.requestedMode;
+  if (!mode || (reportedRequest && reportedRequest !== requested)) {
     return t("config.modeSavedUnconfirmed");
-  const key =
-    requested === "ptrace" && mode !== "ptrace"
-      ? "config.modeSavedPtraceRestart"
-      : "config.modeSavedCurrent";
-  return t(key, { mode: hookOptionLabel("mode", mode) });
+  }
+  const message = t("config.modeSavedCurrent", { mode });
+  const reason = reportedRequest ? modeReasonText(status) : undefined;
+  return reason ? `${message} ${reason}` : message;
 }
 
 export function uiModeLabel(mode: string): string {
