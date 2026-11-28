@@ -78,6 +78,14 @@ jobs:
           7z t -bso0 "module/build/outputs/release/$debugName.symbols.zip"
           7z x -y -oznn-release module/build/outputs/release/ZNNext-v*-release.zip
           7z x -y -oznn-debug module/build/outputs/release/ZNNext-v*-debug.zip
+      - name: Smoke-test ARM64 installation and upgrade
+        env:
+          INITIAL_ZIP: module/build/outputs/release/${{ steps.prepareArtifact.outputs.debugName }}.zip
+          UPGRADE_ZIP: module/build/outputs/release/${{ steps.prepareArtifact.outputs.releaseName }}.zip
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y bubblewrap libarchive-tools
+          sh module/tests/install-smoke.sh "$INITIAL_ZIP" "$UPGRADE_ZIP"
       - name: Post to channel
         if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && github.ref_type != 'tag' }}
         env:
