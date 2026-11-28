@@ -23,6 +23,7 @@
 mod arch;
 mod companion;
 mod config;
+mod config_diff;
 mod ctl;
 mod daemon;
 mod elf;

@@ -56,7 +56,7 @@ const STOP_ATTEMPTS: u32 = 80;
 
 const START_TIMEOUT: Duration = Duration::from_secs(4);
 
-const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-export|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
+const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-export|config-diff [JSON]|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
 
 const CONFIG_SET_USAGE: &str = "usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>";
 
@@ -78,6 +78,7 @@ pub fn command() -> ClapCommand {
                 .conflicts_with(MODULE_DIR_ARGUMENT)
                 .help(
                     "Control command: status, system, modules, config, config-export, \
+                       config-diff [JSON] (defaults to stdin), \
                        config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> \
                        <value>, apply-zn [wait], start, restart, rescan or exit.",
                 ),
@@ -116,6 +117,13 @@ pub fn ctl_main(arguments: &[String]) -> i32 {
             }
         },
         "config-set" => config_set(arguments),
+        "config-diff" => match crate::config_diff::preview(arguments) {
+            Ok(diff) => print_json(&diff),
+            Err(error) => {
+                eprintln!("{error}");
+                1
+            }
+        },
         "apply-zn" => apply_zn(arguments),
         "status" | "system" | "modules" => query_state(command),
         _ => usage(),

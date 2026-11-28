@@ -22,7 +22,7 @@
 use std::fs;
 use std::io;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::paths;
 use crate::system::{runtime_abi, secondary_abi, sibling_abi};
@@ -47,8 +47,8 @@ pub const DISABLE_ZN_FALSE: &str = "false";
 pub const HOT_UPDATE_TRUE: &str = "true";
 pub const HOT_UPDATE_FALSE: &str = "false";
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct HookConfig {
     #[serde(rename = "inline")]
     pub inline_hook: String,

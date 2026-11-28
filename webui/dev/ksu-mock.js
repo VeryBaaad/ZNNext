@@ -149,6 +149,55 @@
     modules: modules,
   };
 
+  function isOptionalConfigKey(kind) {
+    return kind === 'inline32' || kind === 'plt32';
+  }
+
+  function exportConfig() {
+    var exported = {};
+    Object.keys(CONFIG_KEYS).forEach(function (kind) {
+      if (isOptionalConfigKey(kind) && !configuredKeys.has(kind)) return;
+      exported[kind] = state.config[CONFIG_KEYS[kind]].value;
+    });
+    return exported;
+  }
+
+  function diffConfig(operands) {
+    if (operands.length !== 1) throw new Error('usage: znnd --ctl config-diff <json>');
+    var requested = JSON.parse(operands[0]);
+    if (typeof requested !== 'object' || requested === null || Array.isArray(requested)) {
+      throw new Error('config-diff requires a JSON object');
+    }
+    var requestedKeys = Object.keys(requested);
+    requestedKeys.forEach(function (kind) {
+      if (!Object.prototype.hasOwnProperty.call(CONFIG_KEYS, kind)) {
+        throw new Error('unknown configuration key: ' + kind);
+      }
+    });
+    var current = exportConfig();
+    var changes = {};
+    Object.keys(CONFIG_KEYS).forEach(function (kind) {
+      var target = requested[kind];
+      if (isOptionalConfigKey(kind) && target == null) {
+        target = null;
+      } else if (target === undefined) {
+        throw new Error('missing configuration key: ' + kind);
+      } else if (typeof target !== 'string' || state.config[CONFIG_KEYS[kind]].options.indexOf(target) < 0) {
+        throw new Error('invalid ' + kind + ' value for this device');
+      }
+      var previous = current[kind] ?? null;
+      if (previous !== target) changes[kind] = { from: previous, to: target };
+    });
+    var keyCount = 0;
+    for (var token of operands[0].matchAll(/"(?:[^"\\]|\\.)*"(\s*:)?/g)) {
+      if (token[1]) keyCount += 1;
+    }
+    if (keyCount !== requestedKeys.length) {
+      throw new Error('duplicate configuration key');
+    }
+    return { changes: changes };
+  }
+
   function snapshot(cmd, operands) {
     switch (cmd) {
       case 'status': {
@@ -184,17 +233,13 @@
         return state.running ? state.modules : [];
       case 'config':
         return state.config;
-      case 'config-export': {
+      case 'config-export':
         if (operands.length !== 0) {
           throw new Error('usage: znnd --ctl config-export');
         }
-        var exported = {};
-        Object.keys(CONFIG_KEYS).forEach(function (kind) {
-          if ((kind === 'inline32' || kind === 'plt32') && !configuredKeys.has(kind)) return;
-          exported[kind] = state.config[CONFIG_KEYS[kind]].value;
-        });
-        return exported;
-      }
+        return exportConfig();
+      case 'config-diff':
+        return diffConfig(operands);
       case 'config-set': {
         var kind = operands[0];
         var value = operands[1];
