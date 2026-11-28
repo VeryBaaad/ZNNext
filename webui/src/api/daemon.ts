@@ -33,9 +33,12 @@ export async function getDaemonStatus(): Promise<DaemonStatus> {
     pid?: number;
     mode?: string;
   }>(`${apiBinary()} --ctl status`);
+  const running = raw?.running;
+  if (typeof running !== "boolean" && running !== "true" && running !== "false")
+    throw new Error("unexpected daemon status response");
   return {
     pid: typeof raw.pid === "number" ? raw.pid : 0,
     mode: typeof raw.mode === "string" ? raw.mode : undefined,
-    running: raw.running === true || raw.running === "true",
+    running: running === true || running === "true",
   };
 }

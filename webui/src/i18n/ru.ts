@@ -78,6 +78,14 @@ export const ru: Dictionary = {
   "config.mode.ptrace": "ptrace mode",
   "config.mode.proc": "proc mode",
   "config.mode.late": "late mode",
+  "config.modeSavedCurrent":
+    "Сохранено. Текущий режим по данным znnd — {mode}.",
+  "config.modeSavedPtraceRestart":
+    "Сохранено. Текущий режим по данным znnd — {mode}. Для перехода в режим ptrace нужно перезапустить znnd.",
+  "config.modeSavedStopped":
+    "Сохранено. znnd прочитает эту настройку при следующем запуске.",
+  "config.modeSavedUnconfirmed":
+    "Сохранено. Не удалось подтвердить текущий режим отслеживания.",
   "config.disableZn": "Перехватить ZygiskNext",
   "config.disableZn.true": "Вкл",
   "config.disableZn.false": "Выкл",

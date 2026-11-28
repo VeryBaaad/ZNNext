@@ -28,7 +28,7 @@ export interface AppActions {
   refresh: () => void;
   sections: AppData["sections"];
   retrySection: AppData["retrySection"];
-  applyHookConfig: (kind: HookKind, value: string) => Promise<void>;
+  applyHookConfig: (kind: HookKind, value: string) => Promise<string>;
 }
 
 const APP_ACTIONS: InjectionKey<AppActions> = Symbol("znn-app-actions");

@@ -188,6 +188,21 @@
           throw new Error('invalid ' + kind + ' value "' + value + '" for this device');
         }
         entry.value = value;
+        if (kind === 'mode' && state.running) {
+          switch (value) {
+            case 'proc':
+            case 'late':
+              state.mode = value;
+              break;
+            case 'auto':
+            case 'kernel':
+              state.mode = 'kernel';
+              break;
+            case 'ptrace':
+              if (state.mode === 'kernel') state.mode = 'proc';
+              break;
+          }
+        }
         return state.config;
       }
       default:

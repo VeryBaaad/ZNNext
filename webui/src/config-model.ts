@@ -20,6 +20,7 @@
  */
 
 import type { HookConfig, HookEngineEntry, HookKind } from "./api/config";
+import type { DaemonStatus } from "./api/daemon";
 import { t } from "./i18n";
 
 export const ENGINE_LABELS: Record<string, string> = {
@@ -99,6 +100,21 @@ export function hookOptionLabel(kind: HookKind, id: string): string {
   if (kind === "disable-zn") return t(`config.disableZn.${id}`);
   if (kind === "hot-update") return t(`config.hotUpdate.${id}`);
   return ENGINE_LABELS[id] ?? id;
+}
+
+export function modeSaveMessage(
+  requested: string,
+  status: DaemonStatus | null,
+): string {
+  if (status && !status.running) return t("config.modeSavedStopped");
+  const mode = status?.mode;
+  if (!mode || !["kernel", "proc", "late", "ptrace"].includes(mode))
+    return t("config.modeSavedUnconfirmed");
+  const key =
+    requested === "ptrace" && mode !== "ptrace"
+      ? "config.modeSavedPtraceRestart"
+      : "config.modeSavedCurrent";
+  return t(key, { mode: hookOptionLabel("mode", mode) });
 }
 
 export function uiModeLabel(mode: string): string {

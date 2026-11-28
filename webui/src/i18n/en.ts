@@ -76,6 +76,13 @@ export const en: Record<string, string> = {
   "config.mode.ptrace": "ptrace mode",
   "config.mode.proc": "proc mode",
   "config.mode.late": "late mode",
+  "config.modeSavedCurrent": "Saved. znnd currently reports {mode}.",
+  "config.modeSavedPtraceRestart":
+    "Saved. znnd currently reports {mode}. Switching to ptrace requires restarting znnd.",
+  "config.modeSavedStopped":
+    "Saved. znnd will read this setting the next time it starts.",
+  "config.modeSavedUnconfirmed":
+    "Saved. The current tracking mode could not be confirmed.",
   "config.disableZn": "Take over ZygiskNext",
   "config.disableZn.true": "On",
   "config.disableZn.false": "Off",

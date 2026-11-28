@@ -20,6 +20,7 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
+import { refAutoReset } from "@vueuse/core";
 import { computed, ref } from "vue";
 
 import type { HookConfig, HookEngineEntry, HookKind } from "../../api/config";
@@ -52,6 +53,7 @@ const actions = useAppActions();
 
 const busy = ref(false);
 const failure = ref("");
+const modeFeedback = refAutoReset("", 8000);
 
 const rows = computed<ConfigRow[]>(() => {
   const make = (row: HookRow, entry: HookEngineEntry): ConfigRow => ({
@@ -84,8 +86,10 @@ async function select(row: ConfigRow, value: string): Promise<void> {
   }
   if (busy.value) return;
   busy.value = true;
+  modeFeedback.value = "";
   try {
-    await actions.applyHookConfig(row.kind as HookKind, value);
+    const message = await actions.applyHookConfig(row.kind as HookKind, value);
+    if (row.kind === "mode") modeFeedback.value = message;
   } catch (e) {
     console.warn("[znn] config-set:", e);
     failure.value = t("config.saveFailed");
@@ -119,6 +123,18 @@ async function select(row: ConfigRow, value: string): Promise<void> {
         />
       </div>
     </div>
+    <p class="mode-feedback" role="status">{{ modeFeedback }}</p>
     <ZnAlert v-if="failure">{{ failure }}</ZnAlert>
   </ZnCard>
 </template>
+
+<style scoped>
+.mode-feedback {
+  margin: 0;
+  color: var(--zn-text-muted);
+}
+
+.mode-feedback:not(:empty) {
+  margin-block-start: 12px;
+}
+</style>

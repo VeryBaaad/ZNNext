@@ -24,7 +24,8 @@ import { computed, defineAsyncComponent, onMounted, type Component } from "vue";
 
 import { provideAppActions } from "./composables/app-actions";
 import { useAppData } from "./composables/use-app-data";
-import { applyLocale } from "./i18n";
+import { modeSaveMessage } from "./config-model";
+import { applyLocale, t } from "./i18n";
 import { initTheme } from "./theme";
 import { initUiMode, uiMode, type UiMode } from "./ui-mode";
 
@@ -56,7 +57,11 @@ provideAppActions({
   },
   sections,
   retrySection,
-  applyHookConfig,
+  async applyHookConfig(kind, value) {
+    await applyHookConfig(kind, value);
+    if (kind !== "mode") return t("config.saved");
+    return modeSaveMessage(value, sections.status.failed ? null : status.value);
+  },
 });
 
 const SHELLS: Record<UiMode, Component> = {

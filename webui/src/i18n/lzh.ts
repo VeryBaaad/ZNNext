@@ -77,6 +77,11 @@ export const lzh: Dictionary = {
   "config.mode.ptrace": "御下之法",
   "config.mode.proc": "案牘之法",
   "config.mode.late": "遲滯之法",
+  "config.modeSavedCurrent": "已識。znnd 所報今法為 {mode}。",
+  "config.modeSavedPtraceRestart":
+    "已識。znnd 所報今法為 {mode}。欲易為 ptrace，須重啟 znnd。",
+  "config.modeSavedStopped": "已識。znnd 次啟時讀此規制。",
+  "config.modeSavedUnconfirmed": "已識。今法未能核實。",
   "config.disableZn": "總攬生化源",
   "config.disableZn.true": "准",
   "config.disableZn.false": "駁",

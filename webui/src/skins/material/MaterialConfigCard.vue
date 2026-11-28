@@ -109,8 +109,11 @@ async function select(row: ConfigRow, value: string): Promise<void> {
   if (busy.value) return;
   busy.value = true;
   try {
-    await actions.applyHookConfig(row.kind as HookKind, value);
-    M3eSnackbar.open(t("config.saved"));
+    const message = await actions.applyHookConfig(row.kind as HookKind, value);
+    M3eSnackbar.open(
+      message,
+      row.kind === "mode" ? { duration: 8000 } : undefined,
+    );
   } catch (e) {
     console.warn("[znn] config-set:", e);
     M3eSnackbar.open(t("config.saveFailed"));

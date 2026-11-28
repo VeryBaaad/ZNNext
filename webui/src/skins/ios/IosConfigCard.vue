@@ -20,7 +20,8 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-import { kList, kListItem, kToggle } from "konsta/vue";
+import { refAutoReset } from "@vueuse/core";
+import { kList, kListItem, kToast, kToggle } from "konsta/vue";
 import { computed, ref } from "vue";
 
 import type { HookConfig, HookEngineEntry, HookKind } from "../../api/config";
@@ -52,6 +53,7 @@ const actions = useAppActions();
 
 const busy = ref(false);
 const failure = ref("");
+const modeFeedback = refAutoReset("", 8000);
 const toggleEpoch = ref(0);
 const pickerRow = ref<ConfigRow | null>(null);
 
@@ -112,8 +114,10 @@ async function select(row: ConfigRow, value: string): Promise<void> {
     return;
   }
   busy.value = true;
+  modeFeedback.value = "";
   try {
-    await actions.applyHookConfig(row.kind as HookKind, value);
+    const message = await actions.applyHookConfig(row.kind as HookKind, value);
+    if (row.kind === "mode") modeFeedback.value = message;
   } catch (e) {
     console.warn("[znn] config-set:", e);
     failure.value = t("config.saveFailed");
@@ -173,6 +177,14 @@ function onToggle(row: ConfigRow, event: Event): void {
       <IosIcon name="warning" :size="18" />
       <span>{{ failure }}</span>
     </IosAlert>
+
+    <k-toast
+      :opened="!!modeFeedback"
+      position="center"
+      class="pointer-events-none"
+    >
+      <span role="status">{{ modeFeedback }}</span>
+    </k-toast>
   </section>
 
   <IosPickerSheet

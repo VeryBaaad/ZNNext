@@ -77,6 +77,11 @@ export const zhCN: Dictionary = {
   "config.mode.ptrace": "ptrace mode",
   "config.mode.proc": "proc mode",
   "config.mode.late": "late mode",
+  "config.modeSavedCurrent": "已保存。znnd 当前上报的跟踪模式为 {mode}。",
+  "config.modeSavedPtraceRestart":
+    "已保存。znnd 当前上报的跟踪模式为 {mode}。切换到 ptrace 需要重启 znnd。",
+  "config.modeSavedStopped": "已保存。znnd 将在下次启动时读取此设置。",
+  "config.modeSavedUnconfirmed": "已保存。无法确认当前跟踪模式。",
   "config.disableZn": "接管 ZygiskNext",
   "config.disableZn.true": "开启",
   "config.disableZn.false": "关闭",

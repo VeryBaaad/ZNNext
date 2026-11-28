@@ -153,14 +153,18 @@ export function useAppData(): AppData {
     }
   }
 
-  function applyHookConfig(kind: HookKind, value: string): Promise<void> {
+  async function applyHookConfig(kind: HookKind, value: string): Promise<void> {
     const update = configWrite.then(async () => {
       config.value = await setHookConfig(kind, value);
       sections.config.lastSuccess = Date.now();
       sections.config.failed = false;
     });
     configWrite = update.catch(() => {});
-    return update;
+    await update;
+    if (kind === "mode") {
+      await requests.get("status");
+      await retrySection("status");
+    }
   }
 
   return {

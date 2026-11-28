@@ -94,8 +94,11 @@ async function applyValue(row: ConfigRow, value: string): Promise<void> {
   if (busy.value) return;
   busy.value = true;
   try {
-    await actions.applyHookConfig(row.kind as HookKind, value);
-    void showSnackbar({ message: t("config.saved"), duration: "short" });
+    const message = await actions.applyHookConfig(row.kind as HookKind, value);
+    void showSnackbar({
+      message,
+      duration: row.kind === "mode" ? 8000 : "short",
+    });
   } catch (e) {
     console.warn("[znn] config-set:", e);
     void showSnackbar({ message: t("config.saveFailed"), duration: "long" });
