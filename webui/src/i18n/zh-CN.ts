@@ -54,6 +54,7 @@ export const zhCN: Dictionary = {
   "zn.modules.empty": "未加载任何模块",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
+  "info.version": "版本",
   "info.rootImpl": "Root 实现",
   "info.rootImpl.none": "未检测到",
   "info.mode": "当前模式",

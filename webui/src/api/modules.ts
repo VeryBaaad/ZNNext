@@ -80,17 +80,12 @@ function normaliseFailed(raw: unknown): FailedProcess[] {
 function normaliseModule(raw: unknown): ZnnModule | null {
   if (typeof raw !== "object" || raw === null) return null;
   const module = raw as Record<string, unknown>;
-  if (
-    typeof module.id !== "string" ||
-    typeof module.name !== "string" ||
-    typeof module.version !== "string"
-  ) {
+  if (typeof module.id !== "string" || typeof module.name !== "string")
     return null;
-  }
   return {
     id: module.id,
     name: module.name,
-    version: module.version,
+    version: typeof module.version === "string" ? module.version.trim() : "",
     processes: normaliseProcesses(module.processes),
     failed: normaliseFailed(module.failed),
   };

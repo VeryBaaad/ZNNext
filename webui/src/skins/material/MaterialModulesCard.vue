@@ -64,6 +64,12 @@ const basename = (value: string): string => {
             </span>
           </span>
           <div slot="items" class="proc-list">
+            <div v-if="module.version" class="proc-row">
+              <span class="proc-name">{{ t("info.version") }}</span>
+              <span class="proc-name" :title="module.version">{{
+                module.version
+              }}</span>
+            </div>
             <div v-if="module.processes.length === 0" class="proc-empty">—</div>
             <div
               v-for="process in module.processes"

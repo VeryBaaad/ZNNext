@@ -106,7 +106,7 @@
     {
       id: 'zygisknextsu',
       name: 'ZNNext',
-      version: 'v0.0.0',
+      version: 'v2.22.0.1',
       processes: [
         { pid: pid(), name: 'adbd' },
         { pid: pid(), name: 'netd' },
@@ -136,6 +136,8 @@
 
   if (params.get('modules') === 'none') {
     modules = [];
+  } else if (params.get('modules') === 'no-version') {
+    delete modules[0].version;
   }
 
   var state = {
@@ -275,7 +277,7 @@
   };
 
   console.info(
-    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive ?modules=none ' +
+    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive ?modules=none|no-version ' +
       '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=status@2,modules@2',
   );
 })();

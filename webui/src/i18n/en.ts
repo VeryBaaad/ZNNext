@@ -52,6 +52,7 @@ export const en: Record<string, string> = {
   "zn.modules.empty": "No modules loaded",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
+  "info.version": "Version",
   "info.rootImpl": "Root Implementation",
   "info.rootImpl.none": "None detected",
   "info.mode": "Current Mode",

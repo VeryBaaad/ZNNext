@@ -54,6 +54,7 @@ export const ru: Dictionary = {
   "zn.modules.empty": "Модули не загружены",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
+  "info.version": "Версия",
   "info.rootImpl": "Реализация root",
   "info.rootImpl.none": "Не обнаружено",
   "info.mode": "Текущий режим",

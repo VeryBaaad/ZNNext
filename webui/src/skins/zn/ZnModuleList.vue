@@ -75,6 +75,10 @@ const basename = (value: string): string => {
       </button>
 
       <div v-if="expanded.has(module.id)" class="zn-module-body">
+        <div v-if="module.version" class="zn-proc-row">
+          <span>{{ t("info.version") }}</span>
+          <span class="zn-field-value">{{ module.version }}</span>
+        </div>
         <div v-if="module.processes.length === 0" class="zn-empty-line">
           {{ t("modules.noProcesses") }}
         </div>

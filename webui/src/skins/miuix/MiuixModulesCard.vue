@@ -27,7 +27,7 @@ import {
   MiuixIcon,
   MiuixSmallTitle,
 } from "miuix-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import type { ZnnModule } from "../../api/modules";
 import { t } from "../../i18n";
@@ -36,9 +36,16 @@ import { ChevronForward } from "./icons";
 
 const props = defineProps<{ modules: ZnnModule[] }>();
 
-const selected = ref<ZnnModule | null>(null);
-
+const selectedId = ref<string | null>(null);
 const sheetOpen = ref(false);
+
+const selected = computed(() =>
+  props.modules.find((module) => module.id === selectedId.value),
+);
+
+watch(selected, (module) => {
+  if (!module) sheetOpen.value = false;
+});
 
 const processes = computed(() => selected.value?.processes ?? []);
 
@@ -60,8 +67,8 @@ function summary(module: ZnnModule): string {
   return parts.join(" · ");
 }
 
-function open(module: ZnnModule): void {
-  selected.value = module;
+function open(id: string): void {
+  selectedId.value = id;
   sheetOpen.value = true;
 }
 </script>
@@ -80,7 +87,7 @@ function open(module: ZnnModule): void {
       clickable
       :title="`${module.name} (${module.id})`"
       :summary="summary(module)"
-      @click="open(module)"
+      @click="open(module.id)"
     >
       <template #end>
         <span class="miuix-chevron"
@@ -91,6 +98,11 @@ function open(module: ZnnModule): void {
   </MiuixCard>
 
   <MiuixBottomSheet v-model="sheetOpen" :title="sheetTitle">
+    <MiuixBasicComponent
+      v-if="selected?.version"
+      :title="t('info.version')"
+      :summary="selected.version"
+    />
     <MiuixBasicComponent
       v-if="processes.length === 0 && failures.length === 0"
       :title="t('modules.noProcesses')"

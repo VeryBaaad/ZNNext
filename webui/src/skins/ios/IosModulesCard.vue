@@ -90,6 +90,18 @@ function basename(value: string): string {
 
         <template v-if="expanded.has(module.id)">
           <k-list-item
+            v-if="module.version"
+            class="ios-child-item"
+            title-font-size-ios="text-[15px]"
+            :title="t('info.version')"
+          >
+            <template #after>
+              <span class="ios-value" :title="module.version">{{
+                module.version
+              }}</span>
+            </template>
+          </k-list-item>
+          <k-list-item
             v-for="process in module.processes"
             :key="`proc-${module.id}-${process.pid}`"
             class="ios-child-item"

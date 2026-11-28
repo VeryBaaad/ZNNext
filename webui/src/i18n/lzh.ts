@@ -54,6 +54,7 @@ export const lzh: Dictionary = {
   "zn.modules.empty": "未設諸司",
   "zn.credit": "Designed by Mufanc, 5ec1cff & VeryBaaad",
 
+  "info.version": "版次",
   "info.rootImpl": "判官",
   "info.rootImpl.none": "未見神明",
   "info.mode": "今法",
