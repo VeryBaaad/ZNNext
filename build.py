@@ -567,10 +567,12 @@ def run_parallel(tasks):
         raise BuildError(f"{name} failed: {error}")
 
 
-def selected_abis(options):
-    if not options.abis:
+def selected_abis(configured):
+    if not configured:
         return list(ANDROID_ABIS)
-    selected = [abi.strip() for abi in options.abis.split(",") if abi.strip()]
+    selected = [abi.strip() for abi in configured.split(",") if abi.strip()]
+    if not selected:
+        raise BuildError("ABI list must contain at least one ABI")
     unknown = [abi for abi in selected if abi not in ANDROID_ABIS]
     if unknown:
         raise BuildError(
@@ -586,7 +588,7 @@ def build_artifacts(variant, options, state):
     jobs = options.jobs
     loader_jobs = max(1, jobs * 55 // 100)
     daemon_jobs = max(1, jobs - loader_jobs)
-    abis = selected_abis(options)
+    abis = selected_abis(options.abis)
 
     loader_cmd = script("loader", variant, "--jobs", loader_jobs)
     for abi in abis:
@@ -919,7 +921,7 @@ def main(argv=None):
         raise BuildError("--jobs must be at least 1")
 
     settings = optimization_settings(options)
-    abis = selected_abis(options)
+    abis = selected_abis(options.abis)
     if len(abis) != len(ANDROID_ABIS):
         print(f"abis: {', '.join(abis)}", flush=True)
     parsed = parse_tasks(options.tasks)

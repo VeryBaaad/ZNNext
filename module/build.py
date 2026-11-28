@@ -177,29 +177,21 @@ def copy_webroot(stage):
         shutil.copy2(path, destination)
 
 
-def selected_abis():
-    configured = os.environ.get("ZNN_ABIS", "")
-    chosen = [abi for abi in configured.split(",") if abi in znn.ANDROID_ABIS]
-    return chosen or list(znn.ANDROID_ABIS)
+def required_artifacts(variant):
+    artifacts = []
+    for abi in znn.selected_abis(os.environ.get("ZNN_ABIS")):
+        loader = Path(abi) / "libzn_loader.so"
+        daemon = Path(abi) / "znnd"
+        artifacts.append((znn.loader_output(variant) / loader, Path("lib") / loader))
+        artifacts.append((znn.daemon_output(variant) / daemon, Path("bin") / daemon))
 
-
-def copy_artifacts(stage, variant):
-    for abi in selected_abis():
-        loader = znn.loader_output(variant) / abi / "libzn_loader.so"
-        if loader.is_file():
-            destination = stage / "lib" / abi / "libzn_loader.so"
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(loader, destination)
-        else:
-            print(f"loader: missing {loader.relative_to(ROOT)}", file=sys.stderr)
-
-        daemon = znn.daemon_output(variant) / abi / "znnd"
-        if daemon.is_file():
-            destination = stage / "bin" / abi / "znnd"
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(daemon, destination)
-        else:
-            print(f"daemon: missing {daemon.relative_to(ROOT)}", file=sys.stderr)
+    missing = [
+        source.relative_to(ROOT) for source, _ in artifacts if not source.is_file()
+    ]
+    if missing:
+        paths = "\n".join(f"  {path}" for path in missing)
+        raise znn.BuildError(f"missing required {variant} artifacts:\n{paths}")
+    return artifacts
 
 
 def copy_kpm(stage, variant, no_kpm):
@@ -354,6 +346,7 @@ def build_zip(stage, variant, sevenzip_path):
 
 
 def package(variant, no_kpm, sevenzip=None):
+    artifacts = required_artifacts(variant)
     stage = STAGE_ROOT / variant
     shutil.rmtree(stage, ignore_errors=True)
     stage.mkdir(parents=True)
@@ -364,7 +357,10 @@ def package(variant, no_kpm, sevenzip=None):
     expand_scripts(stage, variant)
     copy_webroot(stage)
     prepare_licenses(stage)
-    copy_artifacts(stage, variant)
+    for source, relative in artifacts:
+        destination = stage / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
     copy_kpm(stage, variant, no_kpm)
     sign_stage(stage)
     write_checksums(stage)
