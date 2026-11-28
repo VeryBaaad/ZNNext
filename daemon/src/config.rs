@@ -323,6 +323,13 @@ pub fn for_export() -> io::Result<HookConfig> {
     }
 }
 
+pub fn lock_for_update() -> io::Result<fs::File> {
+    fs::create_dir_all(paths::STATE_DIR)?;
+    let directory = fs::File::open(paths::STATE_DIR)?;
+    directory.lock()?;
+    Ok(directory)
+}
+
 fn effective_from(stored: Option<StoredConfig>) -> HookConfig {
     let inline_options = inline_hook_options();
     let plt_options = plt_hook_options();
@@ -383,8 +390,7 @@ fn effective_from(stored: Option<StoredConfig>) -> HookConfig {
     config
 }
 
-pub fn write(config: &HookConfig) -> bool {
-    let _ = fs::create_dir_all(paths::STATE_DIR);
+pub fn write(config: &HookConfig) -> io::Result<()> {
     let mut contents = format!("inline_hook={}\n", config.inline_hook);
     if let Some(value) = &config.inline_hook32 {
         contents.push_str(&format!("inline_hook32={value}\n"));
@@ -397,7 +403,7 @@ pub fn write(config: &HookConfig) -> bool {
         "mode={}\ndebugdata={}\ndisable_zn={}\nhot_update={}\n",
         config.mode, config.debugdata, config.disable_zn, config.hot_update
     ));
-    crate::fileio::replace_file(paths::CONFIG_FILE.as_ref(), contents.as_bytes()).is_ok()
+    crate::fileio::replace_file(paths::CONFIG_FILE.as_ref(), contents.as_bytes())
 }
 
 struct StoredConfig {

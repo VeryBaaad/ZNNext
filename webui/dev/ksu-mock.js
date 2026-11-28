@@ -153,6 +153,36 @@
     return kind === 'inline32' || kind === 'plt32';
   }
 
+  function setConfigValue(kind, value) {
+    if (value === null) {
+      configuredKeys.delete(kind);
+    } else {
+      state.config[CONFIG_KEYS[kind]].value = value;
+      configuredKeys.add(kind);
+    }
+    var primary = isOptionalConfigKey(kind) ? kind.slice(0, -2) : kind;
+    var secondary = primary + '32';
+    if (isOptionalConfigKey(secondary) && !configuredKeys.has(secondary)) {
+      var engine = state.config[CONFIG_KEYS[primary]].value;
+      var entry32 = state.config[CONFIG_KEYS[secondary]];
+      entry32.value = entry32.options.indexOf(engine) >= 0 ? engine : entry32.options[0];
+    }
+    if (kind !== 'mode' || !state.running) return;
+    switch (value) {
+      case 'proc':
+      case 'late':
+        state.mode = value;
+        break;
+      case 'auto':
+      case 'kernel':
+        state.mode = 'kernel';
+        break;
+      case 'ptrace':
+        if (state.mode === 'kernel') state.mode = 'proc';
+        break;
+    }
+  }
+
   function exportConfig() {
     var exported = {};
     Object.keys(CONFIG_KEYS).forEach(function (kind) {
@@ -162,11 +192,11 @@
     return exported;
   }
 
-  function diffConfig(operands) {
-    if (operands.length !== 1) throw new Error('usage: znnd --ctl config-diff <json>');
+  function diffConfig(cmd, operands) {
+    if (operands.length !== 1) throw new Error('usage: znnd --ctl ' + cmd + ' <json>');
     var requested = JSON.parse(operands[0]);
     if (typeof requested !== 'object' || requested === null || Array.isArray(requested)) {
-      throw new Error('config-diff requires a JSON object');
+      throw new Error(cmd + ' requires a JSON object');
     }
     var requestedKeys = Object.keys(requested);
     requestedKeys.forEach(function (kind) {
@@ -239,7 +269,14 @@
         }
         return exportConfig();
       case 'config-diff':
-        return diffConfig(operands);
+        return diffConfig(cmd, operands);
+      case 'config-import': {
+        var result = diffConfig(cmd, operands);
+        Object.keys(result.changes).forEach(function (kind) {
+          setConfigValue(kind, result.changes[kind].to);
+        });
+        return result;
+      }
       case 'config-set': {
         var kind = operands[0];
         var value = operands[1];
@@ -253,23 +290,7 @@
         if (entry.options.indexOf(value) < 0) {
           throw new Error('invalid ' + kind + ' value "' + value + '" for this device');
         }
-        entry.value = value;
-        configuredKeys.add(kind);
-        if (kind === 'mode' && state.running) {
-          switch (value) {
-            case 'proc':
-            case 'late':
-              state.mode = value;
-              break;
-            case 'auto':
-            case 'kernel':
-              state.mode = 'kernel';
-              break;
-            case 'ptrace':
-              if (state.mode === 'kernel') state.mode = 'proc';
-              break;
-          }
-        }
+        setConfigValue(kind, value);
         return state.config;
       }
       default:

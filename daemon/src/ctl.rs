@@ -56,7 +56,7 @@ const STOP_ATTEMPTS: u32 = 80;
 
 const START_TIMEOUT: Duration = Duration::from_secs(4);
 
-const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-export|config-diff [JSON]|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
+const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-export|config-diff [JSON]|config-import [JSON]|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
 
 const CONFIG_SET_USAGE: &str = "usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>";
 
@@ -78,7 +78,7 @@ pub fn command() -> ClapCommand {
                 .conflicts_with(MODULE_DIR_ARGUMENT)
                 .help(
                     "Control command: status, system, modules, config, config-export, \
-                       config-diff [JSON] (defaults to stdin), \
+                       config-diff [JSON] and config-import [JSON] (default to stdin), \
                        config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> \
                        <value>, apply-zn [wait], start, restart, rescan or exit.",
                 ),
@@ -109,25 +109,22 @@ pub fn ctl_main(arguments: &[String]) -> i32 {
         "start" => start_daemon(false),
         "restart" => start_daemon(true),
         "config" => print_json(&config::effective().report()),
-        "config-export" if arguments.is_empty() => match config::for_export() {
-            Ok(config) => print_json(&config),
-            Err(error) => {
-                eprintln!("cannot read {}: {error}", paths::CONFIG_FILE);
-                1
-            }
-        },
-        "config-set" => config_set(arguments),
-        "config-diff" => match crate::config_diff::preview(arguments) {
-            Ok(diff) => print_json(&diff),
-            Err(error) => {
-                eprintln!("{error}");
-                1
-            }
-        },
+        "config-export" if arguments.is_empty() => {
+            config_result(read_config().map(|config| print_json(&config)))
+        }
+        "config-set" => config_result(config_set(arguments)),
+        "config-diff" | "config-import" => config_result(config_snapshot(command, arguments)),
         "apply-zn" => apply_zn(arguments),
         "status" | "system" | "modules" => query_state(command),
         _ => usage(),
     }
+}
+
+fn config_result(result: Result<i32, String>) -> i32 {
+    result.unwrap_or_else(|error| {
+        eprintln!("{error}");
+        1
+    })
 }
 
 /// Echo the part of the snapshot the WebUI renders as the device information.
@@ -289,49 +286,66 @@ fn signal_daemon(requested: i32, message: fn(Pid) -> String) -> i32 {
     0
 }
 
-fn config_set(arguments: &[String]) -> i32 {
+fn read_config() -> Result<config::HookConfig, String> {
+    config::for_export().map_err(|error| format!("cannot read {}: {error}", paths::CONFIG_FILE))
+}
+
+fn lock_config() -> Result<fs::File, String> {
+    config::lock_for_update().map_err(|error| format!("cannot lock {}: {error}", paths::STATE_DIR))
+}
+
+fn config_snapshot(command: &str, arguments: &[String]) -> Result<i32, String> {
+    let proposed = crate::config_diff::read_snapshot(command, arguments)?;
+    let import = command == "config-import";
+    let guard = if import { Some(lock_config()?) } else { None };
+    let diff = crate::config_diff::compare(read_config()?, &proposed)?;
+    let status = if import && !diff.changes.is_empty() {
+        persist_config(&proposed, diff.changes.contains_key("disable-zn"))?
+    } else {
+        0
+    };
+    drop(guard);
+    Ok(print_json(&diff).max(status))
+}
+
+fn config_set(arguments: &[String]) -> Result<i32, String> {
     let [kind, value] = arguments else {
-        eprintln!("{CONFIG_SET_USAGE}");
-        return 1;
+        return Err(CONFIG_SET_USAGE.into());
     };
 
     let Some(options) = config::HookConfig::options(kind) else {
         if kind == "inline32" || kind == "plt32" {
-            eprintln!("this device has no secondary 32-bit ABI");
-        } else {
-            eprintln!("{CONFIG_SET_USAGE}");
+            return Err("this device has no secondary 32-bit ABI".into());
         }
-        return 1;
+        return Err(CONFIG_SET_USAGE.into());
     };
-    let mut zn_failed = false;
     if !config::option_in(&options, value) {
-        eprintln!("invalid {kind} value \"{value}\" for this device");
-        return 1;
+        return Err(format!("invalid {kind} value \"{value}\" for this device"));
     }
 
-    let mut updated = config::effective();
+    let guard = lock_config()?;
+    let mut updated = read_config()?;
     updated.set(kind, value);
-    if !config::write(&updated) {
-        eprintln!("cannot write {}", paths::CONFIG_FILE);
-        return 1;
-    }
+    let status = persist_config(&updated, kind == "disable-zn")?;
+    drop(guard);
+    Ok(print_json(&updated.report()).max(status))
+}
 
-    if kind == "disable-zn" {
-        let disable = value == config::DISABLE_ZN_TRUE;
-        if !crate::zn::apply_now(disable) {
-            zn_failed = true;
-            eprintln!(
-                "the setting was saved, but Zygisk Next could not be updated; see the module log"
-            );
-        }
+fn persist_config(updated: &config::HookConfig, apply_zn: bool) -> Result<i32, String> {
+    config::write(updated)
+        .map_err(|error| format!("cannot write {}: {error}", paths::CONFIG_FILE))?;
+    let applied = !apply_zn || crate::zn::apply_now(updated.disable_zn == config::DISABLE_ZN_TRUE);
+    if !applied {
+        eprintln!(
+            "the setting was saved, but Zygisk Next could not be updated; see the module log"
+        );
     }
 
     if let Some(pid) = procfs::find_daemon_pid() {
         let _ = process::kill(pid, signal::SIGHUP);
     }
 
-    let code = print_json(&updated.report());
-    if zn_failed { 1 } else { code }
+    Ok(i32::from(!applied))
 }
 
 fn apply_zn(arguments: &[String]) -> i32 {

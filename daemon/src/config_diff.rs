@@ -25,20 +25,19 @@ use std::io::{self, Read};
 use serde::Serialize;
 
 use crate::config::{self, HookConfig};
-use crate::paths::CONFIG_FILE;
 
 #[derive(Serialize)]
 pub struct ConfigDiff {
-    changes: BTreeMap<&'static str, Change>,
+    pub changes: BTreeMap<&'static str, Change>,
 }
 
 #[derive(Serialize)]
-struct Change {
+pub struct Change {
     from: Option<String>,
     to: Option<String>,
 }
 
-pub fn preview(arguments: &[String]) -> Result<ConfigDiff, String> {
+pub fn read_snapshot(command: &str, arguments: &[String]) -> Result<HookConfig, String> {
     let mut stdin = String::new();
     let json = match arguments {
         [] => {
@@ -48,54 +47,68 @@ pub fn preview(arguments: &[String]) -> Result<ConfigDiff, String> {
             &stdin
         }
         [json] => json,
-        _ => return Err("usage: znnd --ctl config-diff [JSON]".into()),
+        _ => return Err(format!("usage: znnd --ctl {command} [JSON]")),
     };
     if !json.trim_start().starts_with('{') {
         return Err("expected a configuration JSON object".into());
     }
-    let proposed: HookConfig =
-        serde_json::from_str(json).map_err(|error| format!("invalid configuration: {error}"))?;
-    let current =
-        config::for_export().map_err(|error| format!("cannot read {CONFIG_FILE}: {error}"))?;
+    serde_json::from_str(json).map_err(|error| format!("invalid configuration: {error}"))
+}
+
+pub fn compare(current: HookConfig, proposed: &HookConfig) -> Result<ConfigDiff, String> {
     let fields = [
         (
             "inline",
             Some(current.inline_hook),
-            Some(proposed.inline_hook),
+            Some(proposed.inline_hook.as_str()),
         ),
-        ("inline32", current.inline_hook32, proposed.inline_hook32),
-        ("plt", Some(current.plt_hook), Some(proposed.plt_hook)),
-        ("plt32", current.plt_hook32, proposed.plt_hook32),
-        ("mode", Some(current.mode), Some(proposed.mode)),
+        (
+            "inline32",
+            current.inline_hook32,
+            proposed.inline_hook32.as_deref(),
+        ),
+        (
+            "plt",
+            Some(current.plt_hook),
+            Some(proposed.plt_hook.as_str()),
+        ),
+        ("plt32", current.plt_hook32, proposed.plt_hook32.as_deref()),
+        ("mode", Some(current.mode), Some(proposed.mode.as_str())),
         (
             "debugdata",
             Some(current.debugdata),
-            Some(proposed.debugdata),
+            Some(proposed.debugdata.as_str()),
         ),
         (
             "disable-zn",
             Some(current.disable_zn),
-            Some(proposed.disable_zn),
+            Some(proposed.disable_zn.as_str()),
         ),
         (
             "hot-update",
             Some(current.hot_update),
-            Some(proposed.hot_update),
+            Some(proposed.hot_update.as_str()),
         ),
     ];
     let mut changes = BTreeMap::new();
     for (key, from, to) in fields {
-        if from == to {
+        if from.as_deref() == to {
             continue;
         }
-        if let Some(value) = &to {
+        if let Some(value) = to {
             let options = HookConfig::options(key)
                 .ok_or_else(|| format!("this device has no secondary 32-bit ABI for {key}"))?;
             if !config::option_in(&options, value) {
                 return Err(format!("invalid {key} value {value:?} for this device"));
             }
         }
-        changes.insert(key, Change { from, to });
+        changes.insert(
+            key,
+            Change {
+                from,
+                to: to.map(str::to_owned),
+            },
+        );
     }
     Ok(ConfigDiff { changes })
 }
