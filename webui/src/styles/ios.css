@@ -291,7 +291,7 @@ html[data-znn-ui="ios"] body {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 28px 16px max(28px, var(--k-safe-area-bottom, 0px));
+  padding-block: 28px max(28px, var(--k-safe-area-bottom, 0px));
 }
 
 .ios-footer-link {

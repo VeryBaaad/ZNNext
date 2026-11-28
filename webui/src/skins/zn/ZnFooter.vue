@@ -21,8 +21,8 @@
  */
 
 import { GITHUB_URL } from "../../app-info";
-import DiagnosticsSummary from "../../components/DiagnosticsSummary.vue";
 import { t } from "../../i18n";
+import ZnDiagnostics from "./ZnDiagnostics.vue";
 import ZnIcon from "./ZnIcon.vue";
 </script>
 
@@ -39,7 +39,7 @@ import ZnIcon from "./ZnIcon.vue";
         {{ t("footer.github") }}
       </a>
     </div>
-    <DiagnosticsSummary />
+    <ZnDiagnostics />
     <span class="zn-credit">{{ t("zn.credit") }}</span>
   </footer>
 </template>

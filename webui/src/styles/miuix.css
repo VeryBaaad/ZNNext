@@ -57,10 +57,15 @@ html[data-znn-ui="miuix"] body {
   opacity: calc(1 - var(--znn-miuix-large-fade, 0));
 }
 
-.znn-miuix .znn-content {
+.znn-miuix .znn-content,
+.znn-miuix .footer-host {
   max-width: var(--znn-column-width);
-  margin: 0 auto;
-  padding: 12px;
+  margin-inline: auto;
+  padding-inline: 12px;
+}
+
+.znn-miuix .znn-content {
+  padding-block: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -189,7 +194,7 @@ html[data-znn-ui="miuix"] body {
 .znn-miuix .footer-host {
   display: flex;
   justify-content: center;
-  padding: 4px 12px 24px;
+  padding-block: 4px 24px;
 }
 
 .znn-miuix .footer-btn {

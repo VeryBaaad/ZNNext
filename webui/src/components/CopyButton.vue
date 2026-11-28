@@ -20,65 +20,10 @@
  * Copyright (C) 2026 VeryBaaad <verybaaad@outlook.com>
  */
 
-import { useTimeoutFn } from "@vueuse/core";
-import { ref } from "vue";
-
-import { t } from "../i18n";
+import { useCopyText } from "../composables/use-copy-text";
 
 const props = defineProps<{ text: string; label: string }>();
-const feedback = ref("actions.copy");
-const { start, stop } = useTimeoutFn(
-  () => (feedback.value = "actions.copy"),
-  2500,
-  {
-    immediate: false,
-  },
-);
-let copying = false;
-
-async function writeClipboard(
-  text: string,
-  button: HTMLButtonElement,
-): Promise<boolean> {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {}
-  }
-
-  const input = document.createElement("textarea");
-  input.value = text;
-  input.readOnly = true;
-  input.style.cssText =
-    "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
-  const focused = document.activeElement;
-  button.after(input);
-  try {
-    input.focus({ preventScroll: true });
-    input.select();
-    return document.execCommand("copy");
-  } finally {
-    input.remove();
-    if (focused instanceof HTMLElement) focused.focus({ preventScroll: true });
-  }
-}
-
-async function copy(event: MouseEvent): Promise<void> {
-  if (copying) return;
-  copying = true;
-  stop();
-  const button = event.currentTarget as HTMLButtonElement;
-  try {
-    const copied = await writeClipboard(props.text, button);
-    feedback.value = copied ? "actions.copied" : "actions.copyFailed";
-  } catch {
-    feedback.value = "actions.copyFailed";
-  } finally {
-    copying = false;
-    start();
-  }
-}
+const { copy, copyLabel } = useCopyText(() => props.text);
 </script>
 
 <template>
@@ -88,7 +33,7 @@ async function copy(event: MouseEvent): Promise<void> {
     :aria-label="props.label"
     @click.stop="copy"
   >
-    <span aria-live="polite">{{ t(feedback) }}</span>
+    <span aria-live="polite">{{ copyLabel }}</span>
   </button>
 </template>
 

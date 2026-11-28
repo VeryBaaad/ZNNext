@@ -25,6 +25,7 @@ import "../../styles/material.css";
 import "@m3e/web/theme";
 import "@m3e/web/card";
 import "@m3e/web/dialog";
+import "@m3e/web/expansion-panel";
 import "@m3e/web/icon";
 import "@m3e/web/icon-button";
 import "@m3e/web/menu";

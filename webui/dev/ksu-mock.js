@@ -79,8 +79,11 @@
   var moduleDir = '/data/adb/modules/zygisknextsu';
   var logcatCommand = "set -o pipefail; /system/bin/logcat -b main -d -v brief znndaemon:I '*:S' | /system/bin/tail -n 100";
   var historyCommand = "set -o pipefail; /system/bin/logcat -b main -d -v time ZNNextLoad:I '*:S' | /system/bin/tail -n 50";
+  var sampleLibrary = params.get('history') === 'long'
+    ? 'libexample_with_a_long_filename_for_narrow_diagnostic_history_rows_and_widescreen_layouts.so'
+    : 'libsample.so';
   var loadHistory = [
-    '11-28 13:55:12.781 I/ZNNextLoad( 3921): loaded 824 libsample.so',
+    '11-28 13:55:12.781 I/ZNNextLoad( 3921): loaded 824 ' + sampleLibrary,
     '11-28 14:03:08.104 I/ZNNextLoad( 4002): failed 120 libother.so',
   ].join('\n');
   var daemonLogs = [
@@ -549,7 +552,7 @@
   };
 
   console.info(
-    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?safe-boot=active ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|waiting|mixed ?logs=empty ?history=empty ' +
+    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?safe-boot=active ?pagesize=16384 ?modules=none|no-version|disabled|no-declarations|missing-libraries|waiting|mixed ?logs=empty ?history=empty|long ' +
       '?update=notStaged|ready|disabled|removed|incomplete|notExecutable|verificationFailed|unreadable ' +
       '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=logs@1,history@1,bugreport@1',
   );

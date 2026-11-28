@@ -21,8 +21,8 @@
  */
 
 import { GITHUB_URL } from "../../app-info";
-import DiagnosticsSummary from "../../components/DiagnosticsSummary.vue";
 import { t } from "../../i18n";
+import MaterialDiagnostics from "./MaterialDiagnostics.vue";
 
 const GITHUB_PATH =
   "M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 " +
@@ -55,7 +55,7 @@ const GITHUB_PATH =
       </svg>
       {{ t("footer.github") }}
     </m3e-button>
-    <DiagnosticsSummary />
+    <MaterialDiagnostics />
   </footer>
 </template>
 
@@ -63,5 +63,6 @@ const GITHUB_PATH =
 .footer-host {
   flex-direction: column;
   align-items: center;
+  gap: var(--md-sys-measurement-space100);
 }
 </style>

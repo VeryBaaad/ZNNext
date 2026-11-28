@@ -23,8 +23,8 @@
 import { kLink } from "konsta/vue";
 
 import { GITHUB_URL } from "../../app-info";
-import DiagnosticsSummary from "../../components/DiagnosticsSummary.vue";
 import { t } from "../../i18n";
+import IosDiagnostics from "./IosDiagnostics.vue";
 import IosIcon from "./IosIcon.vue";
 </script>
 
@@ -39,6 +39,6 @@ import IosIcon from "./IosIcon.vue";
       <IosIcon name="github" :size="18" />
       {{ t("footer.github") }}
     </k-link>
-    <DiagnosticsSummary />
+    <IosDiagnostics />
   </footer>
 </template>

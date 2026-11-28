@@ -32,9 +32,11 @@ const props = withDefaults(
 );
 
 const expanded = ref(props.initiallyOpen);
+const emit = defineEmits<{ toggle: [expanded: boolean] }>();
 
 function toggle(): void {
   expanded.value = !expanded.value;
+  emit("toggle", expanded.value);
 }
 </script>
 

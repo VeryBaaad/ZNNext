@@ -59,3 +59,37 @@ body {
 m3e-theme {
   display: contents;
 }
+
+.diagnostic-text {
+  max-height: 20rem;
+  min-width: 0;
+  margin: 0;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  text-align: start;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.diagnostic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.diagnostic-feedback {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.diagnostic-feedback:empty {
+  display: none;
+}
+
+.diagnostic-filename {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
