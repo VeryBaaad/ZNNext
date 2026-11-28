@@ -471,21 +471,16 @@ impl Daemon {
 
         let fd = regs.return_value() as i32;
         if fd < 0 {
+            let purpose = match tracee.file_purpose {
+                FilePurpose::Loader => "the loader",
+                FilePurpose::Module => "a module library",
+            };
+            let mut reason = format!("memfd_create failed while preparing {purpose}");
             if fd == -libc::ENOSYS {
-                loge!(
-                    "pid {pid}: this kernel ({}) has no memfd_create, which needs Linux 3.17; \
-                     ZNNext cannot inject here",
-                    self.system.kernel
-                );
-                self.give_up(
-                    pid,
-                    tracee,
-                    "kernel without memfd_create (needs Linux 3.17)",
-                );
-            } else {
-                loge!("memfd_create failed for pid {pid} ({fd})");
-                self.give_up(pid, tracee, "memfd_create failed");
+                reason.push_str(" (returned -ENOSYS)");
             }
+            loge!("pid {pid}: {reason} (return value {fd})");
+            self.give_up(pid, tracee, &reason);
             return Progress::Finished;
         }
 

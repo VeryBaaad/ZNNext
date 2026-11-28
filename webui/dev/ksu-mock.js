@@ -124,7 +124,7 @@
       failed: [
         {
           name: 'artd',
-          reason: 'memfd_create failed',
+          reason: 'memfd_create failed while preparing a module library',
           pid: pid(),
           lastSeenMs: Date.now(),
         },
