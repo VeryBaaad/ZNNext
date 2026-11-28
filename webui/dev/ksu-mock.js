@@ -91,6 +91,7 @@
     'hot-update': 'hotUpdate',
   };
   var configuredKeys = new Set();
+  var previousConfig = null;
 
   var config = {
     inlineHook: { value: 'dobby', options: ['dobby', 'shadowhook', 'and64inlinehook', 'frida-gum', 'rv64hook', 'hookzz', 'urhook', 'whale', 'baaadhook', 'yukiihook', 'sandhook', 'srxinlinehook', 'disable'] },
@@ -233,8 +234,10 @@
     return { changes: changes };
   }
 
-  function applyConfigChanges(diff) {
-    Object.keys(diff.changes).forEach(function (kind) {
+  function applyConfigChanges(diff, remember) {
+    var changedKeys = Object.keys(diff.changes);
+    if (remember && changedKeys.length) previousConfig = exportConfig();
+    changedKeys.forEach(function (kind) {
       setConfigValue(kind, diff.changes[kind].to);
     });
     return diff;
@@ -283,7 +286,7 @@
       case 'config-diff':
         return diffConfig(cmd, operands);
       case 'config-import':
-        return applyConfigChanges(diffConfig(cmd, operands));
+        return applyConfigChanges(diffConfig(cmd, operands), true);
       case 'config-reset':
         if (operands.length !== 0) throw new Error('usage: znnd --ctl config-reset');
         return applyConfigChanges(compareConfig({
@@ -293,7 +296,14 @@
           debugdata: state.config.debugdata.options[0],
           'disable-zn': 'true',
           'hot-update': 'false',
-        }));
+        }), true);
+      case 'config-undo': {
+        if (operands.length !== 0) throw new Error('usage: znnd --ctl config-undo');
+        if (previousConfig === null) throw new Error('no configuration change to undo');
+        var undone = applyConfigChanges(compareConfig(previousConfig), false);
+        previousConfig = null;
+        return undone;
+      }
       case 'config-set': {
         var kind = operands[0];
         var value = operands[1];
@@ -307,6 +317,8 @@
         if (entry.options.indexOf(value) < 0) {
           throw new Error('invalid ' + kind + ' value "' + value + '" for this device');
         }
+        var before = exportConfig();
+        if (before[kind] !== value) previousConfig = before;
         setConfigValue(kind, value);
         return state.config;
       }

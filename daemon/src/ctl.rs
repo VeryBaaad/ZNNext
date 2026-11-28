@@ -56,7 +56,7 @@ const STOP_ATTEMPTS: u32 = 80;
 
 const START_TIMEOUT: Duration = Duration::from_secs(4);
 
-const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-export|config-diff [JSON]|config-import [JSON]|config-reset|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
+const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-export|config-diff [JSON]|config-import [JSON]|config-reset|config-undo|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
 
 const CONFIG_SET_USAGE: &str = "usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>";
 
@@ -79,7 +79,7 @@ pub fn command() -> ClapCommand {
                 .help(
                     "Control command: status, system, modules, config, config-export, \
                        config-diff [JSON] and config-import [JSON] (default to stdin), \
-                       config-reset (restore device defaults), \
+                       config-reset (restore device defaults), config-undo (undo the last change), \
                        config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> \
                        <value>, apply-zn [wait], start, restart, rescan or exit.",
                 ),
@@ -114,6 +114,7 @@ pub fn ctl_main(arguments: &[String]) -> i32 {
             config_result(read_config().map(|config| print_json(&config)))
         }
         "config-set" => config_result(config_set(arguments)),
+        "config-undo" => config_result(config_undo(arguments)),
         "config-diff" | "config-import" | "config-reset" => {
             config_result(config_snapshot(command, arguments))
         }
@@ -305,12 +306,30 @@ fn config_snapshot(command: &str, arguments: &[String]) -> Result<i32, String> {
     };
     let write = matches!(command, "config-import" | "config-reset");
     let guard = if write { Some(lock_config()?) } else { None };
-    let diff = crate::config_diff::compare(read_config()?, &proposed)?;
+    let current = read_config()?;
+    let diff =
+        crate::config_diff::compare(current.clone(), &proposed, config::HookConfig::options)?;
     let status = if write && !diff.changes.is_empty() {
-        persist_config(&proposed, diff.changes.contains_key("disable-zn"))?
+        persist_config(
+            &proposed,
+            Some(&current),
+            diff.changes.contains_key("disable-zn"),
+        )?
     } else {
         0
     };
+    drop(guard);
+    Ok(print_json(&diff).max(status))
+}
+
+fn config_undo(arguments: &[String]) -> Result<i32, String> {
+    if !arguments.is_empty() {
+        return Err("usage: znnd --ctl config-undo".into());
+    }
+    let guard = lock_config()?;
+    let (current, previous) = config::undo::read()?;
+    let diff = crate::config_diff::compare(current, &previous, config::HookConfig::stored_options)?;
+    let status = persist_config(&previous, None, diff.changes.contains_key("disable-zn"))?;
     drop(guard);
     Ok(print_json(&diff).max(status))
 }
@@ -331,16 +350,23 @@ fn config_set(arguments: &[String]) -> Result<i32, String> {
     }
 
     let guard = lock_config()?;
-    let mut updated = read_config()?;
+    let current = read_config()?;
+    let mut updated = current.clone();
     updated.set(kind, value);
-    let status = persist_config(&updated, kind == "disable-zn")?;
+    let status = persist_config(&updated, Some(&current), kind == "disable-zn")?;
     drop(guard);
     Ok(print_json(&updated.report()).max(status))
 }
 
-fn persist_config(updated: &config::HookConfig, apply_zn: bool) -> Result<i32, String> {
-    config::write(updated)
-        .map_err(|error| format!("cannot write {}: {error}", paths::CONFIG_FILE))?;
+fn persist_config(
+    updated: &config::HookConfig,
+    previous: Option<&config::HookConfig>,
+    apply_zn: bool,
+) -> Result<i32, String> {
+    if previous != Some(updated) {
+        config::write(updated, previous)
+            .map_err(|error| format!("cannot write {}: {error}", paths::CONFIG_FILE))?;
+    }
     let applied = !apply_zn || crate::zn::apply_now(updated.disable_zn == config::DISABLE_ZN_TRUE);
     if !applied {
         eprintln!(

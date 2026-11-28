@@ -55,7 +55,11 @@ pub fn read_snapshot(command: &str, arguments: &[String]) -> Result<HookConfig, 
     serde_json::from_str(json).map_err(|error| format!("invalid configuration: {error}"))
 }
 
-pub fn compare(current: HookConfig, proposed: &HookConfig) -> Result<ConfigDiff, String> {
+pub fn compare(
+    current: HookConfig,
+    proposed: &HookConfig,
+    options_for: fn(&str) -> Option<Vec<&'static str>>,
+) -> Result<ConfigDiff, String> {
     let fields = [
         (
             "inline",
@@ -96,7 +100,7 @@ pub fn compare(current: HookConfig, proposed: &HookConfig) -> Result<ConfigDiff,
             continue;
         }
         if let Some(value) = to {
-            let options = HookConfig::options(key)
+            let options = options_for(key)
                 .ok_or_else(|| format!("this device has no secondary 32-bit ABI for {key}"))?;
             if !config::option_in(&options, value) {
                 return Err(format!("invalid {key} value {value:?} for this device"));

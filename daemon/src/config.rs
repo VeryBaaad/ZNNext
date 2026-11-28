@@ -27,6 +27,8 @@ use serde::{Deserialize, Serialize};
 use crate::paths;
 use crate::system::{runtime_abi, secondary_abi, sibling_abi};
 
+pub mod undo;
+
 pub const MODE_AUTO: &str = "auto";
 /// Follow kernel fork/exec/exit events.
 pub const MODE_KERNEL: &str = "kernel";
@@ -215,11 +217,18 @@ pub fn option_in(options: &[&str], value: &str) -> bool {
 
 impl HookConfig {
     pub fn options(kind: &str) -> Option<Vec<&'static str>> {
+        if matches!(kind, "inline32" | "plt32") && secondary_abi().is_none() {
+            return None;
+        }
+        Self::stored_options(kind)
+    }
+
+    pub fn stored_options(kind: &str) -> Option<Vec<&'static str>> {
         match kind {
             "inline" => Some(inline_hook_options()),
-            "inline32" => secondary_abi().map(inline_hook_options_for),
+            "inline32" => sibling_abi().map(inline_hook_options_for),
             "plt" => Some(plt_hook_options()),
-            "plt32" => secondary_abi().map(plt_hook_options_for),
+            "plt32" => sibling_abi().map(plt_hook_options_for),
             "mode" => Some(tracking_mode_options()),
             "debugdata" => Some(debugdata_options()),
             "disable-zn" => Some(disable_zn_options()),
@@ -394,7 +403,15 @@ fn effective_from(stored: Option<StoredConfig>) -> HookConfig {
     config
 }
 
-pub fn write(config: &HookConfig) -> io::Result<()> {
+pub fn write(config: &HookConfig, previous: Option<&HookConfig>) -> io::Result<()> {
+    let mut contents = file_contents(config);
+    if let Some(previous) = previous {
+        undo::append(&mut contents, previous, config)?;
+    }
+    crate::fileio::replace_file(paths::CONFIG_FILE.as_ref(), contents.as_bytes())
+}
+
+fn file_contents(config: &HookConfig) -> String {
     let mut contents = format!("inline_hook={}\n", config.inline_hook);
     if let Some(value) = &config.inline_hook32 {
         contents.push_str(&format!("inline_hook32={value}\n"));
@@ -407,7 +424,7 @@ pub fn write(config: &HookConfig) -> io::Result<()> {
         "mode={}\ndebugdata={}\ndisable_zn={}\nhot_update={}\n",
         config.mode, config.debugdata, config.disable_zn, config.hot_update
     ));
-    crate::fileio::replace_file(paths::CONFIG_FILE.as_ref(), contents.as_bytes())
+    contents
 }
 
 struct StoredConfig {
@@ -422,7 +439,10 @@ struct StoredConfig {
 }
 
 fn read_file() -> io::Result<StoredConfig> {
-    let contents = fs::read_to_string(paths::CONFIG_FILE)?;
+    fs::read_to_string(paths::CONFIG_FILE).map(|contents| parse_file(&contents))
+}
+
+fn parse_file(contents: &str) -> StoredConfig {
     let mut stored = StoredConfig {
         inline_hook: String::new(),
         inline_hook32: String::new(),
@@ -457,7 +477,7 @@ fn read_file() -> io::Result<StoredConfig> {
             _ => {}
         }
     }
-    Ok(stored)
+    stored
 }
 
 #[cfg(test)]
