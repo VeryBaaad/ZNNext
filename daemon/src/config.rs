@@ -315,10 +315,14 @@ pub fn effective() -> HookConfig {
     effective_from(read_file().ok())
 }
 
+pub fn defaults() -> HookConfig {
+    effective_from(None)
+}
+
 pub fn for_export() -> io::Result<HookConfig> {
     match read_file() {
         Ok(stored) => Ok(effective_from(Some(stored))),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(effective_from(None)),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(defaults()),
         Err(error) => Err(error),
     }
 }

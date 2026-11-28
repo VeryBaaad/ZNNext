@@ -56,7 +56,7 @@ const STOP_ATTEMPTS: u32 = 80;
 
 const START_TIMEOUT: Duration = Duration::from_secs(4);
 
-const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-export|config-diff [JSON]|config-import [JSON]|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
+const USAGE: &str = "usage: znnd --ctl <status|system|modules|config|config-export|config-diff [JSON]|config-import [JSON]|config-reset|config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>|apply-zn [wait]|start|restart|rescan|exit>";
 
 const CONFIG_SET_USAGE: &str = "usage: znnd --ctl config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> <value>";
 
@@ -79,6 +79,7 @@ pub fn command() -> ClapCommand {
                 .help(
                     "Control command: status, system, modules, config, config-export, \
                        config-diff [JSON] and config-import [JSON] (default to stdin), \
+                       config-reset (restore device defaults), \
                        config-set <inline|inline32|plt|plt32|mode|debugdata|disable-zn|hot-update> \
                        <value>, apply-zn [wait], start, restart, rescan or exit.",
                 ),
@@ -113,7 +114,9 @@ pub fn ctl_main(arguments: &[String]) -> i32 {
             config_result(read_config().map(|config| print_json(&config)))
         }
         "config-set" => config_result(config_set(arguments)),
-        "config-diff" | "config-import" => config_result(config_snapshot(command, arguments)),
+        "config-diff" | "config-import" | "config-reset" => {
+            config_result(config_snapshot(command, arguments))
+        }
         "apply-zn" => apply_zn(arguments),
         "status" | "system" | "modules" => query_state(command),
         _ => usage(),
@@ -295,11 +298,15 @@ fn lock_config() -> Result<fs::File, String> {
 }
 
 fn config_snapshot(command: &str, arguments: &[String]) -> Result<i32, String> {
-    let proposed = crate::config_diff::read_snapshot(command, arguments)?;
-    let import = command == "config-import";
-    let guard = if import { Some(lock_config()?) } else { None };
+    let proposed = match command {
+        "config-reset" if arguments.is_empty() => config::defaults(),
+        "config-reset" => return Err("usage: znnd --ctl config-reset".into()),
+        _ => crate::config_diff::read_snapshot(command, arguments)?,
+    };
+    let write = matches!(command, "config-import" | "config-reset");
+    let guard = if write { Some(lock_config()?) } else { None };
     let diff = crate::config_diff::compare(read_config()?, &proposed)?;
-    let status = if import && !diff.changes.is_empty() {
+    let status = if write && !diff.changes.is_empty() {
         persist_config(&proposed, diff.changes.contains_key("disable-zn"))?
     } else {
         0

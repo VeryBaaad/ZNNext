@@ -204,6 +204,18 @@
         throw new Error('unknown configuration key: ' + kind);
       }
     });
+    var diff = compareConfig(requested);
+    var keyCount = 0;
+    for (var token of operands[0].matchAll(/"(?:[^"\\]|\\.)*"(\s*:)?/g)) {
+      if (token[1]) keyCount += 1;
+    }
+    if (keyCount !== requestedKeys.length) {
+      throw new Error('duplicate configuration key');
+    }
+    return diff;
+  }
+
+  function compareConfig(requested) {
     var current = exportConfig();
     var changes = {};
     Object.keys(CONFIG_KEYS).forEach(function (kind) {
@@ -218,14 +230,14 @@
       var previous = current[kind] ?? null;
       if (previous !== target) changes[kind] = { from: previous, to: target };
     });
-    var keyCount = 0;
-    for (var token of operands[0].matchAll(/"(?:[^"\\]|\\.)*"(\s*:)?/g)) {
-      if (token[1]) keyCount += 1;
-    }
-    if (keyCount !== requestedKeys.length) {
-      throw new Error('duplicate configuration key');
-    }
     return { changes: changes };
+  }
+
+  function applyConfigChanges(diff) {
+    Object.keys(diff.changes).forEach(function (kind) {
+      setConfigValue(kind, diff.changes[kind].to);
+    });
+    return diff;
   }
 
   function snapshot(cmd, operands) {
@@ -270,13 +282,18 @@
         return exportConfig();
       case 'config-diff':
         return diffConfig(cmd, operands);
-      case 'config-import': {
-        var result = diffConfig(cmd, operands);
-        Object.keys(result.changes).forEach(function (kind) {
-          setConfigValue(kind, result.changes[kind].to);
-        });
-        return result;
-      }
+      case 'config-import':
+        return applyConfigChanges(diffConfig(cmd, operands));
+      case 'config-reset':
+        if (operands.length !== 0) throw new Error('usage: znnd --ctl config-reset');
+        return applyConfigChanges(compareConfig({
+          inline: state.config.inlineHook.options[0],
+          plt: state.config.pltHook.options[0],
+          mode: 'auto',
+          debugdata: state.config.debugdata.options[0],
+          'disable-zn': 'true',
+          'hot-update': 'false',
+        }));
       case 'config-set': {
         var kind = operands[0];
         var value = operands[1];
