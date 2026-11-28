@@ -23,6 +23,7 @@
 import { MiuixButton } from "miuix-vue";
 
 import { GITHUB_URL } from "../../app-info";
+import DiagnosticsSummary from "../../components/DiagnosticsSummary.vue";
 import { t } from "../../i18n";
 
 const GITHUB_PATH =
@@ -56,5 +57,13 @@ function openGithub(): void {
       </svg>
       {{ t("footer.github") }}
     </MiuixButton>
+    <DiagnosticsSummary />
   </footer>
 </template>
+
+<style scoped>
+.footer-host {
+  flex-direction: column;
+  align-items: center;
+}
+</style>

@@ -121,5 +121,8 @@ export const zhCN: Dictionary = {
 
   "error.title": "无法读取数据",
 
+  "diagnostics.title": "诊断摘要",
+  "diagnostics.copy": "复制诊断摘要",
+
   "footer.github": "Github",
 };

@@ -121,5 +121,8 @@ export const lzh: Dictionary = {
 
   "error.title": "莫能讀識",
 
+  "diagnostics.title": "診斷撮要",
+  "diagnostics.copy": "謄錄診斷撮要",
+
   "footer.github": "章魚貓",
 };

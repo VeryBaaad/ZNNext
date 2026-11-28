@@ -32,6 +32,7 @@ body:
   - type: textarea
     attributes:
       label: Actual behaviour/实际行为
+      description: You can paste the diagnostic summary from the WebUI footer here. / 可在此粘贴 WebUI 页脚的诊断摘要。
       placeholder: Tell us what happens instead/实际上发生了什么
     validations:
       required: true

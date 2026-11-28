@@ -140,8 +140,9 @@
     delete modules[0].version;
   }
 
+  var statusOverride = params.get('status');
   var state = {
-    running: params.get('status') !== 'inactive',
+    running: statusOverride !== 'inactive',
     mode: 'proc',
     config: config,
     modules: modules,
@@ -149,12 +150,17 @@
 
   function snapshot(cmd, operands) {
     switch (cmd) {
-      case 'status':
-        return {
+      case 'status': {
+        var status = {
           running: state.running,
           pid: state.running ? 4242 : 0,
           mode: state.running ? state.mode : 'unknown',
         };
+        if (state.running && statusOverride !== 'legacy') {
+          status.version = 'v2.22.0.1-128-a1b2c3d-release';
+        }
+        return status;
+      }
       case 'system':
         if (!state.running) {
           return {
@@ -277,7 +283,7 @@
   };
 
   console.info(
-    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive ?modules=none|no-version ' +
+    '[znn preview] KernelSU bridge stubbed. Overrides: ?ksu=0 ?status=inactive|legacy ?modules=none|no-version ' +
       '?ui=material|miuix|zn|ios ?theme=light|dark|auto ?locale=zh-CN|lzh|en|ru ?slow=MS ?fail=status@2,modules@2',
   );
 })();

@@ -21,6 +21,7 @@
  */
 
 import { GITHUB_URL } from "../../app-info";
+import DiagnosticsSummary from "../../components/DiagnosticsSummary.vue";
 import { t } from "../../i18n";
 
 const GITHUB_PATH =
@@ -54,5 +55,13 @@ const GITHUB_PATH =
       </svg>
       {{ t("footer.github") }}
     </m3e-button>
+    <DiagnosticsSummary />
   </footer>
 </template>
+
+<style scoped>
+.footer-host {
+  flex-direction: column;
+  align-items: center;
+}
+</style>

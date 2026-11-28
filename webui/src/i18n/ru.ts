@@ -125,5 +125,8 @@ export const ru: Dictionary = {
 
   "error.title": "Не удалось загрузить данные",
 
+  "diagnostics.title": "Сводка диагностики",
+  "diagnostics.copy": "Скопировать сводку диагностики",
+
   "footer.github": "Github",
 };

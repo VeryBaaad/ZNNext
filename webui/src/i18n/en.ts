@@ -122,6 +122,9 @@ export const en: Record<string, string> = {
 
   "error.title": "Failed to load data",
 
+  "diagnostics.title": "Diagnostic summary",
+  "diagnostics.copy": "Copy diagnostic summary",
+
   "footer.github": "Github",
 };
 

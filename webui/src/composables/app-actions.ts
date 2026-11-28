@@ -26,6 +26,7 @@ import type { AppData } from "./use-app-data";
 
 export interface AppActions {
   refresh: () => void;
+  diagnosticSummary: () => string;
   sections: AppData["sections"];
   retrySection: AppData["retrySection"];
   applyHookConfig: (kind: HookKind, value: string) => Promise<string>;

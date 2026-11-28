@@ -25,6 +25,7 @@ export interface DaemonStatus {
   running: boolean;
   pid: number;
   mode?: string;
+  version?: string;
 }
 
 export async function getDaemonStatus(): Promise<DaemonStatus> {
@@ -32,6 +33,7 @@ export async function getDaemonStatus(): Promise<DaemonStatus> {
     running?: unknown;
     pid?: number;
     mode?: string;
+    version?: unknown;
   }>(`${apiBinary()} --ctl status`);
   const running = raw?.running;
   if (typeof running !== "boolean" && running !== "true" && running !== "false")
@@ -39,6 +41,7 @@ export async function getDaemonStatus(): Promise<DaemonStatus> {
   return {
     pid: typeof raw.pid === "number" ? raw.pid : 0,
     mode: typeof raw.mode === "string" ? raw.mode : undefined,
+    version: typeof raw.version === "string" ? raw.version : undefined,
     running: running === true || running === "true",
   };
 }

@@ -28,6 +28,7 @@ import { modeSaveMessage } from "./config-model";
 import { applyLocale, t } from "./i18n";
 import { initTheme } from "./theme";
 import { initUiMode, uiMode, type UiMode } from "./ui-mode";
+import { formatDiagnosticSummary } from "./util/diagnostic-summary";
 
 const MaterialShell = defineAsyncComponent(
   () => import("./skins/material/MaterialShell.vue"),
@@ -38,6 +39,7 @@ const MiuixShell = defineAsyncComponent(
 const ZnShell = defineAsyncComponent(() => import("./skins/zn/ZnShell.vue"));
 const IosShell = defineAsyncComponent(() => import("./skins/ios/IosShell.vue"));
 
+const data = useAppData();
 const {
   ksuAvailable,
   loading,
@@ -49,7 +51,7 @@ const {
   load,
   retrySection,
   applyHookConfig,
-} = useAppData();
+} = data;
 
 provideAppActions({
   refresh: () => {
@@ -57,6 +59,7 @@ provideAppActions({
   },
   sections,
   retrySection,
+  diagnosticSummary: () => formatDiagnosticSummary(data),
   async applyHookConfig(kind, value) {
     await applyHookConfig(kind, value);
     if (kind !== "mode") return t("config.saved");

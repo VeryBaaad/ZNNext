@@ -138,6 +138,8 @@ fn modules(snapshot: Option<&StateSnapshot>) -> i32 {
 struct StateSnapshot {
     #[serde(default, deserialize_with = "lenient")]
     mode: Option<String>,
+    #[serde(default, deserialize_with = "lenient")]
+    version: Option<String>,
     #[serde(default)]
     system: Option<Box<RawValue>>,
     #[serde(default)]
@@ -348,10 +350,14 @@ fn status(pid: Option<Pid>, snapshot: Option<&StateSnapshot>) -> i32 {
         Some(mode) if running => mode,
         _ => "unknown",
     };
+    let version = snapshot
+        .and_then(|state| state.version.as_deref())
+        .filter(|_| running);
     print_json(&StatusReport {
         running,
         pid: if running { pid } else { 0 },
         mode,
+        version,
     })
 }
 
@@ -360,6 +366,8 @@ struct StatusReport<'a> {
     running: bool,
     pid: Pid,
     mode: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<&'a str>,
 }
 
 fn print_json<T: Serialize + ?Sized>(value: &T) -> i32 {
